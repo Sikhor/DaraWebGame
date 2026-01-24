@@ -7,10 +7,18 @@
 #include <string>
 #include "httplib.h"
 #include "json.hpp"
+#include "secret.h"
 
 #define WEBSERVER_PORT 9050
 
 using json = nlohmann::json;
+
+auto AddCorsHeaders = [](httplib::Response& res)
+{
+    res.set_header("Access-Control-Allow-Origin", "*");
+    res.set_header("Access-Control-Allow-Headers", "Content-Type");
+    res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+};
 
 std::string readPromptFromFile(const std::string& filename) {
     std::ifstream inFile(filename);
@@ -27,8 +35,7 @@ std::string readPromptFromFile(const std::string& filename) {
 
 std::string ContactAI(std::string gameId= "0", std::string userName= "Bernie", std::string actionId= "actionAttack", std::string actionMsg= "explore the strange planet") {
     std::string replyString= "";
-    std::string apiKey = "REMOVED_OPENAI_KEY"; // 🔐 Replace with your actual API key
-
+    std::string apiKey = CHATGPT_SECRET;
     std::string longPrompt;
     try {
         longPrompt = readPromptFromFile("prompt.txt");
@@ -115,9 +122,18 @@ int ContactDara() {
 int main()
 {
     httplib::Server server;
+    
+    server.Options("/action",
+        [](const httplib::Request&, httplib::Response& res)
+        {
+            AddCorsHeaders(res);
+            res.status = 204; // No Content (Preflight OK)
+        }
+    );
 
     server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
     {
+        AddCorsHeaders(res);
         try
         {
             auto body = json::parse(req.body);
@@ -152,6 +168,7 @@ int main()
         }
         catch (const std::exception& e)
         {
+            AddCorsHeaders(res);
             res.status = 400;
             res.set_content(
                 R"({"status":"error","message":"Invalid JSON"})",
@@ -160,7 +177,10 @@ int main()
         }
     });
 
-    std::cout << "REST API läuft auf http://0.0.0.0:8080/action\n";
+    std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";
+    std::string apiKey = CHATGPT_SECRET;
+    std::cout << "API key length = " << apiKey.length() << "\n";
+    
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
 
