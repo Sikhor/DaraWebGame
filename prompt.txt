@@ -88,40 +88,7 @@ CHIANA must NEVER:
 ----------------------------------------------------
 OUTPUT FORMAT (MANDATORY)
 ----------------------------------------------------
-You MUST respond with a SINGLE valid JSON object.
-NO markdown.
-NO extra text.
-NO explanations.
-NO code fences.
-
-If the format is violated, the response is INVALID.
-
-JSON SCHEMA (exact keys, exact casing):
-
-{
-  "narrative": "string (1–3 sentences, no numbers)",
-  "enemy_intents": [
-    {
-      "enemyId": "string",
-      "action": "ATTACK | DEFEND | WAIT | FLEE | USE_SKILL",
-      "targetPlayer": "string | null",
-      "reason": "short neutral explanation"
-    }
-  ],
-  "spawns": [
-    {
-      "enemyId": "string",
-      "name": "string",
-      "type": "string"
-    }
-  ],
-  "despawns": [
-    {
-      "enemyId": "string",
-      "reason": "dead | fled | withdrawn"
-    }
-  ]
-}
+You must send a message which mobs are attacking which players
 
 ----------------------------------------------------
 RULES (MANDATORY)
@@ -131,7 +98,7 @@ RULES (MANDATORY)
 - Do NOT include dead enemies unless despawning them.
 - Keep reasons short and neutral.
 - If unsure, choose a reasonable deterministic action.
-- Never leave arrays missing; use empty arrays if none.
+
 
 ----------------------------------------------------
 SETTING CONTEXT

@@ -1,6 +1,6 @@
 
 #include "main.h"
-#define DARA_DEBUG 1
+#define DARA_DEBUG 0
 
 auto AddCorsHeaders = [](httplib::Response& res)
 {
@@ -42,12 +42,66 @@ Combatant& GetOrCreatePlayer(const std::string& playerName)
 }
 Combatant& GetOrCreateMob(const std::string& mobName)
 {
-    auto [it, inserted] = Players.try_emplace(
+    auto [it, inserted] = Mobs.try_emplace(
         mobName,
         std::make_unique<Combatant>(mobName, ECombatantType::Mob)
     );
 
     return *it->second;
+}
+
+std::string PlayerInfo()
+{
+    std::ostringstream oss;
+
+    oss << "PLAYERS:\n";
+
+    if (Players.empty())
+    {
+        oss << "- none\n";
+        return oss.str();
+    }
+
+    for (const auto& [name, combatantPtr] : Players)
+    {
+        const Combatant& c = *combatantPtr;
+
+        oss << "- " << name
+            << " | HP:" << c.GetHP()
+            << " | EN:" << c.GetEnergy()
+            << " | MN:" << c.GetMana()
+            << " | " << (c.IsAlive() ? "Alive" : "Down")
+            << "\n";
+    }
+
+    return oss.str();
+}
+std::string MobInfo()
+{
+
+    std::ostringstream oss;
+
+    oss << "Mobs:\n";
+
+    if (Players.empty())
+    {
+        oss << "- none\n";
+        return oss.str();
+    }
+
+    for (const auto& [name, combatantPtr] : Mobs)
+    {
+        const Combatant& c = *combatantPtr;
+
+        oss << "- " << name
+            << " | HP:" << c.GetHP()
+            << " | EN:" << c.GetEnergy()
+            << " | MN:" << c.GetMana()
+            << " | " << (c.IsAlive() ? "Alive" : "Down")
+            << "\n";
+    }
+
+    return oss.str();
 }
 
 std::string GenerateUUID()
@@ -93,6 +147,24 @@ static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
     return ptr;
 }
 
+static void PlayerActions(std::string playerName, std::string action)
+{
+        if(action=="ATTACK"){
+
+            Combatant mob = GetOrCreateMob("Chicka");
+            Combatant player= GetOrCreatePlayer(playerName);
+            if (mob.IsAlive() && player.IsAlive())
+            {
+                float dmg = player.AttackMelee("Chicka");
+                mob.ApplyDamage(dmg);
+            }
+            std::cout<<"ATTACK"<<std::endl;
+
+        }else{
+            std::cout<<"NO ATTACK"<<std::endl;
+        }
+
+}
 static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actions)
 {
     std::string combined = "TURN ACTIONS:\n";
@@ -101,6 +173,7 @@ static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actio
         combined += "- Player: " + a.userName + "\n";
         combined += "  ActionId: " + a.actionId + "\n";
         combined += "  ActionMsg: " + a.actionMsg + "\n";
+        PlayerActions(a.userName, a.actionId);
     }
     return combined;
 }
@@ -120,54 +193,77 @@ void DebugMsg(const json& messages)
     std::cout <<"--------------------------------"<< std::endl;
 }
 
-std::string ParseAIReply(const std::string aiResponse)
+static std::string ReadNextToken(const std::string& text, size_t pos)
 {
-    std::string retString;
-    std::ostringstream oss;
-    json aiJson = json::parse(aiResponse);
-    std::string narrative;
+    // skip spaces
+    while (pos < text.size() && std::isspace(static_cast<unsigned char>(text[pos])))
+        ++pos;
 
-    try
+    size_t start = pos;
+
+    // read until whitespace or punctuation that likely ends token
+    while (pos < text.size())
     {
-        narrative = aiJson.at("narrative").get<std::string>();
+        char c = text[pos];
+        if (std::isspace(static_cast<unsigned char>(c)))
+            break;
+        // stop on common punctuation that can appear after the target name
+        if (c == ',' || c == ')' || c == '.' || c == ';' || c == ':')
+            break;
+        ++pos;
     }
-    catch (const nlohmann::json::exception& e)
+
+    if (start >= text.size())
+        return {};
+
+    return text.substr(start, pos - start);
+}
+std::string ParseAIReply(const std::string aiReplyText)
+{
+    std::string retString= aiReplyText;
+ // Iterate over each enemy (mob) you currently have
+    for (const auto& [mobName, mobPtr] : Mobs)
     {
-        narrative = "[Narrative missing or invalid]";
-        std::cerr << "JSON error (narrative): " << e.what() << "\n";
-    }
+        const std::string needle = mobName + ": ATTACK";
+        size_t pos = 0;
 
-    std::cout << "Narrative: " << narrative << "\n";
-
-    for (const auto& intent : aiJson.at("enemy_intents"))
-    {
-        std::string enemyId = intent.at("enemyId").get<std::string>();
-        std::string action  = intent.at("action").get<std::string>();
-        std::string target  = intent.at("targetPlayer").get<std::string>();
-        std::string reason  = intent.at("reason").get<std::string>();
-
-        
-        oss << "Enemy " << enemyId
-                << " does " << action
-                << " targeting " << target
-                << " (" << reason << ")\n";
-        
-
-        // Here is where your combat logic kicks in
-        if (action == "ATTACK")
+        while (true)
         {
-            //std::cout << "Attacking " <<std::endl;
-            // ResolveAttack(enemyId, target);
-        }
-        else if (action == "DEFEND")
-        {
-            //std::cout << "Defend " <<std::endl;
-            // ResolveDefend(enemyId);
-        }
-    }
-    retString= oss.str();
+            pos = aiReplyText.find(needle, pos);
+            if (pos == std::string::npos)
+                break;
 
-    return aiJson;
+            // jump to after "MobName: ATTACK"
+            size_t after = pos + needle.size();
+
+            // read the next token = target player
+            std::string targetPlayer = ReadNextToken(aiReplyText, after);
+
+            if (!targetPlayer.empty())
+            {
+                auto pit = Players.find(targetPlayer);
+                if (pit != Players.end() && pit->second)
+                {
+                    Combatant& enemy  = *mobPtr;
+                    Combatant& player = *pit->second;
+
+                    if (enemy.IsAlive() && player.IsAlive())
+                    {
+                        float dmg = enemy.AttackMelee(targetPlayer);
+                        player.ApplyDamage(dmg);
+
+                        std::cout << mobName << " ATTACK -> " << targetPlayer
+                                  << " dmg=" << dmg << "\n";
+                    }
+                }
+            }
+
+            // continue searching after this match
+            pos = after;
+        }
+    }   
+
+    return retString+PlayerInfo();
 }
 
 std::string ContactAI(
@@ -217,6 +313,8 @@ std::string ContactAI(
     }
 
     messages.push_back({{"role","user"}, {"content", userTurn}});
+    messages.push_back({{"role","user"}, {"content", PlayerInfo()}});
+    messages.push_back({{"role","user"}, {"content", MobInfo()}});
     DebugMsg(messages);
 
 
@@ -286,8 +384,7 @@ std::string ContactAI(
         return "Error: Could not parse OpenAI response";
     }
     
-    std::cout << reply << std::endl;
-    std::string formattedReply= reply; //ParseAIReply(reply);
+    std::string formattedReply= ParseAIReply(reply);
     // 8) Update history only if we got a valid reply
     {
         std::lock_guard<std::mutex> lock(g_historyMutex);
@@ -299,7 +396,7 @@ std::string ContactAI(
         TrimHistory(hist);
     }
 
-    return reply;
+    return formattedReply;
 }
 
 
@@ -428,6 +525,7 @@ int main()
             }
 
             state->pending.push_back({userName, actionId, actionMsg});
+            GetOrCreatePlayer(userName);
             // Debug Message what has been received
             // std::cout << "Received Action:" << userName << " "<< actionId << " "<< actionMsg<< "\n";
 
@@ -542,7 +640,9 @@ server.Get("/turnResult", [](const httplib::Request& req, httplib::Response& res
     }
 });
 
-
+    GetOrCreateMob("Chicka");
+    GetOrCreateMob("Doiner");
+    GetOrCreateMob("Polta");
 
 
     std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";

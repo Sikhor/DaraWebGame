@@ -111,6 +111,18 @@ public:
     {
         return HP > 0;
     }
+    int GetHP() const
+    {
+        return static_cast<int>(HP);
+    }
+    int GetMana() const
+    {
+        return static_cast<int>(Mana);
+    }
+    int GetEnergy() const
+    {
+        return static_cast<int>(Energy);
+    }
     float AttackMelee(std::string target)
     {
         float dmg= 0.f;
