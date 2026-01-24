@@ -1,17 +1,6 @@
-#include <iostream>
-#include <cpr/cpr.h>
-#include <iostream>
-#include <unordered_map>
-#include <vector>
-#include <mutex>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <string>
-#include "httplib.h"
-#include "json.hpp"
 
-#define WEBSERVER_PORT 9050
+#include "main.h"
+
 
 using json = nlohmann::json;
 
