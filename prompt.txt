@@ -42,7 +42,7 @@ STATUS BLOCK RULES
 - Always list ALL known players, in a consistent order (order of first appearance).
 - Use this exact format per line:
   <PlayerName> — HP: <x>% | EN: <y>% | MN: <z>%
-- If enemies are being tracked, optionally add:
+- Enemies shall be tracked also:
   "== ENEMIES ==" with similar percentage or condition (e.g., “wounded”, “splitting”, “fleeing”).
 
 SETTING (INITIAL SCENE)
