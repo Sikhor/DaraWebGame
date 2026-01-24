@@ -19,11 +19,70 @@ static std::mutex g_historyMutex;
 // Wie viel Kontext behalten? (z.B. 12 Messages = 6 Turns)
 static constexpr size_t kMaxHistoryMessages = 12;
 
+using CombatantPtr = std::unique_ptr<Combatant>;
+
+std::unordered_map<std::string, CombatantPtr> Players;
+std::unordered_map<std::string, CombatantPtr> Mobs;
+
 std::string GetOpenAIKey()
 {
     const char* v = std::getenv("OPENAI_API_KEY");
     if (!v || !*v) throw std::runtime_error("OPENAI_API_KEY not set");
     return std::string(v);
+}
+
+Combatant& GetOrCreatePlayer(const std::string& playerName)
+{
+    auto [it, inserted] = Players.try_emplace(
+        playerName,
+        std::make_unique<Combatant>(playerName, ECombatantType::Player)
+    );
+
+    return *it->second;
+}
+Combatant& GetOrCreateMob(const std::string& mobName)
+{
+    auto [it, inserted] = Players.try_emplace(
+        mobName,
+        std::make_unique<Combatant>(mobName, ECombatantType::Mob)
+    );
+
+    return *it->second;
+}
+
+std::string GenerateUUID()
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<uint32_t> dist(0, 0xFFFFFFFF);
+
+    uint32_t data[4] = { dist(gen), dist(gen), dist(gen), dist(gen) };
+
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0')
+        << std::setw(8) << data[0] << "-"
+        << std::setw(4) << ((data[1] >> 16) & 0xFFFF) << "-"
+        << std::setw(4) << ((data[1] & 0xFFFF) | 0x4000) << "-" // version 4
+        << std::setw(4) << ((data[2] & 0x3FFF) | 0x8000) << "-" // variant
+        << std::setw(12) << data[3];
+
+    return oss.str();
+}
+
+
+float GetRandomFloat(float min, float max)
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(gen);
+}
+void ApplyRandomCost(float& current, float normal, float deviation)
+{
+    float value= current;
+    current-= GetRandomFloat(normal-deviation, normal+deviation);
+    if(current <0.f) current=0.f;
+
 }
 
 static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
@@ -61,12 +120,63 @@ void DebugMsg(const json& messages)
     std::cout <<"--------------------------------"<< std::endl;
 }
 
+std::string ParseAIReply(const std::string aiResponse)
+{
+    std::string retString;
+    std::ostringstream oss;
+    json aiJson = json::parse(aiResponse);
+    std::string narrative;
+
+    try
+    {
+        narrative = aiJson.at("narrative").get<std::string>();
+    }
+    catch (const nlohmann::json::exception& e)
+    {
+        narrative = "[Narrative missing or invalid]";
+        std::cerr << "JSON error (narrative): " << e.what() << "\n";
+    }
+
+    std::cout << "Narrative: " << narrative << "\n";
+
+    for (const auto& intent : aiJson.at("enemy_intents"))
+    {
+        std::string enemyId = intent.at("enemyId").get<std::string>();
+        std::string action  = intent.at("action").get<std::string>();
+        std::string target  = intent.at("targetPlayer").get<std::string>();
+        std::string reason  = intent.at("reason").get<std::string>();
+
+        
+        oss << "Enemy " << enemyId
+                << " does " << action
+                << " targeting " << target
+                << " (" << reason << ")\n";
+        
+
+        // Here is where your combat logic kicks in
+        if (action == "ATTACK")
+        {
+            //std::cout << "Attacking " <<std::endl;
+            // ResolveAttack(enemyId, target);
+        }
+        else if (action == "DEFEND")
+        {
+            //std::cout << "Defend " <<std::endl;
+            // ResolveDefend(enemyId);
+        }
+    }
+    retString= oss.str();
+
+    return aiJson;
+}
+
 std::string ContactAI(
     std::string gameId   = "0",
-    std::string userName = "Bernie",
-    std::string actionId = "actionAttack",
-    std::string actionMsg= "explore the strange planet")
+    int turnId = 0,
+    std::string turnMsg= "All Actions of Players in this turn")
 {
+    //gameId, "TURN", "turn_commit", combined);
+
     // 0) Read API key + prompt
     std::string apiKey;
     try {
@@ -89,14 +199,13 @@ std::string ContactAI(
     {
         std::lock_guard<std::mutex> lock(g_historyMutex);
         historyCopy = g_historyByGameId[gameId];
-        DebugMsg(g_historyByGameId[gameId]);
+        //DebugMsg(g_historyByGameId[gameId]);
     }
 
     // 2) Build user turn
     const std::string userTurn =
-        "Player: " + userName + "\n"
-        "ActionId: " + actionId + "\n"
-        "ActionMsg: " + actionMsg;
+        "TurnId: " + std::to_string(turnId) +"\n"
+        "PlayerActions: " + turnMsg;
 
     // 3) Build messages
     json messages = json::array();
@@ -107,8 +216,8 @@ std::string ContactAI(
         messages.push_back(m);
     }
 
-    //messages.push_back({{"role","user"}, {"content", userTurn}});
-    //DebugMsg(messages);
+    messages.push_back({{"role","user"}, {"content", userTurn}});
+    DebugMsg(messages);
 
 
     // 4) Request payload
@@ -176,14 +285,16 @@ std::string ContactAI(
                   << " Body: " << response.text << "\n";
         return "Error: Could not parse OpenAI response";
     }
-
+    
+    std::cout << reply << std::endl;
+    std::string formattedReply= reply; //ParseAIReply(reply);
     // 8) Update history only if we got a valid reply
     {
         std::lock_guard<std::mutex> lock(g_historyMutex);
         auto& hist = g_historyByGameId[gameId];
 
         hist.push_back({{"role","user"}, {"content", userTurn}});
-        hist.push_back({{"role","assistant"}, {"content", reply}});
+        hist.push_back({{"role","user"}, {"content", formattedReply}});
 
         TrimHistory(hist);
     }
@@ -194,11 +305,13 @@ std::string ContactAI(
 
 static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vector<PendingAction> actionsCopy)
 {
+    static int turnId=0;
     // Call AI outside of locks
     const std::string combined = BuildCombinedTurnText(actionsCopy);
 
     // Reuse your ContactAI() by sending one combined "turn_commit" action
-    std::string gmMsg = ContactAI(gameId, "TURN", "turn_commit", combined);
+    std::string gmMsg = ContactAI(gameId, turnId, combined);
+    turnId++;
 
     auto state = GetGameState(gameId);
     {
@@ -315,7 +428,8 @@ int main()
             }
 
             state->pending.push_back({userName, actionId, actionMsg});
-            std::cout << "Action:" << userName << " "<< actionId << " "<< actionMsg<< "\n";
+            // Debug Message what has been received
+            // std::cout << "Received Action:" << userName << " "<< actionId << " "<< actionMsg<< "\n";
 
             // If enough actions collected, launch resolver once
             if (!state->resolving && (int)state->pending.size() >= state->expectedPlayers)
