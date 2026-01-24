@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dara GameMaster Test</title>
+
+  <style>
+    html, body { height: 100%; }
+
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 0 12px;
+
+      background-image: url("https://gameinfo.daraempire.com/wp-content/uploads/2024/12/DelcoCityAtNight.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    label { display:block; margin-top: 12px; font-weight: 600; }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      margin-top: 6px;
+
+      background: rgba(245, 245, 245, 0.9);
+      border: 1px solid #aaa;
+      color: #222;
+      border-radius: 8px;
+    }
+
+    textarea { min-height: 120px; }
+	
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #666;
+      background: rgba(235, 235, 235, 0.95);
+    }
+
+    input.error {
+      border: 2px solid #c0392b;
+      background: #fdecea;
+    }
+
+    input.locked {
+      background: rgba(220, 220, 220, 0.9);
+      color: #555;
+    }
+
+    .small { color:#eaeaea; font-size: 0.9em; margin-top: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+
+    .panel {
+	  background: rgba(200, 255, 255, 0.2); /* ⬅️ 0.5 = 50% Opacity */
+	  padding: 16px;
+	  border-radius: 12px;
+	  margin-top: 12px;
+	  border: 1px solid rgba(0,0,0,0.15);
+	  backdrop-filter: blur(2px);
+	}
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .name-row {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-top: 6px;
+    }
+
+    .name-row input { margin-top: 0; }
+
+    .mini-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid #bbb;
+      background: rgba(245, 245, 245, 0.9);
+      cursor: pointer;
+      font-size: 18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .mini-btn:hover { background: rgba(235, 235, 235, 0.95); }
+    .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .confirm-btn {
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid #bbb;
+      background: rgba(245, 245, 245, 0.9);
+      cursor: pointer;
+      padding: 0 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .confirm-btn:hover { background: rgba(235, 235, 235, 0.95); }
+    .confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      padding: 8px;
+      cursor: pointer;
+
+      border: none;
+      background: transparent;
+      border-radius: 0;
+
+      user-select: none;
+    }
+
+    .action-btn:hover { background: transparent; }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .action-btn img {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      border: 1px solid #999;
+      object-fit: cover; /* or contain */
+      display: block;
+      background: #fff;
+    }
+
+    .action-label { font-weight: 700; text-align: center; }
+
+    .out {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      background: rgba(250,250,250,0.95);
+      white-space: pre-wrap;
+      border-radius: 12px;
+      min-height: 80px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 style="color:white; text-shadow: 0 2px 6px rgba(0,0,0,0.7); margin-bottom: 6px;">
+    Dara GameMaster – Action Buttons
+  </h1>
+  <div class="small">Insert your agent name and commit it. Then just stand tall on Dara III</div>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Game</label>
+        <input id="gameId" value="DARA-III The virtual battle of Marina Station" />
+      </div>
+
+      <div>
+        <label>Agent Name</label>
+        <div class="name-row">
+          <input id="userName" value="" placeholder="at least 5 chars" />
+          <button id="btnRandomName" class="mini-btn" type="button" title="Zufallsname">🎲</button>
+          <button id="btnConfirmName" class="confirm-btn" type="button">Commit</button>
+        </div>
+        <div id="nameHint" class="small" style="color:#333; text-shadow:none;">
+          Please insert agent name and commit it.
+        </div>
+      </div>
+    </div>
+
+    <!-- hidden server url -->
+    <input id="serverUrl" type="hidden" value="http://localhost:9050/action" />
+
+    <label>Abilities</label>
+    <div class="actions" id="actions">
+      <!-- NOTE: Replace these icon URLs with your real ones if you have them -->
+      <button class="action-btn" data-action="ATTACK"  data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png">
+        <img alt="Attack Icon">
+        <div class="action-label">Attack</div>
+      </button>
+
+      <button class="action-btn" data-action="DEFEND"  data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png">
+        <img alt="Defend Icon">
+        <div class="action-label">Defend</div>
+      </button>
+
+      <button class="action-btn" data-action="FIREBALL"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png">
+        <img alt="Cast Icon">
+        <div class="action-label">Fireball</div>
+      </button>
+
+      <button class="action-btn" data-action="MEZMERIZE"     data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png">
+        <img alt="Use Icon">
+        <div class="action-label">Mezmerize</div>
+      </button>
+
+      <button class="action-btn" data-action="FOLLOW"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png">
+        <img alt="Follow Icon">
+        <div class="action-label">Move</div>
+      </button>
+
+      <button class="action-btn" data-action="HEAL"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png">
+        <img alt="Heal Icon">
+        <div class="action-label">Heal</div>
+      </button>
+
+      <button class="action-btn" data-action="TALK"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png">
+        <img alt="Talk Icon">
+        <div class="action-label">Talk</div>
+      </button>
+
+      <button class="action-btn" data-action="USEPOTION" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png">
+        <img alt="Use Potion Icon">
+        <div class="action-label">Use Potion</div>
+      </button>
+
+      <button class="action-btn" data-action="FLEE"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png">
+        <img alt="Flee Icon">
+        <div class="action-label">Flee</div>
+      </button>
+
+	  <button class="action-btn" data-action="EVAC"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png">
+        <img alt="Evac Icon">
+        <div class="action-label">Evac</div>
+      </button>
+
+    </div>
+
+    <label for="actionMsg">Action Message (optional)</label>
+    <textarea id="actionMsg" placeholder="What do you say or what do you want to achieve. Do you have questions?..."></textarea>
+
+    <h2 style="margin-top:16px;">Chianna Aegis Sphere</h2>
+    <div id="out" class="out">Waiting for reports from Chianna...</div>
+  </div>
+
+  <script>
+    const out = document.getElementById("out");
+    const buttons = document.querySelectorAll(".action-btn");
+
+    const userNameInput = document.getElementById("userName");
+    const btnConfirmName = document.getElementById("btnConfirmName");
+    const btnRandomName = document.getElementById("btnRandomName");
+    const nameHint = document.getElementById("nameHint");
+
+    let nameConfirmed = false;
+
+    function setOut(text) {
+      out.textContent = text;
+    }
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    function setNameError(msg) {
+      userNameInput.classList.add("error");
+      nameHint.textContent = msg;
+      setOut("❌ " + msg);
+    }
+
+    function clearNameError() {
+      userNameInput.classList.remove("error");
+      nameHint.textContent = nameConfirmed ? "✅ Name commited (locked)." : "Please insert agent name and commit.";
+    }
+
+    function isValidName(name) {
+      return name && name.trim().length >= 5;
+    }
+
+    function lockName() {
+      nameConfirmed = true;
+      userNameInput.readOnly = true;
+      userNameInput.classList.add("locked");
+      btnConfirmName.disabled = true;
+      btnRandomName.disabled = true;
+      clearNameError();
+    }
+
+    function generateRandomAgentName() {
+      const a = ["Sik", "Dar", "Vor", "Neo", "Kal", "Zen", "Ara", "Ista", "Sol", "Kry"];
+      const b = ["hor", "aris", "dran", "vex", "nox", "lian", "taris", "mora", "zun", "khan"];
+      const c = ["-7", "-IX", "-Prime", "-3", "-V", "", "", "", "", ""];
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      return pick(a) + pick(b) + pick(c);
+    }
+
+    function deriveTurnResultUrl(actionUrl) {
+      if (/\/action$/i.test(actionUrl)) {
+        return actionUrl.replace(/\/action$/i, "/turnResult");
+      }
+      return actionUrl.replace(/\/+$/, "") + "/turnResult";
+    }
+
+    async function pollTurnResult(turnResultUrl, gameId, turn) {
+      while (true) {
+        const r = await fetch(`${turnResultUrl}?gameId=${encodeURIComponent(gameId)}&turn=${turn}`);
+        const j = await r.json();
+        if (j.status === "ok") return j;
+        await sleep(700);
+      }
+    }
+
+    // 1) Icons once on load
+    buttons.forEach(btn => {
+      const img = btn.querySelector("img");
+      const iconUrl = btn.dataset.icon;
+      if (img && iconUrl) {
+        img.src = iconUrl;
+        img.onerror = () => {
+          img.style.display = "none";
+          // Optional: you could show a fallback label here
+        };
+      }
+    });
+
+    // 2) Name buttons
+    btnRandomName.addEventListener("click", () => {
+      if (nameConfirmed) return;
+      userNameInput.value = generateRandomAgentName();
+      clearNameError();
+    });
+
+    btnConfirmName.addEventListener("click", () => {
+      const name = userNameInput.value.trim();
+      if (!isValidName(name)) {
+        setNameError("Agent name must have at least 5 chars");
+        return;
+      }
+      lockName();
+    });
+
+    userNameInput.addEventListener("input", () => {
+      if (!nameConfirmed) clearNameError();
+    });
+
+    // 3) Action buttons -> submit
+    async function submitAction(actionId) {
+      if (!nameConfirmed) {
+        setNameError("Commit agent name before you can do any further actions.");
+        return;
+      }
+
+      const userName = userNameInput.value.trim();
+      if (!isValidName(userName)) {
+        setNameError("Agent name must contain at least 5 chars");
+        return;
+      }
+
+      const payload = {
+        gameId: document.getElementById("gameId").value.trim(),
+        userName,
+        actionId,
+        actionMsg: document.getElementById("actionMsg").value.trim()
+      };
+
+      const actionUrl = document.getElementById("serverUrl").value.trim();
+      const turnResultUrl = deriveTurnResultUrl(actionUrl);
+
+      buttons.forEach(b => b.disabled = true);
+      setOut(`Aktion "${actionId}" gesendet...\nWarte auf andere Spieler...`);
+
+      try {
+        const resp = await fetch(actionUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) {
+          setOut(`HTTP ${resp.status}\n${JSON.stringify(data, null, 2)}`);
+          return;
+        }
+
+        if (data.status !== "submitted") {
+          setOut("Unerwartete Antwort:\n" + JSON.stringify(data, null, 2));
+          return;
+        }
+
+        const turn = data.turn;
+        const result = await pollTurnResult(turnResultUrl, payload.gameId, turn);
+
+        setOut(result.gameMasterMsg || JSON.stringify(result, null, 2));
+      } catch (err) {
+        setOut("Fehler: " + (err?.message || String(err)));
+      } finally {
+        buttons.forEach(b => b.disabled = false);
+      }
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => submitAction(btn.dataset.action));
+    });
+  </script>
+</body>
+</html>

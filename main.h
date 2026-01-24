@@ -17,6 +17,8 @@
 #include "json.hpp"
 
 #define WEBSERVER_PORT 9050
+#define PLAYERS_EXPECTED 2
+#define PLAYERS_MAX 2
 
 struct PendingAction
 {
@@ -37,7 +39,7 @@ struct GameState
 {
     std::mutex mtx;
 
-    int expectedPlayers = 2;
+    int expectedPlayers = PLAYERS_EXPECTED;
     int currentTurn = 0;
 
     // Actions collected for the currentTurn
@@ -48,3 +50,9 @@ struct GameState
 
     bool resolving = false; // prevents multiple resolver threads
 };
+
+
+using json = nlohmann::json;
+
+static void TrimHistory(std::vector<json>& hist);
+std::string readPromptFromFile(const std::string& filename);
