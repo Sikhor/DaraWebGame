@@ -31,6 +31,9 @@
 *.out
 *.app
 
+#IMPORTANT IGNORE SECRET
+secret.h
+.env
 # Testrun Stuff
 DaraWebGameServer
 *.log

@@ -10,7 +10,6 @@
 #include <string>
 #include "httplib.h"
 #include "json.hpp"
-#include "secret.h"
 
 #define WEBSERVER_PORT 9050
 
@@ -31,6 +30,12 @@ static std::mutex g_historyMutex;
 // Wie viel Kontext behalten? (z.B. 12 Messages = 6 Turns)
 static constexpr size_t kMaxHistoryMessages = 12;
 
+std::string GetOpenAIKey()
+{
+    const char* v = std::getenv("OPENAI_API_KEY");
+    if (!v || !*v) throw std::runtime_error("OPENAI_API_KEY not set");
+    return std::string(v);
+}
 
 static void TrimHistory(std::vector<json>& hist)
 {
@@ -56,7 +61,7 @@ std::string readPromptFromFile(const std::string& filename) {
 
 std::string ContactAI(std::string gameId= "0", std::string userName= "Bernie", std::string actionId= "actionAttack", std::string actionMsg= "explore the strange planet") {
     std::string replyString= "";
-    std::string apiKey = CHATGPT_SECRET;
+    std::string apiKey = GetOpenAIKey();
     std::string longPrompt;
     try {
         longPrompt = readPromptFromFile("prompt.txt");
@@ -224,8 +229,8 @@ int main()
     });
 
     std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";
-    std::string apiKey = CHATGPT_SECRET;
-    std::cout << "API key length = " << apiKey.length() << "\n";
+    //std::string apiKey = GetOpenAIKey();
+    //std::cout << "API key length = " << apiKey.length() << "\n";
 
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
