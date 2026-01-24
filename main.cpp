@@ -1,6 +1,9 @@
 #include <iostream>
 #include <cpr/cpr.h>
 #include <iostream>
+#include <unordered_map>
+#include <vector>
+#include <mutex>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -11,6 +14,7 @@
 
 #define WEBSERVER_PORT 9050
 
+
 using json = nlohmann::json;
 
 auto AddCorsHeaders = [](httplib::Response& res)
@@ -19,6 +23,23 @@ auto AddCorsHeaders = [](httplib::Response& res)
     res.set_header("Access-Control-Allow-Headers", "Content-Type");
     res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
 };
+
+
+
+static std::unordered_map<std::string, std::vector<json>> g_historyByGameId;
+static std::mutex g_historyMutex;
+// Wie viel Kontext behalten? (z.B. 12 Messages = 6 Turns)
+static constexpr size_t kMaxHistoryMessages = 12;
+
+
+static void TrimHistory(std::vector<json>& hist)
+{
+    if (hist.size() <= kMaxHistoryMessages) return;
+
+    // entferne die ältesten
+    size_t removeCount = hist.size() - kMaxHistoryMessages;
+    hist.erase(hist.begin(), hist.begin() + static_cast<long>(removeCount));
+}
 
 std::string readPromptFromFile(const std::string& filename) {
     std::ifstream inFile(filename);
@@ -44,26 +65,35 @@ std::string ContactAI(std::string gameId= "0", std::string userName= "Bernie", s
         return "cannot read prompt file";
     }
 
-
-
-    // Build a large prompt (example)
-    // std::string longPrompt = "Once upon a time in a galaxy far, far away, there was a Humrex Crafter that lost all his family to the evil Dara Empire and their warhords.";
-    /* for (int i = 0; i < 1000; ++i) {
-        longPrompt += "very ";
+    // 1) History für diese gameId holen (thread-safe)
+    std::vector<json> historyCopy;
+    {
+        std::lock_guard<std::mutex> lock(g_historyMutex);
+        historyCopy = g_historyByGameId[gameId]; // copy
     }
-    longPrompt += "strange planet.";
-    */
 
-    // Construct JSON request
-   json requestPayload = {
+    // 2) Aktuellen User-Input bauen (was passiert ist)
+    const std::string userTurn =
+        "Player: " + userName + "\n"
+        "ActionId: " + actionId + "\n"
+        "ActionMsg: " + actionMsg;
+
+    // 3) messages: system + world prompt + history + current user turn
+    json messages = json::array();
+    messages.push_back({{"role","system"}, {"content","You are a game master. React to player actions and describe what changed."}});
+    messages.push_back({{"role","system"}, {"content", longPrompt}});
+
+    for (const auto& m : historyCopy) {
+        messages.push_back(m);
+    }
+
+    messages.push_back({{"role","user"}, {"content", userTurn}});
+
+
+
+    json requestPayload = {
         {"model", "gpt-3.5-turbo"},
-        {"messages", {
-            {{"role","system"}, {"content","You are a game master. React to player actions and describe what changed."}},
-            {{"role","user"}, {"content", longPrompt}},
-            {{"role","user"}, {"content",
-                "Player: " + userName + "\nActionId: " + actionId + "\nActionMsg: " + actionMsg
-            }}
-        }},
+        {"messages", messages},
         {"temperature", 0.7}
     };
 
@@ -87,6 +117,22 @@ std::string ContactAI(std::string gameId= "0", std::string userName= "Bernie", s
     } else {
         std::cerr << "Error: " << response.status_code << "\n" << response.text << std::endl;
         replyString= "Error Calling chatGPT API";
+    }
+
+    // 5) Reply extrahieren
+    json jsonResponse = json::parse(response.text);
+    std::string reply = jsonResponse["choices"][0]["message"]["content"].get<std::string>();
+
+    // 6) History updaten: user turn + assistant reply speichern (thread-safe)
+    {
+        std::lock_guard<std::mutex> lock(g_historyMutex);
+
+        auto& hist = g_historyByGameId[gameId];
+
+        hist.push_back({{"role","user"}, {"content", userTurn}});
+        hist.push_back({{"role","assistant"}, {"content", reply}});
+
+        TrimHistory(hist);
     }
 
     return replyString;
@@ -180,7 +226,7 @@ int main()
     std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";
     std::string apiKey = CHATGPT_SECRET;
     std::cout << "API key length = " << apiKey.length() << "\n";
-    
+
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
 
