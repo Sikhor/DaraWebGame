@@ -123,6 +123,10 @@ public:
     {
         return static_cast<int>(Energy);
     }
+    std::string GetName() const
+    {
+        return Name;
+    }
     float AttackMelee(std::string target)
     {
         float dmg= 0.f;

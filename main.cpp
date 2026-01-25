@@ -1,6 +1,10 @@
 
 #include "main.h"
-#define DARA_DEBUG 0
+#include "parse.h"
+
+#define DARA_DEBUG_MESSAGES 0
+#define DARA_DEBUG_NEWMESSAGES 1
+#define DARA_DEBUG_ATTACKS 0
 
 auto AddCorsHeaders = [](httplib::Response& res)
 {
@@ -50,11 +54,11 @@ Combatant& GetOrCreateMob(const std::string& mobName)
     return *it->second;
 }
 
-std::string PlayerInfo()
+std::string PlayerInfo(bool showAllInfo=false)
 {
     std::ostringstream oss;
 
-    oss << "PLAYERS:\n";
+    oss << "Players:\n";
 
     if (Players.empty())
     {
@@ -66,24 +70,26 @@ std::string PlayerInfo()
     {
         const Combatant& c = *combatantPtr;
 
-        oss << "- " << name
-            << " | HP:" << c.GetHP()
-            << " | EN:" << c.GetEnergy()
-            << " | MN:" << c.GetMana()
-            << " | " << (c.IsAlive() ? "Alive" : "Down")
-            << "\n";
+        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Down")<<")";
+            if(showAllInfo){
+            oss << " | HP:" << c.GetHP()
+                << " | ENERGY:" << c.GetEnergy()
+                << " | MANA:" << c.GetMana();
+            }
+            oss<< "\n";
     }
 
     return oss.str();
 }
-std::string MobInfo()
+
+std::string MobInfo(bool showAllInfo=false)
 {
 
     std::ostringstream oss;
 
-    oss << "Mobs:\n";
+    oss << "Enemies:\n";
 
-    if (Players.empty())
+    if (Mobs.empty())
     {
         oss << "- none\n";
         return oss.str();
@@ -93,16 +99,18 @@ std::string MobInfo()
     {
         const Combatant& c = *combatantPtr;
 
-        oss << "- " << name
-            << " | HP:" << c.GetHP()
-            << " | EN:" << c.GetEnergy()
-            << " | MN:" << c.GetMana()
-            << " | " << (c.IsAlive() ? "Alive" : "Down")
-            << "\n";
+        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Down")<<")";
+        if(showAllInfo){
+        oss << " | HP:" << c.GetHP()
+            << " | ENERGY:" << c.GetEnergy()
+            << " | MANA:" << c.GetMana();
+        }
+        oss<< "\n";
     }
 
     return oss.str();
 }
+
 
 std::string GenerateUUID()
 {
@@ -147,7 +155,7 @@ static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
     return ptr;
 }
 
-static void PlayerActions(std::string playerName, std::string action)
+static void StartPlayerCombatActions(std::string playerName, std::string action)
 {
         if(action=="ATTACK"){
 
@@ -155,32 +163,35 @@ static void PlayerActions(std::string playerName, std::string action)
             Combatant player= GetOrCreatePlayer(playerName);
             if (mob.IsAlive() && player.IsAlive())
             {
+                if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK: "<<player.GetName() <<" attacks "<<mob.GetName()<<std::endl;
+
                 float dmg = player.AttackMelee("Chicka");
                 mob.ApplyDamage(dmg);
             }
-            std::cout<<"ATTACK"<<std::endl;
 
         }else{
-            std::cout<<"NO ATTACK"<<std::endl;
+            if(DARA_DEBUG_ATTACKS) std::cout<<"NO ATTACK"<<std::endl;
         }
 
 }
 static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actions)
 {
-    std::string combined = "TURN ACTIONS:\n";
+    std::string combined = "PlayerActions:\n";
     for (const auto& a : actions)
     {
-        combined += "- Player: " + a.userName + "\n";
-        combined += "  ActionId: " + a.actionId + "\n";
-        combined += "  ActionMsg: " + a.actionMsg + "\n";
-        PlayerActions(a.userName, a.actionId);
+        combined += "- " ;
+        combined += a.userName +" ";
+        combined += a.actionId;
+        // combined += "  ActionMsg: " + a.actionMsg + "\n";
+        combined += "\n";
+        StartPlayerCombatActions(a.userName, a.actionId);
     }
     return combined;
 }
 
 void DebugMsg(const json& messages)
 {
-    if(DARA_DEBUG){
+    if(DARA_DEBUG_MESSAGES){
         int i=0;
         for (const auto& msg : messages)
         {
@@ -189,6 +200,13 @@ void DebugMsg(const json& messages)
             }
             i++;
         }
+    }
+    std::cout <<"--------------------------------"<< std::endl;
+}
+void DebugNewMsg(const std::string& newMsg)
+{
+    if(DARA_DEBUG_NEWMESSAGES){
+        std::cout << "NewMsg to AI:\n" << newMsg << std::endl;
     }
     std::cout <<"--------------------------------"<< std::endl;
 }
@@ -218,61 +236,12 @@ static std::string ReadNextToken(const std::string& text, size_t pos)
 
     return text.substr(start, pos - start);
 }
-std::string ParseAIReply(const std::string aiReplyText)
-{
-    std::string retString= aiReplyText;
- // Iterate over each enemy (mob) you currently have
-    for (const auto& [mobName, mobPtr] : Mobs)
-    {
-        const std::string needle = mobName + ": ATTACK";
-        size_t pos = 0;
-
-        while (true)
-        {
-            pos = aiReplyText.find(needle, pos);
-            if (pos == std::string::npos)
-                break;
-
-            // jump to after "MobName: ATTACK"
-            size_t after = pos + needle.size();
-
-            // read the next token = target player
-            std::string targetPlayer = ReadNextToken(aiReplyText, after);
-
-            if (!targetPlayer.empty())
-            {
-                auto pit = Players.find(targetPlayer);
-                if (pit != Players.end() && pit->second)
-                {
-                    Combatant& enemy  = *mobPtr;
-                    Combatant& player = *pit->second;
-
-                    if (enemy.IsAlive() && player.IsAlive())
-                    {
-                        float dmg = enemy.AttackMelee(targetPlayer);
-                        player.ApplyDamage(dmg);
-
-                        std::cout << mobName << " ATTACK -> " << targetPlayer
-                                  << " dmg=" << dmg << "\n";
-                    }
-                }
-            }
-
-            // continue searching after this match
-            pos = after;
-        }
-    }   
-
-    return retString+PlayerInfo();
-}
 
 std::string ContactAI(
     std::string gameId   = "0",
     int turnId = 0,
-    std::string turnMsg= "All Actions of Players in this turn")
+    std::string turnMsg= "PlayerActions: NONE\n")
 {
-    //gameId, "TURN", "turn_commit", combined);
-
     // 0) Read API key + prompt
     std::string apiKey;
     try {
@@ -298,23 +267,23 @@ std::string ContactAI(
         //DebugMsg(g_historyByGameId[gameId]);
     }
 
-    // 2) Build user turn
+    // 2) Build user turn and new message to AI
     const std::string userTurn =
-        "TurnId: " + std::to_string(turnId) +"\n"
+        //"TurnId: " + std::to_string(turnId) +"\n"
         "PlayerActions: " + turnMsg;
+    std::string newMsgToAI= PlayerInfo() + MobInfo()+ userTurn + "\n";
+    DebugNewMsg(newMsgToAI);
 
     // 3) Build messages
     json messages = json::array();
-    messages.push_back({{"role","system"}, {"content","You are a game master. React to player actions and describe what changed."}});
+    // messages.push_back({{"role","system"}, {"content","You are a game master"}});
     messages.push_back({{"role","system"}, {"content", longPrompt}});
 
     for (const auto& m : historyCopy) {
         messages.push_back(m);
     }
-
-    messages.push_back({{"role","user"}, {"content", userTurn}});
-    messages.push_back({{"role","user"}, {"content", PlayerInfo()}});
-    messages.push_back({{"role","user"}, {"content", MobInfo()}});
+    // now add new message to AI
+    messages.push_back({{"role","user"}, {"content", newMsgToAI}});
     DebugMsg(messages);
 
 
@@ -384,17 +353,27 @@ std::string ContactAI(
         return "Error: Could not parse OpenAI response";
     }
     
-    std::string formattedReply= ParseAIReply(reply);
+    std::string error;
+    json aiJson;
+    if (!ParseAndValidateAIReply(reply, aiJson, error))
+    {
+        std::cerr << "AI reply invalid: " << error << "\n";
+        // -> ignore AI turn or retry
+        return "Error in json reply from AI: " + error;
+    }
+
     // 8) Update history only if we got a valid reply
     {
         std::lock_guard<std::mutex> lock(g_historyMutex);
         auto& hist = g_historyByGameId[gameId];
 
-        hist.push_back({{"role","user"}, {"content", userTurn}});
-        hist.push_back({{"role","user"}, {"content", formattedReply}});
-
+        hist.push_back({{"role","user"}, {"content", newMsgToAI}});
+        
         TrimHistory(hist);
     }
+
+    std::string formattedReply = "Narrative:\n" + aiJson["narrative"].get<std::string>() + "\n";
+    formattedReply+=PlayerInfo(true)+MobInfo(true);
 
     return formattedReply;
 }
@@ -404,10 +383,10 @@ static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vect
 {
     static int turnId=0;
     // Call AI outside of locks
-    const std::string combined = BuildCombinedTurnText(actionsCopy);
+    const std::string turnMsg = BuildCombinedTurnText(actionsCopy);
 
     // Reuse your ContactAI() by sending one combined "turn_commit" action
-    std::string gmMsg = ContactAI(gameId, turnId, combined);
+    std::string gmMsg = ContactAI(gameId, turnId, turnMsg);
     turnId++;
 
     auto state = GetGameState(gameId);

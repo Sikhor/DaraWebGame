@@ -9,7 +9,12 @@ set(CPR_USE_SYSTEM_CURL ON CACHE BOOL "" FORCE)
 set(CPR_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(cpr)
 
-add_executable(DaraWebGameServer main.cpp)
+# Add your sources (parse.cpp added)
+add_executable(DaraWebGameServer
+    main.cpp
+    parse.cpp
+    # parse.h   # optional (not required to compile, but ok to list)
+)
 
 # Deine lokalen single-header libs:
 target_include_directories(DaraWebGameServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
