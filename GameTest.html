@@ -1,19 +1,29 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dara GameMaster Test</title>
+  <title>Dara Empire – Virtual Connection</title>
 
   <style>
+    :root{
+      --glass: rgba(18, 26, 34, 0.62);
+      --glass2: rgba(18, 26, 34, 0.42);
+      --stroke: rgba(255,255,255,0.12);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.72);
+      --shadow: 0 18px 55px rgba(0,0,0,0.55);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
     html, body { height: 100%; }
 
-    body {
-      font-family: sans-serif;
-      max-width: 900px;
-      margin: 24px auto;
-      padding: 0 12px;
-
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: #0b0f14;
       background-image: url("https://gameinfo.daraempire.com/wp-content/uploads/2024/12/DelcoCityAtNight.jpg");
       background-size: cover;
       background-position: center;
@@ -21,272 +31,634 @@
       background-attachment: fixed;
     }
 
-    label { display:block; margin-top: 12px; font-weight: 600; }
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      box-sizing: border-box;
-      margin-top: 6px;
-
-      background: rgba(245, 245, 245, 0.9);
-      border: 1px solid #aaa;
-      color: #222;
-      border-radius: 8px;
+    /* subtle vignette */
+    body:before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1200px 600px at 20% 10%, rgba(0,255,255,0.10), transparent 60%),
+        radial-gradient(900px 500px at 90% 30%, rgba(255,120,0,0.10), transparent 60%),
+        radial-gradient(900px 700px at 50% 90%, rgba(0,0,0,0.55), rgba(0,0,0,0.78));
+      pointer-events: none;
     }
 
-    textarea { min-height: 120px; }
-	
-
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #666;
-      background: rgba(235, 235, 235, 0.95);
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 14px 26px;
+      position: relative;
     }
 
-    input.error {
-      border: 2px solid #c0392b;
-      background: #fdecea;
-    }
-
-    input.locked {
-      background: rgba(220, 220, 220, 0.9);
-      color: #555;
-    }
-
-    .small { color:#eaeaea; font-size: 0.9em; margin-top: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-
-    .panel {
-	  background: rgba(200, 255, 255, 0.2); /* ⬅️ 0.5 = 50% Opacity */
-	  padding: 16px;
-	  border-radius: 12px;
-	  margin-top: 12px;
-	  border: 1px solid rgba(0,0,0,0.15);
-	  backdrop-filter: blur(2px);
-	}
-
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-    .name-row {
+    .header{
       display:flex;
-      gap:8px;
-      align-items:center;
-      margin-top: 6px;
-    }
-
-    .name-row input { margin-top: 0; }
-
-    .mini-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      border: 1px solid #bbb;
-      background: rgba(245, 245, 245, 0.9);
-      cursor: pointer;
-      font-size: 18px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .mini-btn:hover { background: rgba(235, 235, 235, 0.95); }
-    .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .confirm-btn {
-      height: 44px;
-      border-radius: 10px;
-      border: 1px solid #bbb;
-      background: rgba(245, 245, 245, 0.9);
-      cursor: pointer;
-      padding: 0 12px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .confirm-btn:hover { background: rgba(235, 235, 235, 0.95); }
-    .confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      align-items:flex-end;
+      justify-content: space-between;
       gap: 12px;
-      margin-top: 12px;
+      margin-bottom: 12px;
     }
 
-    .action-btn {
-      display: flex;
+    .brand{
+      display:flex;
       flex-direction: column;
-      align-items: center;
+      gap: 4px;
+    }
+
+    .title{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      text-shadow: 0 6px 22px rgba(0,0,0,0.7);
+    }
+
+    .subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      text-shadow: 0 6px 22px rgba(0,0,0,0.7);
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
       gap: 8px;
-
-      padding: 8px;
-      cursor: pointer;
-
-      border: none;
-      background: transparent;
-      border-radius: 0;
-
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid var(--stroke);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 12px;
       user-select: none;
     }
+    .dot{
+      width: 8px; height: 8px; border-radius: 999px;
+      background: #999;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .dot.ok{ background:#2ecc71; }
+    .dot.warn{ background:#f1c40f; }
+    .dot.bad{ background:#e74c3c; }
 
-    .action-btn:hover { background: transparent; }
-    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .action-btn img {
-      width: 64px;
-      height: 64px;
-      border-radius: 12px;
-      border: 1px solid #999;
-      object-fit: cover; /* or contain */
-      display: block;
-      background: #fff;
+    .panel{
+      background: linear-gradient(180deg, var(--glass), rgba(10,14,18,0.52));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
     }
 
-    .action-label { font-weight: 700; text-align: center; }
+    .panel-inner{
+      padding: 14px;
+      display:grid;
+      gap: 12px;
+    }
 
-    .out {
-      margin-top: 12px;
-      padding: 12px;
-      border: 1px solid #ccc;
-      background: rgba(250,250,250,0.95);
-      white-space: pre-wrap;
+    /* Top strip */
+    .top-strip{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field{
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .field label{
+      display:block;
+      font-size: 11px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.70);
+      margin-bottom: 6px;
+      font-weight: 800;
+    }
+
+    input, textarea{
+      width:100%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.94);
       border-radius: 12px;
-      min-height: 80px;
+      padding: 10px 10px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    input::placeholder, textarea::placeholder{ color: rgba(255,255,255,0.55); }
+
+    input:focus, textarea:focus{
+      border-color: rgba(0,255,255,0.35);
+      box-shadow: 0 0 0 4px rgba(0,255,255,0.10);
+    }
+
+    input.error{
+      border-color: rgba(231,76,60,0.9);
+      box-shadow: 0 0 0 4px rgba(231,76,60,0.12);
+    }
+    input.locked{ opacity: 0.85; }
+
+    .name-row{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+    .name-row input{ flex: 1; min-width: 140px; }
+
+    .btn{
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.92);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .18s ease, border-color .18s ease;
+      white-space: nowrap;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.14); }
+    .btn:active{ transform: translateY(1px); }
+    .btn:disabled{ opacity: .45; cursor:not-allowed; }
+
+    .btn-mini{
+      width: 42px; height: 42px;
+      display:flex; align-items:center; justify-content:center;
+      padding: 0;
+      font-size: 18px;
+      border-radius: 12px;
+    }
+    .btn-ghost{
+      background: rgba(0,0,0,0.18);
+    }
+
+    .hint{
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.70);
+    }
+    .hint.ok{ color: rgba(46,204,113,0.95); }
+
+    /* Action bar */
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .section-title h3{
+      margin:0;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.72);
+    }
+
+    .actionbar{
+      display:flex;
+      gap: 8px;
+      overflow-x:auto;
+      padding: 10px 6px 12px;
+      scroll-snap-type: x mandatory;
+    }
+    .actionbar::-webkit-scrollbar{ height: 8px; }
+    .actionbar::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+    }
+
+    .action-btn{
+      flex: 0 0 auto;
+      width: 66px;
+      scroll-snap-align: start;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 8px 8px 6px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .18s ease, border-color .18s ease;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 6px;
+    }
+    .action-btn:hover{ background: rgba(255,255,255,0.12); border-color: rgba(0,255,255,0.22); }
+    .action-btn:active{ transform: translateY(1px); }
+    .action-btn:disabled{ opacity:.45; cursor:not-allowed; }
+    .action-btn.active{
+      background: rgba(0,255,255,0.14);
+      border-color: rgba(0,255,255,0.35);
+      box-shadow: 0 0 0 4px rgba(0,255,255,0.08);
+    }
+
+    .action-btn img{
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.18);
+      object-fit: cover;
+      display:block;
+    }
+
+    .action-label{
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.05;
+      text-align:center;
+    }
+
+    /* Chat / message + outputs */
+    .grid-2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .box{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+    .box-head{
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.80);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: 0.35px;
+      text-transform: uppercase;
+    }
+    .box-body{
+      padding: 10px 12px;
+    }
+
+    textarea.action-msg{
+      min-height: 34px;
+      max-height: 110px;
+      padding: 8px 10px;
+      resize: vertical;
+      line-height: 1.35;
+      font-size: 14px;
+    }
+
+    .media-row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+
+    .media-card{
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      min-width: 84px;
+    }
+    .media-card img{
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      object-fit: cover;
+      background: rgba(0,0,0,0.18);
+    }
+    .media-card .cap{
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.78);
+    }
+    .muted{
+      color: rgba(255,255,255,0.68);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    /* HUD */
+    .hud-grid{ display:grid; gap: 10px; }
+    .hud-card{
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    .hud-top{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      font-weight: 900;
+    }
+    .hud-name{ font-size: 13px; }
+    .hud-state{ font-size: 12px; color: rgba(255,255,255,0.70); }
+
+    .bars{ margin-top: 8px; display:flex; flex-direction: column; gap: 6px; }
+    .bar-row{ display:grid; grid-template-columns: 62px 1fr 76px; gap: 8px; align-items:center; }
+    .bar-label{ font-size: 11px; font-weight: 900; color: rgba(255,255,255,0.70); }
+    .bar{
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .fill{ height:100%; width:0%; border-radius: 999px; }
+    .fill.hp{ background: linear-gradient(90deg, rgba(231,76,60,0.95), rgba(231,76,60,0.55)); }
+    .fill.en{ background: linear-gradient(90deg, rgba(241,196,15,0.95), rgba(241,196,15,0.55)); }
+    .fill.ma{ background: linear-gradient(90deg, rgba(52,152,219,0.95), rgba(52,152,219,0.55)); }
+    .bar-num{ font-size: 11px; text-align:right; color: rgba(255,255,255,0.70); font-variant-numeric: tabular-nums; }
+
+    /* Narrative output */
+    .out{
+      max-height: 34vh;
+      overflow:auto;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .out .line{ padding: 0; line-height: 1.25; font-size: 13px; color: rgba(255,255,255,0.86); }
+    .out .title{ margin-top: 8px; font-weight: 900; color: rgba(255,255,255,0.92); }
+    .out::-webkit-scrollbar{ width: 10px; }
+    .out::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.12); border-radius: 999px; }
+
+    /* Setup panel (hidden unless debug=1) */
+    #setupPanel{ display:none; }
+
+    /* Responsive */
+    @media (max-width: 780px){
+      .top-strip{ grid-template-columns: 1fr; }
+      .grid-2{ grid-template-columns: 1fr; }
+      .wrap{ padding: 14px 10px 22px; }
+      body{ background-attachment: scroll; }
+      .action-btn{ width: 62px; }
     }
   </style>
 </head>
 
 <body>
-  <h1 style="color:white; text-shadow: 0 2px 6px rgba(0,0,0,0.7); margin-bottom: 6px;">
-    Dara GameMaster – Action Buttons
-  </h1>
-  <div class="small">Insert your agent name and commit it. Then just stand tall on Dara III</div>
-
-  <div class="panel">
-    <div class="row">
-      <div>
-        <label>Game</label>
-        <input id="gameId" value="DARA-III The virtual battle of Marina Station" />
+  <div class="wrap">
+    <div class="header">
+      <div class="brand">
+        <div class="title">Dara Empire Virtual Connection</div>
+        <div class="subtitle">Commit your agent name, then choose an action. The Sphere will report back.</div>
       </div>
-
-      <div>
-        <label>Agent Name</label>
-        <div class="name-row">
-          <input id="userName" value="" placeholder="at least 5 chars" />
-          <button id="btnRandomName" class="mini-btn" type="button" title="Zufallsname">🎲</button>
-          <button id="btnConfirmName" class="confirm-btn" type="button">Commit</button>
-        </div>
-        <div id="nameHint" class="small" style="color:#333; text-shadow:none;">
-          Please insert agent name and commit it.
-        </div>
+      <div class="chip" title="Connection status (CORS / mixed-content may show as not reachable)">
+        <span id="connDot" class="dot warn"></span>
+        <span id="connText">Ready</span>
       </div>
     </div>
 
-    <!-- hidden server url -->
-    <input id="serverUrl" type="hidden" value="http://localhost:9050/action" />
+    <div class="panel">
+      <div class="panel-inner">
 
-    <label>Abilities</label>
-    <div class="actions" id="actions">
-      <!-- NOTE: Replace these icon URLs with your real ones if you have them -->
-      <button class="action-btn" data-action="ATTACK"  data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png">
-        <img alt="Attack Icon">
-        <div class="action-label">Attack</div>
-      </button>
+        <!-- TOP INPUTS -->
+        <div class="top-strip">
+          <div class="field">
+            <label>Game</label>
+            <input id="gameId" value="DARA-III The virtual battle of Marina Station" />
+          </div>
 
-      <button class="action-btn" data-action="DEFEND"  data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png">
-        <img alt="Defend Icon">
-        <div class="action-label">Defend</div>
-      </button>
+          <div class="field">
+            <label>Agent</label>
+            <div class="name-row">
+              <input id="userName" value="" placeholder="at least 5 chars" />
+              <button id="btnRandomName" class="btn btn-mini btn-ghost" type="button" title="Random name">🎲</button>
+              <button id="btnConfirmName" class="btn" type="button">Commit</button>
+              <button id="btnReset" class="btn btn-ghost" type="button" title="Clear saved data">Reset</button>
+            </div>
+            <div id="nameHint" class="hint">Please insert agent name and commit it.</div>
+          </div>
+        </div>
 
-      <button class="action-btn" data-action="FIREBALL"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png">
-        <img alt="Cast Icon">
-        <div class="action-label">Fireball</div>
-      </button>
+        <!-- DEV SETUP (hidden by default; show with ?debug=1) -->
+        <div id="setupPanel" class="field">
+          <label>Server URL</label>
+          <div class="name-row">
+            <input id="serverUrlText" placeholder="http://gameinfo.daraempire.com:9050/action" />
+            <button id="btnSaveServerUrl" class="btn" type="button">Save</button>
+          </div>
+          <div class="hint">If page is HTTPS and server is HTTP, browsers may block it (mixed content).</div>
+        </div>
 
-      <button class="action-btn" data-action="MEZMERIZE"     data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png">
-        <img alt="Use Icon">
-        <div class="action-label">Mezmerize</div>
-      </button>
+        <!-- ACTION BAR -->
+        <div class="section-title">
+          <h3>Abilities</h3>
+          <div class="hint" style="margin:0;">Tip: swipe the bar on mobile</div>
+        </div>
 
-      <button class="action-btn" data-action="FOLLOW"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png">
-        <img alt="Follow Icon">
-        <div class="action-label">Move</div>
-      </button>
+        <div class="actionbar" id="actions">
+          <button class="action-btn" data-action="ATTACK" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png">
+            <img alt="Attack Icon">
+            <div class="action-label">Attack</div>
+          </button>
+          <button class="action-btn" data-action="DEFEND" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png">
+            <img alt="Defend Icon">
+            <div class="action-label">Defend</div>
+          </button>
+          <button class="action-btn" data-action="FIREBALL" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png">
+            <img alt="Fireball Icon">
+            <div class="action-label">Fireball</div>
+          </button>
+          <button class="action-btn" data-action="MEZMERIZE" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png">
+            <img alt="Mezmerize Icon">
+            <div class="action-label">Mez</div>
+          </button>
+          <button class="action-btn" data-action="FOLLOW" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png">
+            <img alt="Move Icon">
+            <div class="action-label">Move</div>
+          </button>
+          <button class="action-btn" data-action="HEAL" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png">
+            <img alt="Heal Icon">
+            <div class="action-label">Heal</div>
+          </button>
+          <button class="action-btn" data-action="TALK" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png">
+            <img alt="Talk Icon">
+            <div class="action-label">Talk</div>
+          </button>
+          <button class="action-btn" data-action="USEPOTION" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png">
+            <img alt="Potion Icon">
+            <div class="action-label">Potion</div>
+          </button>
+          <button class="action-btn" data-action="FLEE" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png">
+            <img alt="Flee Icon">
+            <div class="action-label">Flee</div>
+          </button>
+          <button class="action-btn" data-action="EVAC" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png">
+            <img alt="Evac Icon">
+            <div class="action-label">Evac</div>
+          </button>
+        </div>
 
-      <button class="action-btn" data-action="HEAL"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png">
-        <img alt="Heal Icon">
-        <div class="action-label">Heal</div>
-      </button>
+        <!-- MESSAGE + MEDIA + HUD -->
+        <div class="grid-2">
 
-      <button class="action-btn" data-action="TALK"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png">
-        <img alt="Talk Icon">
-        <div class="action-label">Talk</div>
-      </button>
+          <div class="box">
+            <div class="box-head">Action Message</div>
+            <div class="box-body">
+              <textarea id="actionMsg" class="action-msg" placeholder="Say something (optional)"></textarea>
+              <div class="muted">Sound becomes available after your first click/tap.</div>
+            </div>
+          </div>
 
-      <button class="action-btn" data-action="USEPOTION" data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png">
-        <img alt="Use Potion Icon">
-        <div class="action-label">Use Potion</div>
-      </button>
+          <div class="box">
+            <div class="box-head">Chianna Aegis Sphere</div>
+            <div class="box-body">
+              <div id="scene" class="media-row"></div>
+              <div id="audioHint" class="muted">🔊 Sound enabled after your first click in the page.</div>
+            </div>
+          </div>
 
-      <button class="action-btn" data-action="FLEE"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png">
-        <img alt="Flee Icon">
-        <div class="action-label">Flee</div>
-      </button>
+        </div>
 
-	  <button class="action-btn" data-action="EVAC"    data-icon="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png">
-        <img alt="Evac Icon">
-        <div class="action-label">Evac</div>
-      </button>
+        <div class="box">
+          <div class="box-head">Status HUD</div>
+          <div class="box-body">
+            <div id="hudGrid" class="hud-grid"></div>
+          </div>
+        </div>
 
+        <div class="box">
+          <div class="box-head">Narrative</div>
+          <div class="box-body">
+            <div id="out" class="out">
+              <div class="line">Waiting for reports from Chianna...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
-
-    <label for="actionMsg">Action Message (optional)</label>
-    <textarea id="actionMsg" placeholder="What do you say or what do you want to achieve. Do you have questions?..."></textarea>
-
-    <h2 style="margin-top:16px;">Chianna Aegis Sphere</h2>
-    <div id="out" class="out">Waiting for reports from Chianna...</div>
   </div>
 
   <script>
+    // =======================
+    // Storage keys
+    // =======================
+    const STORAGE = {
+      name: "dara_userName",
+      server: "dara_serverUrl",
+      game: "dara_gameId",
+      msg: "dara_actionMsg",
+    };
+
+    function saveField(key, value) { localStorage.setItem(key, value ?? ""); }
+    function loadField(key) { return (localStorage.getItem(key) || "").trim(); }
+
+    // =======================
+    // DOM
+    // =======================
     const out = document.getElementById("out");
     const buttons = document.querySelectorAll(".action-btn");
 
     const userNameInput = document.getElementById("userName");
     const btnConfirmName = document.getElementById("btnConfirmName");
     const btnRandomName = document.getElementById("btnRandomName");
+    const btnReset = document.getElementById("btnReset");
     const nameHint = document.getElementById("nameHint");
 
+    const gameIdInput = document.getElementById("gameId");
+    const actionMsgInput = document.getElementById("actionMsg");
+
+    const serverUrlText = document.getElementById("serverUrlText");
+    const btnSaveServerUrl = document.getElementById("btnSaveServerUrl");
+
+    const connDot = document.getElementById("connDot");
+    const connText = document.getElementById("connText");
+
+    const sceneEl = document.getElementById("scene");
+    const audioHintEl = document.getElementById("audioHint");
+    const hudGridEl = document.getElementById("hudGrid");
+
     let nameConfirmed = false;
+    let actionCooldownUntil = 0;
 
+    // =======================
+    // Output formatting
+    // =======================
     function setOut(text) {
-      out.textContent = text;
+      const lines = String(text || "").split("\n");
+      out.innerHTML = lines.map(line => {
+        const safe = line.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        if (/^==.+==\s*$/.test(line.trim())) return `<div class="title">${safe}</div>`;
+        return `<div class="line">${safe}</div>`;
+      }).join("");
     }
 
-    function sleep(ms) {
-      return new Promise(r => setTimeout(r, ms));
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function setButtonsEnabled(enabled) {
+      const now = Date.now();
+      const cooldown = now < actionCooldownUntil;
+      buttons.forEach(b => { b.disabled = !enabled || cooldown; });
     }
 
+    // =======================
+    // Name handling
+    // =======================
     function setNameError(msg) {
       userNameInput.classList.add("error");
+      nameHint.classList.remove("ok");
       nameHint.textContent = msg;
       setOut("❌ " + msg);
     }
 
     function clearNameError() {
       userNameInput.classList.remove("error");
-      nameHint.textContent = nameConfirmed ? "✅ Name commited (locked)." : "Please insert agent name and commit.";
+      if (nameConfirmed) {
+        nameHint.classList.add("ok");
+        nameHint.textContent = "✅ Name committed (locked).";
+      } else {
+        nameHint.classList.remove("ok");
+        nameHint.textContent = "Please insert agent name and commit it.";
+      }
     }
 
-    function isValidName(name) {
-      return name && name.trim().length >= 5;
-    }
+    function isValidName(name) { return name && name.trim().length >= 5; }
 
     function lockName() {
       nameConfirmed = true;
+      const n = userNameInput.value.trim();
+      saveField(STORAGE.name, n);
+
       userNameInput.readOnly = true;
       userNameInput.classList.add("locked");
       btnConfirmName.disabled = true;
       btnRandomName.disabled = true;
       clearNameError();
+
+      buttons.forEach(b => b.disabled = false);
+    }
+
+    function unlockName() {
+      nameConfirmed = false;
+      userNameInput.readOnly = false;
+      userNameInput.classList.remove("locked");
+      btnConfirmName.disabled = false;
+      btnRandomName.disabled = false;
+      clearNameError();
+      buttons.forEach(b => b.disabled = true);
     }
 
     function generateRandomAgentName() {
@@ -297,80 +669,269 @@
       return pick(a) + pick(b) + pick(c);
     }
 
+    // =======================
+    // URL helpers
+    // =======================
+    function normalizeActionUrl(url) {
+      url = (url || "").trim();
+      if (!url) return url;
+      if (!/\/action(\?|$)/i.test(url)) url = url.replace(/\/+$/, "") + "/action";
+      return url;
+    }
+
     function deriveTurnResultUrl(actionUrl) {
-      if (/\/action$/i.test(actionUrl)) {
-        return actionUrl.replace(/\/action$/i, "/turnResult");
-      }
+      if (/\/action$/i.test(actionUrl)) return actionUrl.replace(/\/action$/i, "/turnResult");
       return actionUrl.replace(/\/+$/, "") + "/turnResult";
     }
 
-    async function pollTurnResult(turnResultUrl, gameId, turn) {
+    function looksLikeHttpsMixedContent(url) {
+      return window.location.protocol === "https:" && /^http:\/\//i.test(url);
+    }
+
+    function setConnStatus(mode, text) {
+      connDot.classList.remove("ok","warn","bad");
+      connDot.classList.add(mode);
+      connText.textContent = text;
+    }
+
+    async function checkConnection() {
+      const actionUrl = normalizeActionUrl(serverUrlText?.value || "http://gameinfo.daraempire.com:9050/action");
+      if (looksLikeHttpsMixedContent(actionUrl)) {
+        setConnStatus("bad", "Blocked (HTTPS→HTTP)");
+        return;
+      }
+      const turnResultUrl = deriveTurnResultUrl(actionUrl);
+      const testUrl = `${turnResultUrl}?gameId=${encodeURIComponent("PING")}&turn=-1`;
+      setConnStatus("warn", "Checking...");
+      try {
+        const r = await fetch(testUrl, { cache: "no-store" });
+        if (r.ok) setConnStatus("ok", "Online");
+        else setConnStatus("warn", `Online (${r.status})`);
+      } catch {
+        setConnStatus("bad", "Offline/CORS");
+      }
+    }
+
+    // =======================
+    // Media (images + sfx)
+    // =======================
+    const MEDIA = {
+      images: {
+        attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+        defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+        fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+        mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+        heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+        flee: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+        evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+        talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+        usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+        move: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+      },
+      sounds: {
+        attack: "/sfx/attack.mp3",
+        defend: "/sfx/defend.mp3",
+        fireball: "/sfx/fireball.mp3",
+        mezmerize: "/sfx/mez.mp3",
+        heal: "/sfx/heal.mp3",
+        flee: "/sfx/flee.mp3",
+        evac: "/sfx/evac.mp3",
+        talk: "/sfx/talk.mp3",
+        usepotion: "/sfx/potion.mp3",
+        move: "/sfx/move.mp3",
+        explosion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/explosion.wav",
+      }
+    };
+
+    let audioUnlocked = false;
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      if (audioHintEl) audioHintEl.textContent = "🔊 Sound enabled.";
+    }
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+
+    function clearScene() { if (sceneEl) sceneEl.innerHTML = ""; }
+
+    function showImage(key, label) {
+      const url = MEDIA.images[key];
+      if (!url || !sceneEl) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = "media-card";
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = label || key;
+
+      const cap = document.createElement("div");
+      cap.className = "cap";
+      cap.textContent = label || key;
+
+      wrap.appendChild(img);
+      wrap.appendChild(cap);
+      sceneEl.appendChild(wrap);
+    }
+
+    async function playSound(key) {
+      const url = MEDIA.sounds[key];
+      if (!url || !audioUnlocked) return;
+      try {
+        const a = new Audio(url);
+        a.volume = 0.8;
+        await a.play();
+      } catch {
+        if (audioHintEl) audioHintEl.textContent = "🔇 Sound unavailable (missing file or blocked).";
+      }
+    }
+
+    async function parseTagsFromText(text) {
+      const s = String(text || "");
+      const imgTags = [...s.matchAll(/\[IMG:([a-z0-9_\-]+)(?:\|([^\]]+))?\]/gi)];
+      const sfxTags = [...s.matchAll(/\[SFX:([a-z0-9_\-]+)\]/gi)];
+      if (imgTags.length === 0 && sfxTags.length === 0) return;
+
+      clearScene();
+      for (const m of imgTags) {
+        const key = (m[1] || "").toLowerCase();
+        const label = m[2] ? m[2].trim() : key;
+        showImage(key, label);
+      }
+      if (sfxTags[0]) {
+        const key = (sfxTags[0][1] || "").toLowerCase();
+        await playSound(key);
+      }
+    }
+
+    // =======================
+    // HUD
+    // =======================
+    const HUD_MAX = 1000;
+    function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+
+    function parseCombatantLines(text) {
+      const lines = String(text || "").split("\n");
+      const rx = /^\s*-\s*(.+?)\s*\((Alive|Dead)\)\s*\|\s*HP:(\d+)\s*\|\s*ENERGY:(\d+)\s*\|\s*MANA:(\d+)\s*$/i;
+      const list = [];
+      for (const line of lines) {
+        const m = line.match(rx);
+        if (!m) continue;
+        list.push({
+          name: m[1].trim(),
+          state: m[2].trim(),
+          hp: parseInt(m[3], 10),
+          energy: parseInt(m[4], 10),
+          mana: parseInt(m[5], 10),
+        });
+      }
+      return list;
+    }
+
+    function makeBarRow(label, value, max, cls) {
+      const row = document.createElement("div");
+      row.className = "bar-row";
+
+      const lab = document.createElement("div");
+      lab.className = "bar-label";
+      lab.textContent = label;
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+
+      const fill = document.createElement("div");
+      fill.className = "fill " + cls;
+      fill.style.width = (clamp01((value||0)/(max||1))*100).toFixed(1) + "%";
+      bar.appendChild(fill);
+
+      const num = document.createElement("div");
+      num.className = "bar-num";
+      num.textContent = `${Math.max(0, value)}/${max}`;
+
+      row.appendChild(lab);
+      row.appendChild(bar);
+      row.appendChild(num);
+      return row;
+    }
+
+    function renderHud(combatants) {
+      if (!hudGridEl) return;
+      hudGridEl.innerHTML = "";
+      if (!combatants || combatants.length === 0) return;
+
+      for (const c of combatants) {
+        const card = document.createElement("div");
+        card.className = "hud-card";
+
+        const top = document.createElement("div");
+        top.className = "hud-top";
+
+        const name = document.createElement("div");
+        name.className = "hud-name";
+        name.textContent = c.name;
+
+        const state = document.createElement("div");
+        state.className = "hud-state";
+        state.textContent = c.state;
+
+        top.appendChild(name);
+        top.appendChild(state);
+
+        const bars = document.createElement("div");
+        bars.className = "bars";
+        bars.appendChild(makeBarRow("HP", c.hp, HUD_MAX, "hp"));
+        bars.appendChild(makeBarRow("ENERGY", c.energy, HUD_MAX, "en"));
+        bars.appendChild(makeBarRow("MANA", c.mana, HUD_MAX, "ma"));
+
+        card.appendChild(top);
+        card.appendChild(bars);
+        hudGridEl.appendChild(card);
+      }
+    }
+
+    // =======================
+    // Polling / Submit
+    // =======================
+    async function pollTurnResult(turnResultUrl, gameId, turn, timeoutMs = 45000) {
+      const start = Date.now();
+      let tries = 0;
       while (true) {
-        const r = await fetch(`${turnResultUrl}?gameId=${encodeURIComponent(gameId)}&turn=${turn}`);
-        const j = await r.json();
-        if (j.status === "ok") return j;
+        tries++;
+        if (Date.now() - start > timeoutMs) return { status: "timeout" };
+        try {
+          const r = await fetch(`${turnResultUrl}?gameId=${encodeURIComponent(gameId)}&turn=${turn}`, { cache:"no-store" });
+          const j = await r.json();
+          if (j.status === "ok") return j;
+          setOut(`Waiting for other players... (turn ${turn}, poll ${tries})`);
+        } catch {
+          setOut(`Polling error... retrying (turn ${turn})`);
+        }
         await sleep(700);
       }
     }
 
-    // 1) Icons once on load
-    buttons.forEach(btn => {
-      const img = btn.querySelector("img");
-      const iconUrl = btn.dataset.icon;
-      if (img && iconUrl) {
-        img.src = iconUrl;
-        img.onerror = () => {
-          img.style.display = "none";
-          // Optional: you could show a fallback label here
-        };
-      }
-    });
-
-    // 2) Name buttons
-    btnRandomName.addEventListener("click", () => {
-      if (nameConfirmed) return;
-      userNameInput.value = generateRandomAgentName();
-      clearNameError();
-    });
-
-    btnConfirmName.addEventListener("click", () => {
-      const name = userNameInput.value.trim();
-      if (!isValidName(name)) {
-        setNameError("Agent name must have at least 5 chars");
-        return;
-      }
-      lockName();
-    });
-
-    userNameInput.addEventListener("input", () => {
-      if (!nameConfirmed) clearNameError();
-    });
-
-    // 3) Action buttons -> submit
     async function submitAction(actionId) {
-      if (!nameConfirmed) {
-        setNameError("Commit agent name before you can do any further actions.");
-        return;
-      }
+      if (!nameConfirmed) { setNameError("Commit agent name before actions."); return; }
+
+      if (Date.now() < actionCooldownUntil) return;
+      actionCooldownUntil = Date.now() + 400;
 
       const userName = userNameInput.value.trim();
-      if (!isValidName(userName)) {
-        setNameError("Agent name must contain at least 5 chars");
-        return;
-      }
+      if (!isValidName(userName)) { setNameError("Agent name must have at least 5 chars"); return; }
 
       const payload = {
-        gameId: document.getElementById("gameId").value.trim(),
+        gameId: gameIdInput.value.trim(),
         userName,
         actionId,
-        actionMsg: document.getElementById("actionMsg").value.trim()
+        actionMsg: actionMsgInput.value.trim()
       };
 
-      const actionUrl = document.getElementById("serverUrl").value.trim();
+      const defaultUrl = "http://gameinfo.daraempire.com:9050/action";
+      const actionUrl = normalizeActionUrl((serverUrlText?.value || loadField(STORAGE.server) || defaultUrl));
       const turnResultUrl = deriveTurnResultUrl(actionUrl);
 
-      buttons.forEach(b => b.disabled = true);
-      setOut(`Aktion "${actionId}" gesendet...\nWarte auf andere Spieler...`);
+      setButtonsEnabled(false);
+      setOut(`Action "${actionId}" sent...\nWaiting...`);
 
       try {
         const resp = await fetch(actionUrl, {
@@ -379,31 +940,137 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await resp.json();
+        let data = null;
+        try { data = await resp.json(); } catch {}
+
         if (!resp.ok) {
-          setOut(`HTTP ${resp.status}\n${JSON.stringify(data, null, 2)}`);
+          setOut(`HTTP ${resp.status}\n${data ? JSON.stringify(data, null, 2) : "(no json response)"}`);
+          return;
+        }
+        if (!data || data.status !== "submitted") {
+          setOut("Unexpected response:\n" + JSON.stringify(data, null, 2));
           return;
         }
 
-        if (data.status !== "submitted") {
-          setOut("Unerwartete Antwort:\n" + JSON.stringify(data, null, 2));
-          return;
-        }
+        const result = await pollTurnResult(turnResultUrl, payload.gameId, data.turn);
+        if (result.status === "timeout") { setOut("⏳ Timed out waiting for turn result."); return; }
 
-        const turn = data.turn;
-        const result = await pollTurnResult(turnResultUrl, payload.gameId, turn);
-
-        setOut(result.gameMasterMsg || JSON.stringify(result, null, 2));
+        const msg = result.gameMasterMsg || "";
+        setOut(msg || JSON.stringify(result, null, 2));
+        renderHud(parseCombatantLines(msg));
+        await parseTagsFromText(msg);
       } catch (err) {
-        setOut("Fehler: " + (err?.message || String(err)));
+        setOut("Error: " + (err?.message || String(err)));
       } finally {
-        buttons.forEach(b => b.disabled = false);
+        buttons.forEach(b => b.disabled = !nameConfirmed);
       }
     }
 
+    // =======================
+    // Init
+    // =======================
+    // Icons
     buttons.forEach(btn => {
-      btn.addEventListener("click", () => submitAction(btn.dataset.action));
+      const img = btn.querySelector("img");
+      const iconUrl = btn.dataset.icon;
+      if (img && iconUrl) img.src = iconUrl;
     });
+
+    // persist fields
+    gameIdInput.addEventListener("input", () => saveField(STORAGE.game, gameIdInput.value.trim()));
+    actionMsgInput.addEventListener("input", () => saveField(STORAGE.msg, actionMsgInput.value));
+
+    // auto-grow action msg a bit (nice on mobile)
+    actionMsgInput.addEventListener("input", () => {
+      actionMsgInput.style.height = "auto";
+      actionMsgInput.style.height = Math.min(actionMsgInput.scrollHeight, 120) + "px";
+    });
+
+    // Name controls
+    btnRandomName.addEventListener("click", () => {
+      if (nameConfirmed) return;
+      userNameInput.value = generateRandomAgentName();
+      clearNameError();
+    });
+
+    btnConfirmName.addEventListener("click", () => {
+      const name = userNameInput.value.trim();
+      if (!isValidName(name)) { setNameError("Agent name must have at least 5 chars"); return; }
+      lockName();
+    });
+
+    userNameInput.addEventListener("input", () => { if (!nameConfirmed) clearNameError(); });
+
+    btnReset.addEventListener("click", () => {
+      localStorage.removeItem(STORAGE.name);
+      localStorage.removeItem(STORAGE.server);
+      localStorage.removeItem(STORAGE.game);
+      localStorage.removeItem(STORAGE.msg);
+
+      userNameInput.value = "";
+      userNameInput.readOnly = false;
+      unlockName();
+      clearScene();
+      hudGridEl.innerHTML = "";
+      setOut("Reset done. Enter name and commit again.");
+      setConnStatus("warn", "Ready");
+    });
+
+    // Action buttons
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        buttons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        submitAction(btn.dataset.action);
+      });
+    });
+
+    // Debug setup show with ?debug=1
+    (function enableDebugSetup() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("debug") === "1") {
+        const el = document.getElementById("setupPanel");
+        if (el) el.style.display = "block";
+      }
+    })();
+
+    // Restore state
+    (function restoreStateOnLoad() {
+      const defaultUrl = "http://gameinfo.daraempire.com:9050/action";
+      const savedServer = loadField(STORAGE.server);
+      if (serverUrlText) serverUrlText.value = normalizeActionUrl(savedServer || defaultUrl);
+
+      const savedGame = loadField(STORAGE.game);
+      if (savedGame) gameIdInput.value = savedGame;
+
+      const savedMsg = localStorage.getItem(STORAGE.msg);
+      if (savedMsg !== null) actionMsgInput.value = savedMsg;
+
+      const savedName = loadField(STORAGE.name);
+      if (savedName && isValidName(savedName)) {
+        userNameInput.value = savedName;
+        lockName();
+      } else {
+        unlockName();
+      }
+
+      // Save server URL button (only exists when debug panel is visible)
+      if (btnSaveServerUrl && serverUrlText) {
+        btnSaveServerUrl.addEventListener("click", () => {
+          const url = normalizeActionUrl(serverUrlText.value);
+          serverUrlText.value = url;
+          saveField(STORAGE.server, url);
+          setConnStatus("warn", "Saved");
+          checkConnection();
+        });
+      }
+
+      // Disable abilities until name committed
+      buttons.forEach(b => b.disabled = !nameConfirmed);
+
+      // connection check (best-effort)
+      if (serverUrlText) checkConnection();
+    })();
   </script>
 </body>
 </html>

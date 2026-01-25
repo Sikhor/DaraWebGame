@@ -1,10 +1,17 @@
-
+#include <thread>
+#include <condition_variable>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <cpr/cpr.h>
+#include "httplib.h"
+#include "json.hpp"
 #include "main.h"
 #include "parse.h"
 
-#define DARA_DEBUG_MESSAGES 0
-#define DARA_DEBUG_NEWMESSAGES 1
-#define DARA_DEBUG_ATTACKS 0
+void TrimHistory(std::vector<json>& hist);
+
 
 auto AddCorsHeaders = [](httplib::Response& res)
 {
@@ -23,10 +30,11 @@ static std::mutex g_historyMutex;
 // Wie viel Kontext behalten? (z.B. 12 Messages = 6 Turns)
 static constexpr size_t kMaxHistoryMessages = 12;
 
-using CombatantPtr = std::unique_ptr<Combatant>;
 
 std::unordered_map<std::string, CombatantPtr> Players;
+std::mutex PlayersMutex;
 std::unordered_map<std::string, CombatantPtr> Mobs;
+std::mutex MobsMutex;
 
 std::string GetOpenAIKey()
 {
@@ -34,21 +42,56 @@ std::string GetOpenAIKey()
     if (!v || !*v) throw std::runtime_error("OPENAI_API_KEY not set");
     return std::string(v);
 }
+std::string GetOpenAIModel()
+{
+    const char* v = std::getenv("OPENAI_MODEL");
+    if (!v || !*v) return "gpt-4o-mini"; // default
+    return std::string(v);
+}
+
+static std::string TrimCopy(std::string s)
+{
+    auto notSpace = [](unsigned char c){ return !std::isspace(c); };
+
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), notSpace));
+    s.erase(std::find_if(s.rbegin(), s.rend(), notSpace).base(), s.end());
+    return s;
+}
+Combatant* GetRandomMob()
+{
+    std::lock_guard<std::mutex> lk(MobsMutex);
+
+    if (Mobs.empty())
+        return nullptr;
+
+    static thread_local std::mt19937 rng{ std::random_device{}() };
+
+    std::uniform_int_distribution<size_t> dist(0, Mobs.size() - 1);
+
+    auto it = Mobs.begin();
+    std::advance(it, dist(rng));
+
+    return it->second.get(); // pointer is stable (shared_ptr owns it)
+}
 
 Combatant& GetOrCreatePlayer(const std::string& playerName)
 {
+    std::lock_guard<std::mutex> lk(PlayersMutex);
+    if(playerName=="") throw std::runtime_error("Empty player name not allowed");
+
     auto [it, inserted] = Players.try_emplace(
         playerName,
-        std::make_unique<Combatant>(playerName, ECombatantType::Player)
+        std::make_shared<Combatant>(playerName, ECombatantType::Player, 1000.f, 1000.f, 1000.f)
     );
 
     return *it->second;
 }
 Combatant& GetOrCreateMob(const std::string& mobName)
 {
+    std::lock_guard<std::mutex> lk(MobsMutex);
     auto [it, inserted] = Mobs.try_emplace(
         mobName,
-        std::make_unique<Combatant>(mobName, ECombatantType::Mob)
+        std::make_shared<Combatant>(mobName, ECombatantType::Mob)
     );
 
     return *it->second;
@@ -56,6 +99,7 @@ Combatant& GetOrCreateMob(const std::string& mobName)
 
 std::string PlayerInfo(bool showAllInfo=false)
 {
+    std::lock_guard<std::mutex> lk(PlayersMutex);
     std::ostringstream oss;
 
     oss << "Players:\n";
@@ -70,7 +114,7 @@ std::string PlayerInfo(bool showAllInfo=false)
     {
         const Combatant& c = *combatantPtr;
 
-        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Down")<<")";
+        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Dead")<<")";
             if(showAllInfo){
             oss << " | HP:" << c.GetHP()
                 << " | ENERGY:" << c.GetEnergy()
@@ -84,6 +128,7 @@ std::string PlayerInfo(bool showAllInfo=false)
 
 std::string MobInfo(bool showAllInfo=false)
 {
+    std::lock_guard<std::mutex> lk(MobsMutex);
 
     std::ostringstream oss;
 
@@ -99,7 +144,7 @@ std::string MobInfo(bool showAllInfo=false)
     {
         const Combatant& c = *combatantPtr;
 
-        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Down")<<")";
+        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Dead")<<")";
         if(showAllInfo){
         oss << " | HP:" << c.GetHP()
             << " | ENERGY:" << c.GetEnergy()
@@ -112,41 +157,6 @@ std::string MobInfo(bool showAllInfo=false)
 }
 
 
-std::string GenerateUUID()
-{
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<uint32_t> dist(0, 0xFFFFFFFF);
-
-    uint32_t data[4] = { dist(gen), dist(gen), dist(gen), dist(gen) };
-
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0')
-        << std::setw(8) << data[0] << "-"
-        << std::setw(4) << ((data[1] >> 16) & 0xFFFF) << "-"
-        << std::setw(4) << ((data[1] & 0xFFFF) | 0x4000) << "-" // version 4
-        << std::setw(4) << ((data[2] & 0x3FFF) | 0x8000) << "-" // variant
-        << std::setw(12) << data[3];
-
-    return oss.str();
-}
-
-
-float GetRandomFloat(float min, float max)
-{
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(min, max);
-    return dist(gen);
-}
-void ApplyRandomCost(float& current, float normal, float deviation)
-{
-    float value= current;
-    current-= GetRandomFloat(normal-deviation, normal+deviation);
-    if(current <0.f) current=0.f;
-
-}
-
 static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
 {
     std::lock_guard<std::mutex> lock(g_stateMapMutex);
@@ -157,20 +167,34 @@ static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
 
 static void StartPlayerCombatActions(std::string playerName, std::string action)
 {
-        if(action=="ATTACK"){
+        if(action=="ATTACK" && playerName!=""){
 
-            Combatant mob = GetOrCreateMob("Chicka");
-            Combatant player= GetOrCreatePlayer(playerName);
-            if (mob.IsAlive() && player.IsAlive())
-            {
-                if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK: "<<player.GetName() <<" attacks "<<mob.GetName()<<std::endl;
+            Combatant *mob = GetRandomMob();
+            if(mob==nullptr){
+                if(DARA_DEBUG_ATTACKS) std::cout<<"No mobs available to attack"<<std::endl;
+                return;
+            }else{
+                Combatant &player= GetOrCreatePlayer(playerName);
+                if (mob->IsAlive() && player.IsAlive())
+                {
+                    if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK: "<<player.GetName() <<" attacks "<<mob->GetName()<<std::endl;
 
-                float dmg = player.AttackMelee("Chicka");
-                mob.ApplyDamage(dmg);
+                    float dmg = player.AttackMelee("Chicka");
+                    mob->ApplyDamage(dmg);
+                    if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK RESULT: Damage "<<dmg <<" to the Mob "<<mob->GetName()<<std::endl;
+                }
             }
 
         }else{
-            if(DARA_DEBUG_ATTACKS) std::cout<<"NO ATTACK"<<std::endl;
+            if(DARA_DEBUG_ATTACKS) std::cout<<"NO ATTACK or empty Playername"<<std::endl;
+        }
+
+        // Regen HP, Mana, Energy per turn
+        for(auto& [name, combatantPtr] : Players){
+            Combatant &player= *combatantPtr;
+            if(player.IsAlive()){
+                player.RegenTurn();
+            }
         }
 
 }
@@ -189,6 +213,21 @@ static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actio
     return combined;
 }
 
+void DebugMsgStats(std::string msg="")
+{
+    if(DARA_DEBUG_MSGSTATS){
+        std::cout << "=== Current Game State ===\n";
+        std::cout << PlayerInfo(true);
+        std::cout << MobInfo(true);
+        std::cout << "==========================\n";
+    }
+    if(DARA_DEBUG_AI_REPLIES){
+        std::cout << "=======JSON===============\n";
+        std::cout << msg << std::endl;
+        std::cout << "=======END JSON===========\n";
+    }
+
+}
 void DebugMsg(const json& messages)
 {
     if(DARA_DEBUG_MESSAGES){
@@ -289,7 +328,7 @@ std::string ContactAI(
 
     // 4) Request payload
     json requestPayload = {
-        {"model", "gpt-3.5-turbo"},
+        {"model", GetOpenAIModel()},
         {"messages", messages},
         {"temperature", 0.7}
     };
@@ -353,29 +392,38 @@ std::string ContactAI(
         return "Error: Could not parse OpenAI response";
     }
     
+    std::string formattedReply= "No reply set before parse\n";
     std::string error;
     json aiJson;
     if (!ParseAndValidateAIReply(reply, aiJson, error))
     {
         std::cerr << "AI reply invalid: " << error << "\n";
         // -> ignore AI turn or retry
-        return "Error in json reply from AI: " + error;
+        formattedReply= "Error in json reply from AI: " + error;
+    }else{
+        DebugMsgStats(reply);
+        // set reply
+        formattedReply = "Narrative:\n" + aiJson["narrative"].get<std::string>() + "\n";
+        formattedReply+=PlayerInfo(true)+MobInfo(true);
+        ParseActionsFromAI(aiJson, Players, Mobs);
+
+        //if(DARA_DEBUG_AI_ACTIONS) std::cout<<"AI ACTION: "<<aiJson["enemy_intents"].get<std::string>()<<std::endl;
+
+        // 8) Update history only if we got a valid reply
+        // not sure if we need to pass back something the ai said
+        {
+            std::lock_guard<std::mutex> lock(g_historyMutex);
+            auto& hist = g_historyByGameId[gameId];
+
+            hist.push_back({{"role","user"}, {"content", newMsgToAI}});
+            hist.push_back({{"role","assistant"}, {"content", reply}});
+            
+            TrimHistory(hist);
+        }
+
     }
+    return formattedReply+"[IMG:fireball] [SFX:explosion]"; // example for embedding images/sounds";
 
-    // 8) Update history only if we got a valid reply
-    {
-        std::lock_guard<std::mutex> lock(g_historyMutex);
-        auto& hist = g_historyByGameId[gameId];
-
-        hist.push_back({{"role","user"}, {"content", newMsgToAI}});
-        
-        TrimHistory(hist);
-    }
-
-    std::string formattedReply = "Narrative:\n" + aiJson["narrative"].get<std::string>() + "\n";
-    formattedReply+=PlayerInfo(true)+MobInfo(true);
-
-    return formattedReply;
 }
 
 
@@ -403,7 +451,7 @@ static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vect
     }
 }
 
-static void TrimHistory(std::vector<json>& hist)
+void TrimHistory(std::vector<json>& hist)
 {
     if (hist.size() <= kMaxHistoryMessages) return;
 
@@ -504,6 +552,8 @@ int main()
             }
 
             state->pending.push_back({userName, actionId, actionMsg});
+
+            if(userName=="")std::cout << "ERROR Empty Username received\n";
             GetOrCreatePlayer(userName);
             // Debug Message what has been received
             // std::cout << "Received Action:" << userName << " "<< actionId << " "<< actionMsg<< "\n";
@@ -524,12 +574,15 @@ int main()
             int resolvedTurn = myTurn;
 
             // Run AI call in the background so POST can return immediately
-            std::thread([gameId, resolvedTurn, actions = std::move(actionsToResolve)]() mutable
-            {
-                ResolveTurnAsync(gameId, resolvedTurn, std::move(actions));
-
-                // mark resolving=false afterwards
+            std::thread([gameId, resolvedTurn, actions = std::move(actionsToResolve)]() mutable {
                 auto st = GetGameState(gameId);
+                try {
+                    ResolveTurnAsync(gameId, resolvedTurn, std::move(actions));
+                } catch (const std::exception& e) {
+                    // log
+                } catch (...) {
+                    // log
+                }
                 std::lock_guard<std::mutex> lock(st->mtx);
                 st->resolving = false;
             }).detach();
@@ -620,9 +673,6 @@ server.Get("/turnResult", [](const httplib::Request& req, httplib::Response& res
 });
 
     GetOrCreateMob("Chicka");
-    GetOrCreateMob("Doiner");
-    GetOrCreateMob("Polta");
-
 
     std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";
     //std::string apiKey = GetOpenAIKey();

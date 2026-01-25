@@ -1,5 +1,93 @@
-#include "main.h"
+#include "globals.h"
 #include "parse.h"
+
+void ParseActionsFromAI(
+    const json& aiJson,
+    std::unordered_map<std::string, CombatantPtr>& Players,
+    std::unordered_map<std::string, CombatantPtr>& Mobs)
+{
+    if (aiJson.contains("enemy_intents") && aiJson["enemy_intents"].is_array())
+    {
+        for (const auto& intent : aiJson["enemy_intents"])
+        {
+            std::string enemyId      = intent.value("enemyId", "");
+            std::string action       = intent.value("action", "WAIT");
+            std::string targetPlayer = intent.value("targetPlayer", "");
+            std::string reason       = intent.value("reason", "");
+
+            if (DARA_DEBUG_AI_ACTIONS)
+            {
+                std::cout << "Enemy " << enemyId
+                          << " will " << action
+                          << " on player " << targetPlayer
+                          << " because: " << reason << "\n";
+            }
+            if(targetPlayer.empty()){
+                // no action to take
+                continue;
+            }
+            if(enemyId.empty()){
+                // no action to take
+                continue;
+            }
+            Combatant& mob = GetOrCreateMob(enemyId);
+            Combatant& player = GetOrCreatePlayer(targetPlayer);
+            if (action == "ATTACK")
+            {
+                float dmg = mob.AttackMelee(player.GetName());
+                player.ApplyDamage(dmg);
+            }
+
+        }
+    }
+    if (aiJson.contains("spawns") && aiJson["spawns"].is_array())
+    {
+        for (const auto& intent : aiJson["spawns"])
+        {
+            std::string enemyId      = intent.value("enemyId", "");
+            std::string name       = intent.value("name", "small mob");
+
+            if (DARA_DEBUG_AI_ACTIONS)
+            {
+                std::cout << "New Enemy " << name<< "\n";
+            }
+            if(name.empty()){
+                // no action to take
+                continue;
+            }
+            GetOrCreateMob(name);
+        }
+
+    }
+    if (aiJson.contains("despawns") && aiJson["despawns"].is_array())
+    {
+        for (const auto& intent : aiJson["despawns"])
+        {
+            std::string enemyId      = intent.value("enemyId", "");
+            std::string reason       = intent.value("reason", "");
+
+            if (DARA_DEBUG_AI_ACTIONS)
+            {
+                std::cout << "Despawning Enemy " << enemyId
+                          << " because: " << reason << "\n";
+            }
+            if(enemyId.empty()){
+                // no action to take
+                continue;
+            }
+            std::lock_guard<std::mutex> lk(MobsMutex);
+            auto it = Mobs.find(enemyId);
+            if (it != Mobs.end())
+            {
+                Mobs.erase(it);
+            }
+        }
+
+    }
+
+
+    //std::cout << "END OF ParseActionsFromAI\n";
+}
 
 bool ParseAndValidateAIReply(
     const std::string& aiReply,

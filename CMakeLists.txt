@@ -13,6 +13,7 @@ add_subdirectory(cpr)
 add_executable(DaraWebGameServer
     main.cpp
     parse.cpp
+    combatant.cpp
     # parse.h   # optional (not required to compile, but ok to list)
 )
 
@@ -21,3 +22,21 @@ target_include_directories(DaraWebGameServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 
 # CPR linken
 target_link_libraries(DaraWebGameServer PRIVATE cpr::cpr)
+
+# =========================
+# Testgame Executable
+# =========================
+add_executable(testgame
+    testgame.cpp
+)
+
+target_include_directories(testgame PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# httplib + json brauchen KEINE extra Libs
+# pthread nur für Linux notwendig
+if (UNIX)
+    target_link_libraries(testgame PRIVATE pthread)
+endif()
+
