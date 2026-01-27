@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+<<style>
+body {
+  background: transparent;
+  padding: 10px;
+  line-height: 1.5;
+}
+
+#story {
+  color: #ffffff;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.chat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.chat-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.chat-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.chat-msg {
+  color: #ffffff;
+}
+</style>
+</head>
+<body>
+<div id="story">Waiting for Chiana…</div>
+
+<script>
+const STORY_ICON_URL =
+  "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png";
+const storyDiv = document.getElementById("story");
+const storyHistory = [];           // keeps the last entries
+const MAX_STORY_LINES = 10;
+let lastNarrative = "";            // avoid duplicates
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
+
+function renderStory() {
+  storyDiv.innerHTML = storyHistory
+    .map(t => `
+      <div class="chat-row">
+        <div class="chat-icon">
+          <img src="${STORY_ICON_URL}" alt="story">
+        </div>
+        <div class="chat-msg">
+          ${escapeHtml(t)}
+        </div>
+      </div>
+    `)
+    .join("");
+
+  storyDiv.scrollTop = storyDiv.scrollHeight;
+}
+
+
+async function loadStory() {
+  try {
+    const res = await fetch("https://gameinfo.daraempire.com/api/v001/darawebgame/story", { cache: "no-store" });
+    const s = await res.json();
+
+    const narrative = (s.narrative ?? "").trim();
+    if (!narrative) return;
+
+    // only add if it actually changed
+    if (narrative === lastNarrative) return;
+    lastNarrative = narrative;
+
+    storyHistory.push(narrative);
+    if (storyHistory.length > MAX_STORY_LINES) storyHistory.shift();
+
+    renderStory();
+  } catch (e) {
+    console.error("loadStory failed:", e);
+  }
+}
+
+setInterval(loadStory, 2000);
+loadStory();
+</script>
+</body>
+</html>

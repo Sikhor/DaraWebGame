@@ -9,6 +9,10 @@
 #include "json.hpp"
 #include "main.h"
 #include "parse.h"
+#include "combatlog.h"
+#include "CombatDirector.h"
+
+CombatDirector* g_combatDirector = nullptr;
 
 void TrimHistory(std::vector<json>& hist);
 
@@ -35,6 +39,9 @@ std::unordered_map<std::string, CombatantPtr> Players;
 std::mutex PlayersMutex;
 std::unordered_map<std::string, CombatantPtr> Mobs;
 std::mutex MobsMutex;
+
+CombatLog CombatLogState(Players, PlayersMutex, Mobs, MobsMutex);
+std::string Narrative= "Some cool story that I have here ..";
 
 std::string GetOpenAIKey()
 {
@@ -81,7 +88,7 @@ Combatant& GetOrCreatePlayer(const std::string& playerName)
 
     auto [it, inserted] = Players.try_emplace(
         playerName,
-        std::make_shared<Combatant>(playerName, ECombatantType::Player, 1000.f, 1000.f, 1000.f)
+        std::make_shared<Combatant>(playerName, ECombatantType::Player, MAXHP, MAXENERGY, MAXMANA)
     );
 
     return *it->second;
@@ -167,7 +174,7 @@ static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
 
 static void StartPlayerCombatActions(std::string playerName, std::string action)
 {
-        if(action=="ATTACK" && playerName!=""){
+        if(action=="attack" && playerName!=""){
 
             Combatant *mob = GetRandomMob();
             if(mob==nullptr){
@@ -182,6 +189,11 @@ static void StartPlayerCombatActions(std::string playerName, std::string action)
                     float dmg = player.AttackMelee("Chicka");
                     mob->ApplyDamage(dmg);
                     if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK RESULT: Damage "<<dmg <<" to the Mob "<<mob->GetName()<<std::endl;
+                    CombatLogState.PushPlayerLog(
+                        player.GetName(),
+                        "You attack " + mob->GetName() + " for " + std::to_string(static_cast<int>(dmg)) + " damage.",
+                        "attack"
+                    );
                 }
             }
 
@@ -403,6 +415,7 @@ std::string ContactAI(
     }else{
         DebugMsgStats(reply);
         // set reply
+        Narrative= aiJson["narrative"].get<std::string>();
         formattedReply = "Narrative:\n" + aiJson["narrative"].get<std::string>() + "\n";
         formattedReply+=PlayerInfo(true)+MobInfo(true);
         ParseActionsFromAI(aiJson, Players, Mobs);
@@ -422,6 +435,7 @@ std::string ContactAI(
         }
 
     }
+
     return formattedReply+"[IMG:fireball] [SFX:explosion]"; // example for embedding images/sounds";
 
 }
@@ -432,6 +446,7 @@ static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vect
     static int turnId=0;
     // Call AI outside of locks
     const std::string turnMsg = BuildCombinedTurnText(actionsCopy);
+
 
     // Reuse your ContactAI() by sending one combined "turn_commit" action
     std::string gmMsg = ContactAI(gameId, turnId, turnMsg);
@@ -472,34 +487,10 @@ std::string readPromptFromFile(const std::string& filename) {
 }
 
 
-int ContactDara() {
-    // Set the URL and the JSON payload
-    std::string url = "https://httpbin.org/post"; // test endpoint
-    url = "http://game.daraempire.com/DaraPublicApi/DaraPublicApi"; // test endpoint
-    
-    nlohmann::json j;
-    j["user"] = "Bernie";
-    j["name"] = "Dara";
-    j["role"] = "agent";
-    j["stats"] = {{"strength", 10}, {"intelligence", 15}};
-
-    std::cout << "JSON string:\n" << j.dump(4) << std::endl;
-								    
-    cpr::Response response = cpr::Post(
-        cpr::Url{url},
-        cpr::Header{{"Content-Type", "application/json"}},
-        cpr::Body{j.dump(4)}
-    );
-
-    // Output the response status and text
-    std::cout << "Status code: " << response.status_code << std::endl;
-    std::cout << "Response body:\n" << response.text << std::endl;
-
-    return 0;
-}
 
 int main()
 {
+    g_combatDirector = new CombatDirector("DefaultGame");
     httplib::Server server;
     
     server.Options("/action",
@@ -521,11 +512,26 @@ int main()
         std::string gameId    = body.at("gameId").get<std::string>();
         std::string userName  = body.at("userName").get<std::string>();
         std::string actionId  = body.at("actionId").get<std::string>();
+        std::string actionTarget  = body.at("actionTarget").get<std::string>();
         std::string actionMsg = body.at("actionMsg").get<std::string>();
+
+        int myTurn = 0;
+        std::string err;
+        g_combatDirector->AddOrUpdatePlayer(userName);
+        bool ok= g_combatDirector->SubmitPlayerAction(userName, actionId, actionTarget, actionMsg, &err);
+        if(ok==false){
+            std::cout << "SubmitPlayerAction failed: "<< err <<std::endl;
+        }
+        if(!err.empty()){
+            res.status = 400;
+            res.set_content(R"({"status":"error","message":")"+ err +R"("})", "application/json");
+            return;
+        }else{
+            std::cout << g_combatDirector->GetStateSnapshotJson().dump() << std::endl;
+        }
 
         auto state = GetGameState(gameId);
 
-        int myTurn = 0;
         bool shouldStartResolver = false;
         std::vector<PendingAction> actionsToResolve;
 
@@ -606,72 +612,102 @@ int main()
     }
 });
 
-server.Get("/turnResult", [](const httplib::Request& req, httplib::Response& res)
+
+server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeaders(res);
+    res.status = 200;
+    // Example 
+    //res.set_content(R"({"hpPct":"20", "energyPct": "50", "manaPct": "30", "level": "1", "experience": "0", "gold": "100"})", "application/json");
+
+    std::cout << g_combatDirector->GetStateSnapshotJson().dump() << std::endl;
+
+    auto it = req.headers.find("X-Player-Name");
+    if (it == req.headers.end() || it->second.empty()) {
+        res.status = 400;
+        res.set_content(R"({"error":"Missing player identity"})", "application/json");
+        return;
+    }
+    if(DARA_DEBUG_PLAYERSTATS) {
+        std::cout << "Fetching state for player: " << it->second << std::endl;
+    } 
+
+
+    const std::string& userName = it->second;
+
+    Combatant& player = GetOrCreatePlayer(userName);
+    res.set_content(
+        R"({
+            "hpPct": ")" + std::to_string(player.GetHPPercentage()) + R"(",
+            "energyPct": ")" + std::to_string(player.GetEnergyPercentage()) + R"(",
+            "manaPct": ")" + std::to_string(player.GetManaPercentage()) + R"(",
+            "level": ")" + std::to_string(player.GetLevel()) + R"(",
+            "experience": ")" + std::to_string(player.GetExperience()) + R"(",
+            "gold": ")" + std::to_string(player.GetGold()) + R"("
+        })",
+        "application/json"
+    );
+    if(DARA_DEBUG_PLAYERSTATS) {
+        std::cout << "Player State for " << userName << " HP%: " << player.GetHPPercentage()
+                  << " Energy%: " << player.GetEnergyPercentage()
+                  << " Mana%: " << player.GetManaPercentage()
+                  << " Level: " << player.GetLevel()
+                  << " Experience: " << player.GetExperience()
+                  << " Gold: " << player.GetGold()
+                  << std::endl;
+    }
+    return;
+ 
+
+});
+
+server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeaders(res);
+    
+    nlohmann::json j;
+    j["narrative"] = Narrative;
+
+    res.set_content(j.dump(), "application/json");
+    return;
+
+});
+
+server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
 {
     AddCorsHeaders(res);
 
-    auto gameIdIt = req.get_param_value("gameId");
-    auto turnIt   = req.get_param_value("turn");
+    res.status = 200;
+    const std::string body = CombatLogState.GetJsonCached();
+    res.set_content(body, "application/json");
 
-    if (gameIdIt.empty() || turnIt.empty())
+    return;
+    /*
+    if (true) //(gameIdIt.empty() || turnIt.empty())
     {
         res.status = 400;
-        res.set_content(R"({"status":"error","message":"Missing gameId or turn"})", "application/json");
-        return;
-    }
-
-    std::string gameId = gameIdIt;
-
-    int turn = 0;
-    try { turn = std::stoi(turnIt); }
-    catch (...)
-    {
-        res.status = 400;
-        res.set_content(R"({"status":"error","message":"Invalid turn"})", "application/json");
-        return;
-    }
-
-    auto state = GetGameState(gameId);
-
-    {
-        std::lock_guard<std::mutex> lock(state->mtx);
-
-        auto it = state->results.find(turn);
-        if (it == state->results.end())
-        {
-            json out = {
-                {"status", "pending"},
-                {"gameId", gameId},
-                {"turn", turn}
-            };
-            res.set_content(out.dump(), "application/json");
+        res.set_content(
+            R"({
+            "Players": [
+                {"player":"Istako","hpPct":50,"combatLog":"Istako did something","action":"attack"},
+                {"player":"Zendran","hpPct":20,"combatLog":"Zendran attacks Polta","action":"defend"},
+                {"player":"Tunja","hpPct":56,"combatLog":"Tunja did something","action":"heal"},
+                {"player":"Trollya","hpPct":80,"combatLog":"Trollya attacks Polta","action":"move"}
+            ],
+            "Mobs": [
+                {"mob":"Polta","hpPct":10,"combatLog":"Polta was attacked by Istako","action":"attack"},
+                {"mob":"Chicka","hpPct":50,"combatLog":"Chicka attacks Tunja","action":"defend"}
+            ]
+            })",
+            "application/json"
+            );
             return;
-        }
-
-        const auto& r = it->second;
-
-        json actionsJson = json::array();
-        for (const auto& a : r.actions)
-        {
-            actionsJson.push_back({
-                {"userName", a.userName},
-                {"actionId", a.actionId},
-                {"actionMsg", a.actionMsg}
-            });
-        }
-
-        json out = {
-            {"status", "ok"},
-            {"gameId", gameId},
-            {"turn", r.turnNumber},
-            {"actions", actionsJson},
-            {"gameMasterMsg", r.gameMasterMsg}
-        };
-
-        res.set_content(out.dump(), "application/json");
     }
+            */
+ 
 });
 
+    g_combatDirector->Start();
     GetOrCreateMob("Chicka");
 
     std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";

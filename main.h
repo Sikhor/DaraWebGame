@@ -21,6 +21,7 @@ inline constexpr int DARA_DEBUG_ATTACKS= 0;
 inline constexpr int DARA_DEBUG_AI_ACTIONS= 0;
 inline constexpr int DARA_DEBUG_AI_REPLIES= 1;
 inline constexpr int DARA_DEBUG_MSGSTATS= 0;
+inline constexpr int DARA_DEBUG_PLAYERSTATS= 0;
 
 
 

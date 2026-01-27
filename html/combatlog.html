@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+<style>
+body { background: transparent; padding: 10px; font-size: 12px; }
+#combatLog { color: #fff; white-space: normal; } /* damit divs gut aussehen */
+
+.bar { margin: 6px 0 10px; }
+.label { font-size: 12px; margin-bottom: 2px; }
+.progress { height: 16px; background: #222; border-radius: 4px; overflow: hidden; }
+.fill { height: 100%; }
+.hp { background: #c0392b; }
+.hp-high   { background: #27ae60; }  /* green  */
+.hp-mid    { background: #f1c40f; }  /* yellow */
+.hp-low    { background: #e67e22; }  /* orange */
+.hp-crit   { background: #c0392b; }  /* red    */
+
+.log-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.log-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.log-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.log-text {
+  line-height: 1.4;
+}
+</style>
+</head>
+<body>
+<div id="combatLog">first combat entry...</div>
+
+<script>
+const MEDIA = {
+      images: {
+        attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+        defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+        fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+        mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+        heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+        flee: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+        evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+        talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+        usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+        move: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+      },
+      sounds: {
+        attack: "/sfx/attack.mp3",
+        defend: "/sfx/defend.mp3",
+        fireball: "/sfx/fireball.mp3",
+        mezmerize: "/sfx/mez.mp3",
+        heal: "/sfx/heal.mp3",
+        flee: "/sfx/flee.mp3",
+        evac: "/sfx/evac.mp3",
+        talk: "/sfx/talk.mp3",
+        usepotion: "/sfx/potion.mp3",
+        move: "/sfx/move.mp3",
+        explosion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/explosion.wav",
+      }
+    };
+const combatLog = document.getElementById("combatLog");
+
+function safeId(s) {
+  return String(s).replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+async function loadLog() {
+  const res = await fetch("https://gameinfo.daraempire.com/api/v001/darawebgame/combatlog", { cache: "no-store" });
+  const s = await res.json();
+
+  let html = "";
+
+  for (const entry of s.Players) {
+	  const pid = safeId(entry.player);
+	  const hp = Math.max(0, Math.min(100, Number(entry.hpPct ?? 0)));
+
+	  let hpClass = "hp-high";
+	  if (hp < 25)      hpClass = "hp-crit";
+	  else if (hp < 50) hpClass = "hp-low";
+	  else if (hp < 75) hpClass = "hp-mid";
+
+	  html += `<div class="bar">
+				 <div class="label">${entry.player} HP: ${hp}%</div>
+				 <div class="progress">
+				   <div id="hp-${pid}" class="fill ${hpClass}" style="width:${hp}%"></div>
+				 </div>
+			   </div>`;
+	}
+
+	for (const entry of s.Players) {
+	  const hp = Math.max(0, Math.min(100, Number(entry.hpPct ?? 0)));
+
+	  const imgKey = entry.action;
+	  const imgSrc = MEDIA.images[imgKey];
+
+	  html += `<div class="log-entry">`;
+
+	  if (imgSrc) {
+		html += `
+		  <div class="log-icon">
+			<img src="${imgSrc}" alt="${imgKey}">
+		  </div>
+		`;
+	  }
+
+	  html += `
+		<div class="log-text">
+		  <b>${entry.player}</b>: ${entry.combatLog}
+		</div>
+	  </div>
+	  `;
+	}
+	
+	for (const entry of s.Mobs) {
+	  const pid = safeId(entry.mob);
+	  const hp = Math.max(0, Math.min(100, Number(entry.hpPct ?? 0)));
+
+	  let hpClass = "hp-high";
+	  if (hp < 25)      hpClass = "hp-crit";
+	  else if (hp < 50) hpClass = "hp-low";
+	  else if (hp < 75) hpClass = "hp-mid";
+
+	  html += `<div class="bar">
+				 <div class="label">${entry.mob} HP: ${hp}%</div>
+				 <div class="progress">
+				   <div id="hp-${pid}" class="fill ${hpClass}" style="width:${hp}%"></div>
+				 </div>
+			   </div>`;
+	}
+
+	 
+  combatLog.innerHTML = html;
+}
+
+setInterval(loadLog, 1000);
+loadLog();
+</script>
+</body>
+</html>

@@ -14,6 +14,8 @@ add_executable(DaraWebGameServer
     main.cpp
     parse.cpp
     combatant.cpp
+    combatlog.cpp
+    CombatDirector.cpp
     # parse.h   # optional (not required to compile, but ok to list)
 )
 
