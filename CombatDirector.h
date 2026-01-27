@@ -44,6 +44,9 @@ public:
     void AddOrUpdatePlayer(const std::string& playerName);
     void RemovePlayer(const std::string& playerName);
 
+    json GetPlayerStateJson(const std::string& playerName) const;
+    bool ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err);
+
     void AddOrUpdateMob(const std::string& mobName);
     void RemoveMob(const std::string& mobName);
 

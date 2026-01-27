@@ -152,14 +152,24 @@
 
   <!-- Name + Actions ABOVE statbars -->
   <div class="top">
-    <div class="row">
-      <input id="playerName" type="text" placeholder="Player name…" />
-      <button id="btnRandom">Random</button>
-    </div>
-
-    <div class="actions" id="actions"></div>
+<div class="row">
+  <div id="playerNameLabel" style="
+      flex:1;
+      height:34px;
+      display:flex;
+      align-items:center;
+      padding:0 10px;
+      border-radius:6px;
+      border:1px solid #2a3340;
+      background: rgba(0,0,0,0.35);
+      color:#fff;
+      font-size:14px;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;">
+    Player: <span id="playerNameText" style="margin-left:6px; opacity:0.95;">(loading…)</span>
   </div>
-
+</div>
   <!-- Statbars -->
   <div class="bar">
     <div class="label">HP</div>
@@ -176,11 +186,44 @@
     <div class="progress"><div id="mp" class="fill mp" style="width:100%"></div></div>
   </div>
 
+  <!-- Action Buttons -->
+
+  <div class="actions" id="actions"></div>
+  </div>
+
+
 <script>
+
+  
+  function getToken() {
+    return localStorage.getItem("sessionToken") || "";
+  }
+
+  function authHeaders(extra = {}) {
+    const t = getToken();
+    if (!t) return extra;
+    return { ...extra, "Authorization": "Bearer " + t };
+  }
+
+const playerNameText = document.getElementById("playerNameText");
+
+function getPlayerName() {
+  return localStorage.getItem("playerName") || ""; // wird von index.html nach Login gesetzt
+}
+
+function renderPlayerName() {
+  const pn = getPlayerName();
+  playerNameText.textContent = pn ? pn : "(not set)";
+}
+
+
+
+
+
   // 1) WO der POST hingeht:
   // Wenn du Apache Proxy nutzt, wäre "/action" am saubersten.
   // Du wolltest explizit "auf darempire seite", darum hier volle URL:
-  const ACTION_URL = "https://gameinfo.daraempire.com/api/v001/darawebgame/action"; // <- ggf. anpassen (z.B. https://gameinfo.daraempire.com:9050/action wenn du das so exposed hast)
+  const ACTION_URL = "/api/v001/darawebgame/action"; // <- ggf. anpassen (z.B. https://gameinfo.daraempire.com:9050/action wenn du das so exposed hast)
 
   // 2) Deine Media Icons
   const MEDIA = {
@@ -212,29 +255,9 @@
     { id: "evac",       label: "Evac",    cd: 20 },
   ];
 
-  // --- Name generator ---
-  function randomName() {
-    const a = ["Zan","Ista","Vor","Kel","Ryn","Tar","Mal","Zen","Dro","Tun","Tro","Ari"];
-    const b = ["drax","korr","naris","vane","thos","mir","dahl","rion","zeth","kara","lyx","qen"];
-    const num = Math.floor(Math.random() * 900 + 100);
-    return a[Math.floor(Math.random()*a.length)] + b[Math.floor(Math.random()*b.length)] + "-" + num;
-  }
 
-  const playerNameEl = document.getElementById("playerName");
-  const btnRandom = document.getElementById("btnRandom");
   const actionsEl = document.getElementById("actions");
 
-  playerNameEl.value = localStorage.getItem("dara_playerName") || randomName();
-  localStorage.setItem("dara_playerName", playerNameEl.value);
-
-  playerNameEl.addEventListener("input", () => {
-    localStorage.setItem("dara_playerName", playerNameEl.value.trim());
-  });
-
-  btnRandom.addEventListener("click", () => {
-    playerNameEl.value = randomName();
-    localStorage.setItem("dara_playerName", playerNameEl.value);
-  });
 
   // --- Cooldown state ---
   const cooldownUntil = new Map(); // actionId -> timestamp(ms)
@@ -308,38 +331,35 @@
         const actionId = a.id;
         const cdSec = a.cd;
 
-        // block if cooldown active
-        const remaining = getRemaining(actionId);
-        if (remaining > 0) return;
+        if (getRemaining(actionId) > 0) return;
 
-        const userName = (playerNameEl.value || "Unknown").trim();
-        if (!userName) return;
+        const userName = getPlayerName();
+        if (!userName) {
+          console.warn("No playerName in localStorage yet");
+          return;
+        }
 
-        // start cooldown immediately (UI feels responsive)
         startCooldown(actionId, cdSec);
-        tickCooldowns(); // update UI instantly
+        tickCooldowns();
 
-		actionTarget="Chika";
-        // send action
+        
         try {
           await fetch(ACTION_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
               gameId: "0",
               userName,
               actionId,
-			  actionTarget,
+              actionTarget,
               actionMsg: actionId
             })
           });
         } catch (e) {
           console.error("Action POST failed:", e);
-          // optional: rollback cooldown on failure
-          // cooldownUntil.delete(actionId);
         }
       });
-
+      
       actionsEl.appendChild(btn);
     }
   }
@@ -357,27 +377,21 @@
   // --- Statbar update (optional, your server should return {hp, energy, mana} 0..100) ---
   async function updateBars() {
 	  try {
-		const playerName = (document.getElementById("playerName")?.value
-		  || localStorage.getItem("dara_playerName")
-		  || "Unknown").trim();
+      const res = await fetch("/api/v001/darawebgame/state", {
+              headers: authHeaders(),
+              cache: "no-store"
+              });
 
-		const res = await fetch("/api/v001/darawebgame/state", {
-            headers: {
-                "X-Player-Name": playerName
-            },
-            cache: "no-store"
-            });
+      if (!res.ok) {
+        console.error("state HTTP", res.status, await res.text());
+        return;
+      }
 
-		if (!res.ok) {
-		  console.error("state HTTP", res.status, await res.text());
-		  return;
-		}
-
-		const s = await res.json();
-
-		document.getElementById("hp").style.width = `${Number(s.hpPct ?? 100)}%`;
-		document.getElementById("en").style.width = `${Number(s.energyPct ?? 100)}%`;
-		document.getElementById("mp").style.width = `${Number(s.manaPct ?? 100)}%`;
+      const s = await res.json();
+      console.log("Bar Values:", s);
+      document.getElementById("hp").style.width = `${Number(s.hpPct ?? 100)}%`;
+      document.getElementById("en").style.width = `${Number(s.energyPct ?? 100)}%`;
+      document.getElementById("mp").style.width = `${Number(s.manaPct ?? 100)}%`;
 		} catch (e) {
 		console.error("updateBars failed:", e);
 	  }
@@ -387,8 +401,14 @@
   setInterval(tickCooldowns, 100);
   tickCooldowns();
 
-  setInterval(updateBars, 1000);
+  setInterval(updateBars, 5000);
   updateBars();
+
+  // einmalig + alle 2s (falls index.html es später setzt)
+  renderPlayerName();
+  setInterval(renderPlayerName, 2000);
+
+
 </script>
 
 </body>

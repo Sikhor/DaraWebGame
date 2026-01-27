@@ -8,11 +8,13 @@
 #include "httplib.h"
 #include "json.hpp"
 #include "main.h"
+#include "auth.h"
 #include "parse.h"
 #include "combatlog.h"
 #include "CombatDirector.h"
 
 CombatDirector* g_combatDirector = nullptr;
+
 
 void TrimHistory(std::vector<json>& hist);
 
@@ -20,8 +22,8 @@ void TrimHistory(std::vector<json>& hist);
 auto AddCorsHeaders = [](httplib::Response& res)
 {
     res.set_header("Access-Control-Allow-Origin", "*");
-    res.set_header("Access-Control-Allow-Headers", "Content-Type");
-    res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 };
 
 static std::unordered_map<std::string, std::shared_ptr<GameState>> g_stateByGameId;
@@ -42,6 +44,44 @@ std::mutex MobsMutex;
 
 CombatLog CombatLogState(Players, PlayersMutex, Mobs, MobsMutex);
 std::string Narrative= "Some cool story that I have here ..";
+
+static std::string GeneratePlayerName(const std::string& base)
+{
+   static const std::vector<std::string> a = {
+        "Zan","Ista","Vor","Kel","Ryn","Tar","Mal","Zen","Dro","Tun","Tro","Ari"
+    };
+    static const std::vector<std::string> b = {
+        "drax","korr","naris","vane","thos","mir","dahl","rion","zeth","kara","lyx","qen"
+    };
+
+    // Zufallsgenerator (einmal pro Thread initialisiert)
+    static thread_local std::mt19937 rng{ std::random_device{}() };
+
+    std::uniform_int_distribution<size_t> distA(0, a.size() - 1);
+    std::uniform_int_distribution<size_t> distB(0, b.size() - 1);
+    std::uniform_int_distribution<int> distNum(100, 999);
+
+    return a[distA(rng)] + b[distB(rng)] + "-" + std::to_string(distNum(rng));
+}
+
+std::string NewPlayer(const std::string& userName,
+                      const std::string& displayName,
+                      const std::string& pictureUrl)
+{
+    std::cout << "[LOGIN] Player: " << userName
+              << " (" << displayName << ")\n";
+
+    std::string playerName = GeneratePlayerName(displayName);
+    // Your join logic:
+    g_combatDirector->AddOrUpdatePlayer(playerName);
+    //GetOrCreatePlayer(userName);
+
+    // Optional: welcome narrative / combatlog
+    CombatLogState.PushPlayerLog(playerName, "You arrive on Dara III.", "talk");
+    return playerName;
+}
+
+
 
 std::string GetOpenAIKey()
 {
@@ -440,6 +480,14 @@ std::string ContactAI(
 
 }
 
+void InitialActions()
+{
+    std::srand((unsigned int)std::time(nullptr));
+    // Example initial actions to setup the game state
+    g_combatDirector->AddOrUpdateMob("Chicka");
+    g_combatDirector->AddOrUpdateMob("Goblin");
+    g_combatDirector->AddOrUpdateMob("Orc Warrior");
+}
 
 static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vector<PendingAction> actionsCopy)
 {
@@ -492,6 +540,7 @@ int main()
 {
     g_combatDirector = new CombatDirector("DefaultGame");
     httplib::Server server;
+    RegisterAuthRoutes(server);
     
     server.Options("/action",
         [](const httplib::Request&, httplib::Response& res)
@@ -501,115 +550,48 @@ int main()
         }
     );
 
-    server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
+server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
 {
     AddCorsHeaders(res);
 
-    try
-    {
-        auto body = json::parse(req.body);
-
-        std::string gameId    = body.at("gameId").get<std::string>();
-        std::string userName  = body.at("userName").get<std::string>();
-        std::string actionId  = body.at("actionId").get<std::string>();
-        std::string actionTarget  = body.at("actionTarget").get<std::string>();
-        std::string actionMsg = body.at("actionMsg").get<std::string>();
-
-        int myTurn = 0;
-        std::string err;
-        g_combatDirector->AddOrUpdatePlayer(userName);
-        bool ok= g_combatDirector->SubmitPlayerAction(userName, actionId, actionTarget, actionMsg, &err);
-        if(ok==false){
-            std::cout << "SubmitPlayerAction failed: "<< err <<std::endl;
-        }
-        if(!err.empty()){
-            res.status = 400;
-            res.set_content(R"({"status":"error","message":")"+ err +R"("})", "application/json");
-            return;
-        }else{
-            std::cout << g_combatDirector->GetStateSnapshotJson().dump() << std::endl;
-        }
-
-        auto state = GetGameState(gameId);
-
-        bool shouldStartResolver = false;
-        std::vector<PendingAction> actionsToResolve;
-
-        {
-            std::lock_guard<std::mutex> lock(state->mtx);
-
-            myTurn = state->currentTurn;
-
-            // Prevent same player submitting twice in same turn (optional but recommended)
-            for (const auto& a : state->pending)
-            {
-                if (a.userName == userName)
-                {
-                    json out = {
-                        {"status", "error"},
-                        {"message", "Player already submitted action for this turn"},
-                        {"gameId", gameId},
-                        {"turn", myTurn}
-                    };
-                    res.status = 409;
-                    res.set_content(out.dump(), "application/json");
-                    return;
-                }
-            }
-
-            state->pending.push_back({userName, actionId, actionMsg});
-
-            if(userName=="")std::cout << "ERROR Empty Username received\n";
-            GetOrCreatePlayer(userName);
-            // Debug Message what has been received
-            // std::cout << "Received Action:" << userName << " "<< actionId << " "<< actionMsg<< "\n";
-
-            // If enough actions collected, launch resolver once
-            if (!state->resolving && (int)state->pending.size() >= state->expectedPlayers)
-            {
-                state->resolving = true;
-                actionsToResolve = state->pending; // copy
-                state->pending.clear();
-                state->currentTurn++; // immediately advance turn for next submissions
-                shouldStartResolver = true;
-            }
-        }
-
-        if (shouldStartResolver)
-        {
-            int resolvedTurn = myTurn;
-
-            // Run AI call in the background so POST can return immediately
-            std::thread([gameId, resolvedTurn, actions = std::move(actionsToResolve)]() mutable {
-                auto st = GetGameState(gameId);
-                try {
-                    ResolveTurnAsync(gameId, resolvedTurn, std::move(actions));
-                } catch (const std::exception& e) {
-                    // log
-                } catch (...) {
-                    // log
-                }
-                std::lock_guard<std::mutex> lock(st->mtx);
-                st->resolving = false;
-            }).detach();
-        }
-
-        // Immediate ACK to client
-        json out = {
-            {"status", "submitted"},
-            {"gameId", gameId},
-            {"turn", myTurn},
-            {"userName", userName},
-            {"actionId", actionId}
-        };
-
-        res.set_content(out.dump(), "application/json");
+    Session session;
+    std::string serr;
+    if (!GetSessionFromRequest(req, session, &serr)) {
+        res.status = 401;
+        res.set_content((json{{"status","error"},{"message",serr}}).dump(), "application/json");
+        return;
     }
-    catch (...)
-    {
+
+    const std::string& playerName = session.playerName;
+    if (playerName.empty()) {
         res.status = 400;
-        res.set_content(R"({"status":"error","message":"Invalid JSON"})", "application/json");
+        res.set_content(R"({"status":"error","message":"Session has no playerName"})", "application/json");
+        return;
     }
+
+    auto body = json::parse(req.body);
+
+    std::string gameId       = body.value("gameId", "0");
+    std::string actionId     = body.value("actionId", "");
+    std::string actionTarget = body.value("actionTarget", "");
+    std::string actionMsg    = body.value("actionMsg", "");
+    std::cout << "Received action from player " << playerName
+              << ": " << actionId << " " << actionTarget << " Msg: " << actionMsg << "\n";
+
+    std::string err;
+    g_combatDirector->AddOrUpdatePlayer(playerName);
+    bool ok = g_combatDirector->SubmitPlayerAction(playerName, actionId, actionTarget, actionMsg, &err);
+
+    if (!ok || !err.empty()) {
+        res.status = 400;
+        res.set_content((json{{"status","error"},{"message", err}}).dump(), "application/json");
+        return;
+    }
+
+    g_combatDirector->ApplyDamageToPlayer(playerName, 10.f, &err); // trigger condition updates
+
+    res.status = 200;
+    res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
 });
 
 
@@ -617,45 +599,25 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
 {
     AddCorsHeaders(res);
     res.status = 200;
-    // Example 
-    //res.set_content(R"({"hpPct":"20", "energyPct": "50", "manaPct": "30", "level": "1", "experience": "0", "gold": "100"})", "application/json");
 
-    std::cout << g_combatDirector->GetStateSnapshotJson().dump() << std::endl;
-
-    auto it = req.headers.find("X-Player-Name");
-    if (it == req.headers.end() || it->second.empty()) {
-        res.status = 400;
-        res.set_content(R"({"error":"Missing player identity"})", "application/json");
+    Session session;
+    std::string err;
+    if (!GetSessionFromRequest(req, session, &err)) {
+        res.status = 401;
+        res.set_content(
+            (json{{"status","error"},{"message",err}}).dump(),
+            "application/json"
+        );
         return;
     }
-    if(DARA_DEBUG_PLAYERSTATS) {
-        std::cout << "Fetching state for player: " << it->second << std::endl;
-    } 
+    // DAS ist jetzt deine Player-Identität
+    const std::string& playerName = session.playerName;
 
+    json out = g_combatDirector->GetPlayerStateJson(playerName);
 
-    const std::string& userName = it->second;
+    res.set_content(out.dump(), "application/json");
+    if(DARA_DEBUG_PLAYERSTATS)std::cout << "PlayerState for " << playerName << ": " << out.dump() <<std::endl;
 
-    Combatant& player = GetOrCreatePlayer(userName);
-    res.set_content(
-        R"({
-            "hpPct": ")" + std::to_string(player.GetHPPercentage()) + R"(",
-            "energyPct": ")" + std::to_string(player.GetEnergyPercentage()) + R"(",
-            "manaPct": ")" + std::to_string(player.GetManaPercentage()) + R"(",
-            "level": ")" + std::to_string(player.GetLevel()) + R"(",
-            "experience": ")" + std::to_string(player.GetExperience()) + R"(",
-            "gold": ")" + std::to_string(player.GetGold()) + R"("
-        })",
-        "application/json"
-    );
-    if(DARA_DEBUG_PLAYERSTATS) {
-        std::cout << "Player State for " << userName << " HP%: " << player.GetHPPercentage()
-                  << " Energy%: " << player.GetEnergyPercentage()
-                  << " Mana%: " << player.GetManaPercentage()
-                  << " Level: " << player.GetLevel()
-                  << " Experience: " << player.GetExperience()
-                  << " Gold: " << player.GetGold()
-                  << std::endl;
-    }
     return;
  
 
@@ -664,10 +626,10 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
 server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
 {
     AddCorsHeaders(res);
+    res.status = 200;
     
     nlohmann::json j;
-    j["narrative"] = Narrative;
-
+    j["narrative"] = Narrative; 
     res.set_content(j.dump(), "application/json");
     return;
 
@@ -676,16 +638,14 @@ server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
 server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
 {
     AddCorsHeaders(res);
+    res.status = 204;
 
-    res.status = 200;
     const std::string body = CombatLogState.GetJsonCached();
     res.set_content(body, "application/json");
 
-    return;
-    /*
-    if (true) //(gameIdIt.empty() || turnIt.empty())
+    if (true) 
     {
-        res.status = 400;
+        res.status = 200;
         res.set_content(
             R"({
             "Players": [
@@ -703,17 +663,32 @@ server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
             );
             return;
     }
-            */
+    return;
  
 });
 
+server.Options("/register", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+server.Options("/login", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+server.Options("/logout", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+server.Options("/me", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+
     g_combatDirector->Start();
-    GetOrCreateMob("Chicka");
 
+    SetOnNewPlayerCallback(NewPlayer);
+    InitialActions();
     std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";
-    //std::string apiKey = GetOpenAIKey();
-    //std::cout << "API key length = " << apiKey.length() << "\n";
-
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
 

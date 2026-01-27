@@ -6,6 +6,8 @@
 #include <mutex>
 #include <string>
 #include <chrono>
+#include <unordered_set>
+#include <random>
 #include "httplib.h"
 #include "json.hpp"
 #include "combatant.h"
@@ -23,6 +25,11 @@ inline constexpr int DARA_DEBUG_AI_REPLIES= 1;
 inline constexpr int DARA_DEBUG_MSGSTATS= 0;
 inline constexpr int DARA_DEBUG_PLAYERSTATS= 0;
 
+struct UserAccount
+{
+    std::string userName;
+    std::string passwordHash;
+};
 
 
 struct PendingAction

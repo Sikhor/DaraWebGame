@@ -1,11 +1,17 @@
 <!doctype html>
-<html>
+<html lang="de">
 <head>
-<<style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dara Story</title>
+
+<style>
 body {
   background: transparent;
   padding: 10px;
   line-height: 1.5;
+  font-family: Arial, sans-serif;
+  color: #fff;
 }
 
 #story {
@@ -35,67 +41,129 @@ body {
 
 .chat-msg {
   color: #ffffff;
+  white-space: pre-wrap; /* keep newlines from narrative */
+}
+
+.muted {
+  opacity: 0.75;
 }
 </style>
 </head>
+
 <body>
-<div id="story">Waiting for Chiana…</div>
+  <button id="btnLogout">Logout</button>
+  <div id="story">Waiting for Chiana…</div>
 
 <script>
-const STORY_ICON_URL =
-  "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png";
-const storyDiv = document.getElementById("story");
-const storyHistory = [];           // keeps the last entries
-const MAX_STORY_LINES = 10;
-let lastNarrative = "";            // avoid duplicates
+  // ============================================================
+  // Logout button
+  // ============================================================
+  document.getElementById("btnLogout").addEventListener("click", () => {
+  // tell parent to logout
+  window.parent.postMessage({ type: "LOGOUT" }, "*");
+});
+  // ============================================================
+  // Auth helpers (Google-only)
+  // ============================================================
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[m]));
-}
-
-function renderStory() {
-  storyDiv.innerHTML = storyHistory
-    .map(t => `
-      <div class="chat-row">
-        <div class="chat-icon">
-          <img src="${STORY_ICON_URL}" alt="story">
-        </div>
-        <div class="chat-msg">
-          ${escapeHtml(t)}
-        </div>
-      </div>
-    `)
-    .join("");
-
-  storyDiv.scrollTop = storyDiv.scrollHeight;
-}
-
-
-async function loadStory() {
-  try {
-    const res = await fetch("https://gameinfo.daraempire.com/api/v001/darawebgame/story", { cache: "no-store" });
-    const s = await res.json();
-
-    const narrative = (s.narrative ?? "").trim();
-    if (!narrative) return;
-
-    // only add if it actually changed
-    if (narrative === lastNarrative) return;
-    lastNarrative = narrative;
-
-    storyHistory.push(narrative);
-    if (storyHistory.length > MAX_STORY_LINES) storyHistory.shift();
-
-    renderStory();
-  } catch (e) {
-    console.error("loadStory failed:", e);
+  function getToken() {
+    return localStorage.getItem("sessionToken") || "";
   }
-}
 
-setInterval(loadStory, 2000);
-loadStory();
+  function authHeaders(extra = {}) {
+    const t = getToken();
+    if (!t) return extra;
+    return { ...extra, "Authorization": "Bearer " + t };
+  }
+
+  // ============================================================
+  // Endpoint config (recommended: same origin via reverse proxy)
+  // ============================================================
+
+  const STORY_URL = "/api/v001/darawebgame/story";
+
+  // If you MUST call cross-origin:
+  // const STORY_URL = "https://gameinfo.daraempire.com/api/v001/darawebgame/story";
+
+  // ============================================================
+  // UI settings
+  // ============================================================
+
+  const STORY_ICON_URL =
+    "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png";
+
+  const storyDiv = document.getElementById("story");
+  const storyHistory = [];
+  const MAX_STORY_LINES = 10;
+  let lastNarrative = "";
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
+  }
+
+  function renderStory() {
+    storyDiv.innerHTML = storyHistory
+      .map(t => `
+        <div class="chat-row">
+          <div class="chat-icon">
+            <img src="${STORY_ICON_URL}" alt="story">
+          </div>
+          <div class="chat-msg">${escapeHtml(t)}</div>
+        </div>
+      `)
+      .join("");
+
+    storyDiv.scrollTop = storyDiv.scrollHeight;
+  }
+
+  async function loadStory() {
+    try {
+      const token = getToken();
+      if (!token) {
+        storyDiv.innerHTML = `<div class="muted">Not logged in. Please login on the main page.</div>`;
+        return;
+      }
+
+      const res = await fetch(STORY_URL, {
+        headers: authHeaders(),
+        cache: "no-store"
+      });
+
+      if (res.status === 401) {
+        storyDiv.innerHTML = `<div class="muted">Unauthorized. Please login again on the main page.</div>`;
+        return;
+      }
+
+      if (!res.ok) {
+        const txt = await res.text();
+        storyDiv.innerHTML = `<div class="muted">Story error: HTTP ${res.status}<br>${escapeHtml(txt)}</div>`;
+        return;
+      }
+
+      const s = await res.json();
+
+      const narrative = (s.narrative ?? "").trim();
+      if (!narrative) return;
+
+      // only add if it actually changed
+      if (narrative === lastNarrative) return;
+      lastNarrative = narrative;
+
+      storyHistory.push(narrative);
+      if (storyHistory.length > MAX_STORY_LINES) storyHistory.shift();
+
+      renderStory();
+    } catch (e) {
+      console.error("loadStory failed:", e);
+      storyDiv.innerHTML = `<div class="muted">loadStory failed: ${escapeHtml(String(e))}</div>`;
+    }
+  }
+
+  setInterval(loadStory, 2000);
+  loadStory();
 </script>
 </body>
 </html>
+

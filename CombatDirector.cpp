@@ -63,8 +63,50 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
 
     if (!Players.count(playerName))
         Players.emplace(playerName, std::make_shared<Combatant>(playerName, ECombatantType::Player, MAXHP, MAXENERGY, MAXMANA));
-
+        
     Cv.notify_all();
+}
+
+json CombatDirector::GetPlayerStateJson(const std::string& playerName) const
+{
+    std::shared_ptr<Combatant> p;
+
+    { // nur kurz locken
+        std::lock_guard<std::mutex> lk(CacheMutex);
+        auto it = Players.find(playerName);
+        if (it == Players.end())
+            return json{{"error","Unknown player"}};
+
+        p = it->second; // shared_ptr kopieren
+    }
+
+    // außerhalb vom CacheMutex lesen
+    json out;
+    out["hpPct"]      = p->GetHPPercentage();
+    out["energyPct"]  = p->GetEnergyPercentage();
+    out["manaPct"]    = p->GetManaPercentage();
+    out["level"]      = p->GetLevel();
+    out["experience"] = p->GetExperience();
+    out["gold"]       = p->GetGold();
+    return out;
+}
+
+bool CombatDirector::ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err)
+{
+    std::shared_ptr<Combatant> p;
+
+    {
+        std::lock_guard<std::mutex> lk(CacheMutex);
+        auto it = Players.find(playerName);
+        if (it == Players.end()) {
+            if (err) *err = "Unknown player";
+            return false;
+        }
+        p = it->second;
+    }
+
+    p->ApplyDamage(dmg); // außerhalb CacheMutex
+    return true;
 }
 
 void CombatDirector::RemovePlayer(const std::string& playerName)

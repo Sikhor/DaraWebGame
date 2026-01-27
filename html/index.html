@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <title>Dara – GameMaster UI</title>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
 body {
   margin: 0;
@@ -12,8 +14,35 @@ body {
   color: #e6e6e6;
 }
 
+/* ---------- LOGIN OVERLAY ---------- */
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #0c1220, #05070b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#loginBox {
+  background: rgba(15,20,35,0.95);
+  border: 1px solid #2a3340;
+  border-radius: 8px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+
+#loginBox h1 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: normal;
+}
+
+/* ---------- GAME LAYOUT ---------- */
 .layout {
-  display: grid;
+  display: none; /* hidden until logged in */
   grid-template-columns: 400px 1fr;
   grid-template-rows: 400px 1fr 120px;
   height: 100vh;
@@ -37,24 +66,43 @@ iframe {
 </head>
 
 <body>
-<div class="layout">
 
-  <!-- HUD -->
+<!-- ================= LOGIN OVERLAY ================= -->
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h1>Dara Online</h1>
+
+    <div id="g_id_onload"
+         data-client_id="510527062283-5v7dtu9tug798ba5bvcost3ur0at9grn.apps.googleusercontent.com"
+         data-callback="onGoogleCredential"
+         data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="sign_in_with"
+         data-shape="rectangular">
+    </div>
+  </div>
+</div>
+
+<!-- ================= GAME UI ================= -->
+<div class="layout" id="gameUI">
+
   <div class="panel" style="grid-column:1; grid-row:1;">
-    <iframe src="hud.html"></iframe>
+    <iframe id="combatLogFrame" src="https://gameinfo.daraempire.com/ui/combatlog.html"></iframe>
   </div>
 
-  <!-- Story -->
   <div class="panel" style="grid-column:2; grid-row:1 / span 2;">
-    <iframe src="story.html"></iframe>
+    <iframe id="storyFrame" src="story.html"></iframe>
   </div>
 
-  <!-- Log -->
   <div class="panel" style="grid-column:1; grid-row:2;">
-    <iframe src="combatlog.html"></iframe>
+    <iframe id="hudFrame" src="hud.html"></iframe>
   </div>
 
-  <!-- Action Input -->
   <div class="panel" style="grid-column:1 / span 2; grid-row:3; padding:8px;">
     <input id="action"
            placeholder="Your action..."
@@ -62,5 +110,99 @@ iframe {
   </div>
 
 </div>
+
+<script>
+  // --- Name generator ---
+  function randomName() {
+    const a = ["Zan","Ista","Vor","Kel","Ryn","Tar","Mal","Zen","Dro","Tun","Tro","Ari"];
+    const b = ["drax","korr","naris","vane","thos","mir","dahl","rion","zeth","kara","lyx","qen"];
+    const num = Math.floor(Math.random() * 900 + 100);
+    return a[Math.floor(Math.random()*a.length)] + b[Math.floor(Math.random()*b.length)] + "-" + num;
+  }
+/* ----------- LOGOUT --------------*/
+async function doLogout() {
+  const token = localStorage.getItem("sessionToken") || "";
+  localStorage.removeItem("sessionToken");
+  localStorage.removeItem("playerName");
+
+  // optional: backend session invalidieren
+  if (token) {
+    try {
+      await fetch("/api/v001/darawebgame/logout", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token }
+      });
+    } catch (e) {
+      console.warn("logout call failed:", e);
+    }
+  }
+
+  showLogin();
+}
+
+// receive logout request from HUD iframe
+window.addEventListener("message", (ev) => {
+  if (ev.data && ev.data.type === "LOGOUT") {
+    doLogout();
+  }
+});
+
+/* ---------- AUTH STATE ---------- */
+function showGame() {
+  document.getElementById("loginOverlay").style.display = "none";
+  document.getElementById("gameUI").style.display = "grid";
+
+   // reload iframes so they re-read localStorage token
+  document.getElementById("hudFrame").contentWindow.location.reload();
+  document.getElementById("storyFrame").contentWindow.location.reload();
+  document.getElementById("combatLogFrame").contentWindow.location.reload();
+}
+
+function showLogin() {
+  localStorage.removeItem("sessionToken");
+  document.getElementById("loginOverlay").style.display = "flex";
+  document.getElementById("gameUI").style.display = "none";
+}
+
+/* ---------- GOOGLE CALLBACK ---------- */
+async function onGoogleCredential(response) {
+  const r = await fetch("/api/v001/darawebgame/auth/google", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken: response.credential })
+  });
+
+  const j = await r.json();
+  if (!r.ok) {
+    alert(j.message || "Login failed");
+    return;
+  }
+
+  localStorage.setItem("sessionToken", j.token);
+  localStorage.setItem("playerName", j.playerName || "Unknown Agent");
+  showGame();
+}
+
+/* ---------- AUTO LOGIN ON RELOAD ---------- */
+(async function autoLogin() {
+  const token = localStorage.getItem("sessionToken");
+  if (!token) {
+    showLogin();
+    return;
+  }
+
+  // Verify token with backend
+  const r = await fetch("/me", {
+    headers: { "Authorization": "Bearer " + token }
+  });
+
+  if (r.ok) {
+    showGame();
+  } else {
+    showLogin();
+  }
+})();
+</script>
+
 </body>
 </html>
