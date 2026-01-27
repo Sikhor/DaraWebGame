@@ -39,6 +39,50 @@
     padding: 0 10px;
     outline: none;
   }
+  .bottom {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #2a3340;
+    background: rgba(10,14,20,0.85);
+    border-radius: 6px;
+
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+  }
+  .chat-input {
+    flex: 1;
+    height: 34px;                 /* kleiner */
+    border-radius: 999px;         /* chat bubble look */
+    border: 1px solid #2a3340;
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    padding: 0 14px;
+    outline: none;
+    font-size: 14px;
+  }
+
+  .chat-input::placeholder {
+    opacity: 0.65;
+  }
+
+  .chat-input:focus {
+    border-color: rgba(120,170,255,0.55);
+    box-shadow: 0 0 0 3px rgba(120,170,255,0.15);
+  }
+
+  .target-input {
+    width: 140px;                 /* kleiner Target */
+    flex: 0 0 auto;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #2a3340;
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    padding: 0 10px;
+    outline: none;
+    font-size: 13px;
+  }
 
   button {
     height: 34px;
@@ -145,6 +189,22 @@
   .mp { background: #3498db; }
 
   .hint { font-size: 11px; opacity: 0.8; margin-top: 8px; }
+
+  .send-btn {
+    visibility: hidden;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid #2a3340;
+    background: rgba(30,40,60,0.9);
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+
+  .send-btn:hover { filter: brightness(1.15); }
+  .send-btn:active { transform: translateY(1px); }
 </style>
 </head>
 
@@ -190,6 +250,22 @@
 
   <div class="actions" id="actions"></div>
   </div>
+
+  <div class="bottom">
+  <input id="actionTarget"
+         class="target-input"
+         placeholder="Your target"
+         value="" />
+
+  <input id="actionMsg"
+         class="chat-input"
+         placeholder="Type a message… (Enter to send)" />
+
+  <button id="btnSend"
+          class="send-btn">
+    Send
+  </button>
+</div>
 
 
 <script>
@@ -255,9 +331,7 @@ function renderPlayerName() {
     { id: "evac",       label: "Evac",    cd: 20 },
   ];
 
-
   const actionsEl = document.getElementById("actions");
-
 
   // --- Cooldown state ---
   const cooldownUntil = new Map(); // actionId -> timestamp(ms)
@@ -296,6 +370,18 @@ function renderPlayerName() {
     const y = 100 - pct;
     fill.style.transform = `translateY(${y}%)`;
   }
+
+  const actionTargetEl = document.getElementById("actionTarget");
+  const actionMsgEl = document.getElementById("actionMsg");
+  const btnSend = document.getElementById("btnSend");
+
+  function getActionTarget() {
+    return (actionTargetEl.value || "").trim();
+  }
+  function getActionMsg() {
+    return (actionMsgEl.value || "").trim();
+  }
+
 
   // --- Build buttons with icons ---
   function buildButtons() {
@@ -342,7 +428,9 @@ function renderPlayerName() {
         startCooldown(actionId, cdSec);
         tickCooldowns();
 
-        
+        const actionTarget = getActionTarget();
+        const actionMsg = getActionMsg() || actionId;  // fallback
+
         try {
           await fetch(ACTION_URL, {
             method: "POST",
@@ -352,7 +440,7 @@ function renderPlayerName() {
               userName,
               actionId,
               actionTarget,
-              actionMsg: actionId
+              actionMsg
             })
           });
         } catch (e) {

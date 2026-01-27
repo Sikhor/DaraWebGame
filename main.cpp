@@ -588,7 +588,11 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
         return;
     }
 
-    g_combatDirector->ApplyDamageToPlayer(playerName, 10.f, &err); // trigger condition updates
+    std::string logMsg;
+    g_combatDirector->ApplyDamageToPlayer(actionTarget, 10.f, &logMsg); // trigger condition updates
+    if(logMsg .empty()==false){
+        std::cout << "ApplyDamageToPlayer logMsg: " << logMsg << "\n";
+    }
 
     res.status = 200;
     res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
