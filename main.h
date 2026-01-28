@@ -11,19 +11,8 @@
 #include "httplib.h"
 #include "json.hpp"
 #include "combatant.h"
+#include "DaraConfig.h"
 
-inline constexpr int WEBSERVER_PORT= 9050;
-inline constexpr int PLAYERS_EXPECTED= 1;
-inline constexpr int PLAYERS_MAX= 1;
-
-// Debug Flags
-inline constexpr int DARA_DEBUG_MESSAGES= 0;
-inline constexpr int DARA_DEBUG_NEWMESSAGES= 0;
-inline constexpr int DARA_DEBUG_ATTACKS= 0;
-inline constexpr int DARA_DEBUG_AI_ACTIONS= 0;
-inline constexpr int DARA_DEBUG_AI_REPLIES= 1;
-inline constexpr int DARA_DEBUG_MSGSTATS= 0;
-inline constexpr int DARA_DEBUG_PLAYERSTATS= 0;
 
 struct UserAccount
 {

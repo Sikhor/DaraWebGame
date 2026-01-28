@@ -112,7 +112,7 @@ static std::string GetEnvOrDefault(const char* name, const std::string& def)
 //   GOOGLE_JWKS_URL=https://www.googleapis.com/oauth2/v3/certs
 static std::string GoogleClientId()
 {
-    return "510527062283-5v7dtu9tug798ba5bvcost3ur0at9grn.apps.googleusercontent.com"; //GetEnvOrThrow("GOOGLE_CLIENT_ID");
+    return GetEnvOrThrow("GOOGLE_CLIENT_ID");
 }
 
 static std::string GoogleJwksUrl()

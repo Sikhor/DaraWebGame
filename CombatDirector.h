@@ -42,13 +42,22 @@ public:
 
     // Player/mob management (call when joining/leaving/spawning)
     void AddOrUpdatePlayer(const std::string& playerName);
+    bool ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err);
     void RemovePlayer(const std::string& playerName);
 
     json GetPlayerStateJson(const std::string& playerName) const;
-    bool ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err);
 
     void AddOrUpdateMob(const std::string& mobName);
+    bool ApplyDamageToMob(const std::string& mobName, float dmg, std::string* err);
     void RemoveMob(const std::string& mobName);
+
+    // game state management
+    json GetCombatState() const;
+    json SerializePlayersLocked() const;
+    json SerializeMobsLocked() const;
+    // Snapshot helpers for logging
+    json SerializePlayersAllLocked() const;
+    json SerializeMobsAllLocked() const;
 
     // Submit action for the currently-open turn (server authoritative).
     // If the turn is resolving, the action is queued for the next turn.
@@ -61,6 +70,8 @@ public:
 
     // Read-only snapshot for GET /state
     json GetStateSnapshotJson(size_t lastLogLines = 30) const;
+    // Convenience: last N lines (you already do something similar in GetStateSnapshotJson)
+    json GetLogTailJson(size_t lastN) const;
 
     // Configuration
     void SetTurnTimeout(std::chrono::milliseconds timeout);
@@ -94,9 +105,6 @@ private:
 
     void AppendLogLocked(uint64_t turnId, const std::vector<std::string>& lines);
 
-    // Snapshot helpers (replace with your real combatant serialization)
-    json SerializePlayersLocked() const;
-    json SerializeMobsLocked() const;
 
 private:
     const std::string GameId;
@@ -127,7 +135,7 @@ private:
     std::unordered_map<std::string, PlayerAction> BufferedActions;  // playerName -> action
 
     // config
-    std::chrono::milliseconds TurnTimeout { 20000 };
+    std::chrono::milliseconds TurnTimeout { 60000 };
 
     // injected AI callback
     AiCallback AiCb;

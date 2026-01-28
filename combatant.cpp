@@ -120,17 +120,17 @@ void Combatant::ApplyDamage(float dmg)
     if (HP < 0.f) HP = 0.f;
 }
 
-float Combatant::GetHPPercentage() const
+float Combatant::GetHPPct() const
 {
     return (MaxHP > 0.f) ? (HP / MaxHP) * 100.f : 0.f;
 }
 
-float Combatant::GetManaPercentage() const
+float Combatant::GetManaPct() const
 {
     return (MaxMana > 0.f) ? (Mana / MaxMana) * 100.f : 0.f;
 }
 
-float Combatant::GetEnergyPercentage() const
+float Combatant::GetEnergyPct() const
 {
     return (MaxEnergy > 0.f) ? (Energy / MaxEnergy) * 100.f : 0.f;
 }
@@ -147,9 +147,9 @@ json Combatant::ToJson() const
     j["MaxEnergy"] = MaxEnergy;
     j["Mana"] = Mana;
     j["MaxMana"] = MaxMana;
-    j["HPPercentage"] = GetHPPercentage();
-    j["EnergyPercentage"] = GetEnergyPercentage();
-    j["ManaPercentage"] = GetManaPercentage();
+    j["HPPct"] = GetHPPct();
+    j["EnergyPct"] = GetEnergyPct();
+    j["ManaPct"] = GetManaPct();
     j["Conditions"] = json::array();
     for (const auto& condition : Conditions) {
         j["Conditions"].push_back(static_cast<int>(condition));

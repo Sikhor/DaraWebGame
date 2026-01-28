@@ -16,42 +16,87 @@ body {
 
 #story {
   color: #ffffff;
-  max-height: 60vh;
+  height: 100vh;
+  max-height: none;
   overflow-y: auto;
+  padding-top: 44px; /* space for logout button */
 }
 
-.chat-row {
+/* ---------- CHAT WITH AVATARS ---------- */
+.chat-msg {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-.chat-icon {
-  width: 32px;
-  height: 32px;
+.chat-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 2px;
+
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(120,140,200,0.25);
 }
 
-.chat-icon img {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
+/* message bubble */
+.chat-body {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(8,12,20,0.65);
+  border: 1px solid rgba(80,100,160,0.15);
+  line-height: 1.4;
+  flex: 1;
 }
 
-.chat-msg {
-  color: #ffffff;
-  white-space: pre-wrap; /* keep newlines from narrative */
+/* Variants */
+.chat-msg.system .chat-body {
+  color: #9aa7ff;
+  font-family: monospace;
+  background: rgba(20,30,60,0.4);
+}
+
+.chat-msg.station .chat-body { color: #ffd6d6; }
+.chat-msg.ai .chat-body      { color: #c6f0ff; }
+.chat-msg.control .chat-body {
+  color: #d4e0ff;
+  background: rgba(20,30,40,0.7);
 }
 
 .muted {
   opacity: 0.75;
 }
+
+/* ---------- TOP LOGOUT BUTTON ---------- */
+.top-logout-btn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #2a3340;
+  background: rgba(10,14,20,0.75);
+  color: #e6e6e6;
+  font-size: 13px;
+  cursor: pointer;
+
+  backdrop-filter: blur(6px);
+}
+
+.top-logout-btn:active {
+  transform: translateY(1px);
+}
 </style>
 </head>
 
 <body>
-  <button id="btnLogout">Logout</button>
+<button id="btnLogout" class="top-logout-btn">
+  Logout
+</button>
   <div id="story">Waiting for Chiana…</div>
 
 <script>
@@ -103,20 +148,31 @@ body {
     }[m]));
   }
 
-  function renderStory() {
-    storyDiv.innerHTML = storyHistory
-      .map(t => `
-        <div class="chat-row">
-          <div class="chat-icon">
-            <img src="${STORY_ICON_URL}" alt="story">
-          </div>
-          <div class="chat-msg">${escapeHtml(t)}</div>
-        </div>
-      `)
-      .join("");
+  function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
 
-    storyDiv.scrollTop = storyDiv.scrollHeight;
-  }
+// preserve newlines in narrative
+function toSafeHtmlWithBreaks(s) {
+  return escapeHtml(s).replace(/\n/g, "<br>");
+}
+
+function renderStory() {
+  storyDiv.innerHTML = storyHistory
+    .map(t => `
+      <div class="chat-msg ai">
+        <img class="chat-avatar" src="${STORY_ICON_URL}" alt="Chiana">
+        <div class="chat-body">
+          ${toSafeHtmlWithBreaks(t)}
+        </div>
+      </div>
+    `)
+    .join("");
+
+  storyDiv.scrollTop = storyDiv.scrollHeight;
+}
 
   async function loadStory() {
     try {
@@ -144,7 +200,8 @@ body {
 
       const s = await res.json();
 
-      const narrative = (s.narrative ?? "").trim();
+      //const narrative = (s.narrative ?? "").trim();
+      const narrative= "new Message"+ Math.floor(Math.random()*100); // TESTING ONLY
       if (!narrative) return;
 
       // only add if it actually changed

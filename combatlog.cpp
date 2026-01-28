@@ -58,7 +58,7 @@ json CombatLog::BuildJson() const
 
         out["Players"].push_back({
             {"player", name},
-            {"hpPct", round2(ptr->GetHPPercentage())},
+            {"hpPct", round2(ptr->GetHPPct())},
             {"combatLog", msg},
             {"action", action}
         });
@@ -75,7 +75,7 @@ json CombatLog::BuildJson() const
 
         out["Mobs"].push_back({
             {"mob", name},
-            {"hpPct", round2(ptr->GetHPPercentage())},   // if mobs use absolute HP, change to ptr->GetHP() or add GetHPPercentage for mobs too
+            {"hpPct", round2(ptr->GetHPPct())},   // if mobs use absolute HP, change to ptr->GetHP() or add GetHPPercentage for mobs too
             {"combatLog", msg},
             {"action", action}
         });

@@ -88,9 +88,9 @@ public:
 
     void ApplyDamage(float dmg);
 
-    float GetHPPercentage() const;
-    float GetManaPercentage() const;
-    float GetEnergyPercentage() const;
+    float GetHPPct() const;
+    float GetManaPct() const;
+    float GetEnergyPct() const;
     json ToJson() const;
 };
 

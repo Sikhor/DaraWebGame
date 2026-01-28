@@ -2,6 +2,7 @@
 #include "combatant.h"
 #include <algorithm>
 #include <iostream>
+#include "DaraConfig.h"
 
 CombatDirector::CombatDirector(std::string gameId)
     : GameId(std::move(gameId))
@@ -82,14 +83,60 @@ json CombatDirector::GetPlayerStateJson(const std::string& playerName) const
 
     // außerhalb vom CacheMutex lesen
     json out;
-    out["hpPct"]      = p->GetHPPercentage();
-    out["energyPct"]  = p->GetEnergyPercentage();
-    out["manaPct"]    = p->GetManaPercentage();
+    out["hpPct"]      = p->GetHPPct();
+    out["energyPct"]  = p->GetEnergyPct();
+    out["manaPct"]    = p->GetManaPct();
     out["level"]      = p->GetLevel();
     out["experience"] = p->GetExperience();
     out["gold"]       = p->GetGold();
     return out;
 }
+
+json CombatDirector::GetCombatState() const
+{
+    std::lock_guard<std::mutex> lk(CacheMutex);
+
+    json out;
+    out["Players"] = SerializePlayersLocked();
+    out["Mobs"]    = SerializeMobsLocked();
+
+    return out;
+}
+
+json CombatDirector::SerializePlayersLocked() const
+{
+    json arr = json::array();
+
+    for (const auto& [name, player] : Players)
+    {
+        json p;
+        p["player"]    = player->GetName();
+        p["hpPct"]     = player->GetHPPct();              // int 0–100
+        p["combatLog"] = "";   // string
+        p["action"]    = "";   // "attack", "defend", ...
+
+        arr.push_back(std::move(p));
+    }
+
+    return arr;
+}
+json CombatDirector::SerializeMobsLocked() const
+{
+    json arr = json::array();
+
+    for (const auto& [name, mob] : Mobs)
+    {
+        json m;
+        m["mob"]    = mob->GetName();
+        m["hpPct"]     = mob->GetHPPct();              // int 0–100
+        m["combatLog"] = "";   // string
+        m["action"]    = "";   // "attack", "defend", ...
+        arr.push_back(std::move(m));
+    }
+
+    return arr;
+}
+
 
 bool CombatDirector::ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err)
 {
@@ -109,6 +156,8 @@ bool CombatDirector::ApplyDamageToPlayer(const std::string& playerName, float dm
     return true;
 }
 
+
+
 void CombatDirector::RemovePlayer(const std::string& playerName)
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
@@ -127,6 +176,23 @@ void CombatDirector::AddOrUpdateMob(const std::string& mobName)
         Mobs.emplace(mobName, std::make_shared<Combatant>(mobName, ECombatantType::Mob, MAXHP, MAXENERGY, MAXMANA));
 }
 
+bool CombatDirector::ApplyDamageToMob(const std::string& mobName, float dmg, std::string* err)
+{
+    std::shared_ptr<Combatant> m;
+
+    {
+        std::lock_guard<std::mutex> lk(CacheMutex);
+        auto it = Mobs.find(mobName);
+        if (it == Mobs.end()) {
+            if (err) *err = "Unknown mob";
+            return false;
+        }
+        m = it->second;
+    }
+
+    m->ApplyDamage(dmg); // außerhalb CacheMutex
+    return true;
+}
 void CombatDirector::RemoveMob(const std::string& mobName)
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
@@ -225,7 +291,7 @@ CombatDirector::json CombatDirector::GetStateSnapshotJson(size_t lastLogLines) c
     return out;
 }
 
-CombatDirector::json CombatDirector::SerializePlayersLocked() const
+CombatDirector::json CombatDirector::SerializePlayersAllLocked() const
 {
     json arr = json::array();
     for (const auto& kv : Players)
@@ -241,7 +307,7 @@ CombatDirector::json CombatDirector::SerializePlayersLocked() const
     return arr;
 }
 
-CombatDirector::json CombatDirector::SerializeMobsLocked() const
+CombatDirector::json CombatDirector::SerializeMobsAllLocked() const
 {
     json arr = json::array();
     for (const auto& kv : Mobs)
@@ -316,6 +382,7 @@ void CombatDirector::ResolverLoop()
         std::vector<std::string> turnLog;
         turnLog.push_back("=== TURN " + std::to_string(turnId) + " ===");
         ResolvePlayers(actions, turnLog);
+
 
         // Step C: AI (no lock). Build snapshot under lock, then call AI unlocked.
         json aiRequest;
@@ -450,6 +517,53 @@ void CombatDirector::ResolveMobs(const json& aiJson,
 
     if (!Mobs.empty())
         outTurnLog.push_back("Mobs act (placeholder).");
+
+    // Build a list of alive players (shared_ptrs)
+    std::vector<std::shared_ptr<Combatant>> alivePlayers;
+    alivePlayers.reserve(Players.size());
+    for (const auto& [playerName, p] : Players)
+    {
+        if (p && p->GetHP() > 0)
+            alivePlayers.push_back(p);
+    }
+
+    if (alivePlayers.empty())
+        return;
+
+    static thread_local std::mt19937 rng{std::random_device{}()};
+    std::uniform_int_distribution<size_t> pick(0, alivePlayers.size() - 1);
+
+    constexpr float kDamage = 1.0f;
+
+    for (auto& [mobName, mob] : Mobs)
+    {
+        if (!mob) continue;
+        // Optional: skip dead mobs
+        // if (mob->GetHP() <= 0) continue;
+
+        auto target = alivePlayers[pick(rng)];
+        if (!target) continue;
+
+        // Apply damage directly (NO second CacheMutex lock!)
+        target->ApplyDamage(kDamage);
+        mob->AttackMelee(target->GetName());    
+
+        // Log globally (turn log)
+        outTurnLog.push_back(
+            mobName + " attacks " + target->GetName() +
+            " for " + std::to_string((int)kDamage) + " dmg."
+        );
+
+        if(DARA_DEBUG_COMBATLOG) {
+            std::cout << "CombatLog: " << mobName << " attacks " << target->GetName() <<
+                " for " << (int)kDamage << " dmg." <<std::endl;
+        }
+        // Optional per-entity log fields if you have them:
+        // mob->SetLastAction("attack");
+        // mob->SetCombatLog("Attacked " + target->GetName());
+        // target->SetCombatLog("Hit by " + mobName);
+    }
+    
 }
 
 bool CombatDirector::CheckGameOverLocked(std::string& outReason) const
@@ -488,4 +602,32 @@ void CombatDirector::AppendLogLocked(uint64_t turnId, const std::vector<std::str
     {
         Log.erase(Log.begin(), Log.begin() + (Log.size() - kMaxLog));
     }
+}
+
+
+CombatDirector::json CombatDirector::GetLogTailJson(size_t lastN) const
+{
+    std::lock_guard<std::mutex> lk(CacheMutex);
+
+    json out;
+    out["gameId"] = GameId;
+    out["turnId"] = CurrentTurnId;
+
+    const size_t total = Log.size();
+    const size_t n = std::min(lastN, total);
+
+    json arr = json::array();
+    for (size_t i = total - n; i < total; ++i)
+    {
+        const auto& e = Log[i];
+        arr.push_back({
+            {"i", i},
+            {"turnId", e.turnId},
+            {"text", e.text}
+        });
+    }
+
+    out["total"] = total;
+    out["entries"] = std::move(arr);
+    return out;
 }

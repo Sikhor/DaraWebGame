@@ -1,203 +1,466 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<title>Dara – GameMaster UI</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dara – GameMaster UI</title>
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-<style>
-body {
-  margin: 0;
-  background: #05070b;
-  font-family: Arial, sans-serif;
-  color: #e6e6e6;
-}
+  <style>
+    :root{
+      --gap: 10px;
+      --panel-radius: 10px;
+      --border: #2a3340;
+      --bg: rgba(10,14,20,0.95);
+    }
+    body {
+      margin: 0;
+      background: #05070b;
+      font-family: Arial, sans-serif;
+      color: #e6e6e6;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
 
-/* ---------- LOGIN OVERLAY ---------- */
-#loginOverlay {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, #0c1220, #05070b);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
+    /* ---------- LOGIN SCREEN ---------- */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-#loginBox {
-  background: rgba(15,20,35,0.95);
-  border: 1px solid #2a3340;
-  border-radius: 8px;
-  padding: 32px 40px;
-  text-align: center;
-  box-shadow: 0 0 40px rgba(0,0,0,0.6);
-}
+    .login-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url("https://gameinfo.daraempire.com/wp-content/uploads/2024/12/DelcoCityAtNight.jpg");
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.6) saturate(1.2);
+      transform: scale(1.05);
+    }
 
-#loginBox h1 {
-  margin: 0 0 20px;
-  font-size: 22px;
-  font-weight: normal;
-}
+    .login-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at center, rgba(30,40,80,0.15), rgba(5,7,11,0.9)),
+        linear-gradient(to top, rgba(5,7,11,0.95), rgba(5,7,11,0.3));
+    }
 
-/* ---------- GAME LAYOUT ---------- */
-.layout {
-  display: none; /* hidden until logged in */
-  grid-template-columns: 400px 1fr;
-  grid-template-rows: 400px 1fr 120px;
-  height: 100vh;
-  gap: 8px;
-  padding: 8px;
-}
+    .login-content {
+      position: relative;
+      z-index: 2;
+      max-width: 420px;
+      width: calc(100% - 32px);
+      padding: 28px 22px;
+      text-align: center;
 
-.panel {
-  border: 1px solid #2a3340;
-  background: rgba(10,14,20,0.95);
-  border-radius: 6px;
-  overflow: hidden;
-}
+      background: rgba(12,16,30,0.85);
+      border: 1px solid #2a3340;
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 40px rgba(0,0,0,0.6);
+    }
 
-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-</style>
+    .login-content h1 {
+      margin: 0 0 10px;
+      font-size: clamp(22px, 6vw, 28px);
+      letter-spacing: 1px;
+    }
+
+    .login-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      display: block;
+      image-rendering: auto;
+      filter: drop-shadow(0 0 8px rgba(255,80,80,0.4));
+      animation: distressPulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes distressPulse {
+      0%   { transform: scale(1);   opacity: 0.9; }
+      50%  { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1);   opacity: 0.9; }
+    }
+
+    /* ---------- LOGIN CHAT ---------- */
+    .login-chat {
+      text-align: left;
+      margin-bottom: 18px;
+      font-size: clamp(13px, 3.6vw, 15px);
+      line-height: 1.4;
+    }
+
+    .chat-line {
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(8,12,20,0.65);
+      border: 1px solid rgba(80,100,160,0.15);
+    }
+
+    .chat-line.system {
+      color: #9aa7ff;
+      font-family: monospace;
+      background: rgba(20,30,60,0.4);
+    }
+
+    .chat-line.station { color: #ffd6d6; }
+    .chat-line.ai      { color: #c6f0ff; }
+    .chat-line.control {
+      color: #d4e0ff;
+      background: rgba(20,30,40,0.7);
+    }
+    /* ---------- CHAT WITH AVATARS ---------- */
+    .chat-msg {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .chat-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 2px;
+
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(120,140,200,0.25);
+    }
+
+    /* message bubble */
+    .chat-body {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(8,12,20,0.65);
+      border: 1px solid rgba(80,100,160,0.15);
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    /* Variants */
+    .chat-msg.system .chat-body {
+      color: #9aa7ff;
+      font-family: monospace;
+      background: rgba(20,30,60,0.4);
+    }
+
+    .chat-msg.station .chat-body { color: #ffd6d6; }
+    .chat-msg.ai .chat-body      { color: #c6f0ff; }
+    .chat-msg.control .chat-body {
+      color: #d4e0ff;
+      background: rgba(20,30,40,0.7);
+    }
+
+    .google-login-wrap {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .reset-login-btn{
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #2a3340;
+      background: rgba(10,14,20,0.6);
+      color: #e6e6e6;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .reset-login-btn:active{
+      transform: translateY(1px);
+    }
+
+    /* ---------- GAME LAYOUT ---------- */
+    .layout {
+      display: none; /* hidden until logged in */
+      height: 100dvh;
+      gap: var(--gap);
+      padding: var(--gap);
+      box-sizing: border-box;
+
+      grid-template-columns: 420px 1fr;
+      grid-template-rows: 320px 1fr;
+      grid-template-areas:
+        "log story"
+        "hud story";
+
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: var(--panel-radius);
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+          "hud"
+          "log"
+          "story";
+      }
+      .panel { min-height: 160px; }
+      #hudFrame { height: 400px; }
+      #combatLogFrame { height: 160px; }
+      #storyFrame { height: calc(100dvh - 200px - 260px - (var(--gap) * 4)); }
+    }
+
+    @media (max-width: 420px) {
+      #hudFrame { height: 320px; }
+      #combatLogFrame { height: 140px; }
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- ================= LOGIN OVERLAY ================= -->
-<div id="loginOverlay">
-  <div id="loginBox">
-    <h1>Dara Online</h1>
+  <!-- ================= LOGIN OVERLAY ================= -->
+  <div id="loginOverlay">
+    <div class="login-bg"></div>
+    <div class="login-overlay"></div>
 
-    <div id="g_id_onload"
-         data-client_id="510527062283-5v7dtu9tug798ba5bvcost3ur0at9grn.apps.googleusercontent.com"
-         data-callback="onGoogleCredential"
-         data-auto_prompt="false">
+    <div class="login-content">
+      <img
+        src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/AttentionSignal-300x300.png"
+        alt="Distress Signal"
+        class="login-icon"
+      />
+
+      <h1>Dara III Rescue of Marina Station</h1>
+      <!-- START login chat -->
+<div class="login-chat">
+
+  <div class="chat-msg system">
+    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Soldorn-300x300.jpg">
+    <div class="chat-body">
+      [ Distress Channel Opened ]
+    </div>
+  </div>
+
+  <div class="chat-msg station">
+    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Soldorn-300x300.jpg">
+    <div class="chat-body">
+      Marina Station is silent.<br>
+      Power levels critical.<br>
+      Systems failing.
+    </div>
+  </div>
+
+  <div class="chat-msg ai">
+    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Tira-300x300.jpg">
+    <div class="chat-body">
+      Any agent receiving this transmission,<br>
+      we are running out of time.
+    </div>
+  </div>
+
+  <div class="chat-msg control">
+    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Christi-300x300.jpg">
+    <div class="chat-body">
+      All available operatives are authorized to respond.
+    </div>
+  </div>
+
+  <div class="chat-msg system">
+    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Turnario-300x300.jpg">
+    <div class="chat-body">
+      &gt;&gt; Awaiting authentication…
+    </div>
+  </div>
+
+</div>
+      <!-- End login chat -->
+      <!-- Google GSI config (callback must be global) -->
+      <div id="g_id_onload"
+           data-client_id="510527062283-5v7dtu9tug798ba5bvcost3ur0at9grn.apps.googleusercontent.com"
+           data-callback="onGoogleCredential"
+           data-auto_prompt="false">
+      </div>
+
+      <!-- We render the button into this container via JS (so we can re-render on reset) -->
+      <div class="google-login-wrap">
+        <div id="googleBtn"></div>
+      </div>
+
+      <button id="btnResetLogin" class="reset-login-btn" type="button">
+        Use other account
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= GAME UI ================= -->
+  <div class="layout" id="gameUI">
+    <div class="panel" style="grid-area:log;">
+      <iframe id="combatLogFrame" src="https://gameinfo.daraempire.com/ui/combatlog.html"></iframe>
     </div>
 
-    <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="sign_in_with"
-         data-shape="rectangular">
+    <div class="panel" style="grid-area:story;">
+      <iframe id="storyFrame" src="story.html"></iframe>
+    </div>
+
+    <div class="panel" style="grid-area:hud;">
+      <iframe id="hudFrame" src="hud.html"></iframe>
     </div>
   </div>
-</div>
 
-<!-- ================= GAME UI ================= -->
-<div class="layout" id="gameUI">
+  <script>
+    // ---------- GOOGLE BUTTON RENDER ----------
+    function renderGoogleButton() {
+      const el = document.getElementById("googleBtn");
+      if (!el) return;
+      el.innerHTML = "";
 
-  <div class="panel" style="grid-column:1; grid-row:1;">
-    <iframe id="combatLogFrame" src="https://gameinfo.daraempire.com/ui/combatlog.html"></iframe>
-  </div>
-
-  <div class="panel" style="grid-column:2; grid-row:1 / span 2;">
-    <iframe id="storyFrame" src="story.html"></iframe>
-  </div>
-
-  <div class="panel" style="grid-column:1; grid-row:2;">
-    <iframe id="hudFrame" src="hud.html"></iframe>
-  </div>
-
-
-</div>
-
-<script>
-  // --- Name generator ---
-  function randomName() {
-    const a = ["Zan","Ista","Vor","Kel","Ryn","Tar","Mal","Zen","Dro","Tun","Tro","Ari"];
-    const b = ["drax","korr","naris","vane","thos","mir","dahl","rion","zeth","kara","lyx","qen"];
-    const num = Math.floor(Math.random() * 900 + 100);
-    return a[Math.floor(Math.random()*a.length)] + b[Math.floor(Math.random()*b.length)] + "-" + num;
-  }
-/* ----------- LOGOUT --------------*/
-async function doLogout() {
-  const token = localStorage.getItem("sessionToken") || "";
-  localStorage.removeItem("sessionToken");
-  localStorage.removeItem("playerName");
-
-  // optional: backend session invalidieren
-  if (token) {
-    try {
-      await fetch("/api/v001/darawebgame/logout", {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + token }
-      });
-    } catch (e) {
-      console.warn("logout call failed:", e);
+      if (window.google?.accounts?.id) {
+        google.accounts.id.renderButton(el, {
+          type: "standard",
+          size: "large",
+          theme: "outline",
+          text: "sign_in_with",
+          shape: "rectangular"
+        });
+      }
     }
-  }
 
-  showLogin();
-}
+    // ---------- LOGOUT (from HUD iframe) ----------
+    async function doLogout() {
+      const token = localStorage.getItem("sessionToken") || "";
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("playerName");
 
-// receive logout request from HUD iframe
-window.addEventListener("message", (ev) => {
-  if (ev.data && ev.data.type === "LOGOUT") {
-    doLogout();
-  }
-});
+      if (token) {
+        try {
+          await fetch("/api/v001/darawebgame/logout", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token }
+          });
+        } catch (e) {
+          console.warn("logout call failed:", e);
+        }
+      }
+      showLogin();
+    }
 
-/* ---------- AUTH STATE ---------- */
-function showGame() {
-  document.getElementById("loginOverlay").style.display = "none";
-  document.getElementById("gameUI").style.display = "grid";
+    window.addEventListener("message", (ev) => {
+      if (ev.data && ev.data.type === "LOGOUT") {
+        doLogout();
+      }
+    });
 
-   // reload iframes so they re-read localStorage token
-  document.getElementById("hudFrame").contentWindow.location.reload();
-  document.getElementById("storyFrame").contentWindow.location.reload();
-  document.getElementById("combatLogFrame").contentWindow.location.reload();
-}
+    // ---------- AUTH STATE ----------
+    function showGame() {
+      document.getElementById("loginOverlay").style.display = "none";
+      document.getElementById("gameUI").style.display = "grid";
 
-function showLogin() {
-  localStorage.removeItem("sessionToken");
-  document.getElementById("loginOverlay").style.display = "flex";
-  document.getElementById("gameUI").style.display = "none";
-}
+      // reload iframes so they re-read localStorage token
+      document.getElementById("hudFrame").contentWindow.location.reload();
+      document.getElementById("storyFrame").contentWindow.location.reload();
+      document.getElementById("combatLogFrame").contentWindow.location.reload();
+    }
 
-/* ---------- GOOGLE CALLBACK ---------- */
-async function onGoogleCredential(response) {
-  const r = await fetch("/api/v001/darawebgame/auth/google", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken: response.credential })
-  });
+    function showLogin() {
+      document.getElementById("loginOverlay").style.display = "flex";
+      document.getElementById("gameUI").style.display = "none";
+      renderGoogleButton();
+    }
 
-  const j = await r.json();
-  if (!r.ok) {
-    alert(j.message || "Login failed");
-    return;
-  }
+    // ---------- RESET / SWITCH ACCOUNT ----------
+    async function resetGoogleLogin() {
+      console.log("resetGoogleLogin clicked");
 
-  localStorage.setItem("sessionToken", j.token);
-  localStorage.setItem("playerName", j.playerName || "Unknown Agent");
-  showGame();
-}
+      // clear app session
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("playerName");
 
-/* ---------- AUTO LOGIN ON RELOAD ---------- */
-(async function autoLogin() {
-  const token = localStorage.getItem("sessionToken");
-  if (!token) {
-    showLogin();
-    return;
-  }
+      // disable auto-select / cancel OneTap
+      if (window.google?.accounts?.id) {
+        try {
+          google.accounts.id.disableAutoSelect();
+          google.accounts.id.cancel();
+        } catch (e) {
+          console.warn("google reset failed:", e);
+        }
+      }
 
-  // Verify token with backend
-  const r = await fetch("/me", {
-    headers: { "Authorization": "Bearer " + token }
-  });
+      // show login and re-render button (forces UI refresh)
+      showLogin();
+    }
 
-  if (r.ok) {
-    showGame();
-  } else {
-    showLogin();
-  }
-})();
-</script>
+    // ---------- GOOGLE CALLBACK (must be global name for data-callback) ----------
+    async function onGoogleCredential(response) {
+      const r = await fetch("/api/v001/darawebgame/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: response.credential })
+      });
+
+      const j = await r.json();
+      if (!r.ok) {
+        alert(j.message || "Login failed");
+        return;
+      }
+
+      localStorage.setItem("sessionToken", j.token);
+      localStorage.setItem("playerName", j.playerName || "Unknown Agent");
+      showGame();
+    }
+
+    // ---------- INIT ----------
+    document.addEventListener("DOMContentLoaded", () => {
+      // bind reset button
+      const btn = document.getElementById("btnResetLogin");
+      if (btn) btn.addEventListener("click", resetGoogleLogin);
+
+      // wait for Google script (async) then render button
+      const t = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(t);
+          renderGoogleButton();
+        }
+      }, 50);
+
+      // auto-login on reload
+      (async function autoLogin() {
+        const token = localStorage.getItem("sessionToken");
+        if (!token) {
+          showLogin();
+          return;
+        }
+
+        const r = await fetch("/me", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (r.ok) {
+          showGame();
+        } else {
+          showLogin();
+        }
+      })();
+    });
+  </script>
 
 </body>
 </html>

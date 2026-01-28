@@ -589,9 +589,10 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
     }
 
     std::string logMsg;
-    g_combatDirector->ApplyDamageToPlayer(actionTarget, 10.f, &logMsg); // trigger condition updates
+
+    g_combatDirector->ApplyDamageToMob(actionTarget, 10.f, &logMsg); // trigger condition updates
     if(logMsg .empty()==false){
-        std::cout << "ApplyDamageToPlayer logMsg: " << logMsg << "\n";
+        std::cout << "ApplyDamageToMob logMsg: " << logMsg << "\n";
     }
 
     res.status = 200;
@@ -632,9 +633,16 @@ server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
     AddCorsHeaders(res);
     res.status = 200;
     
-    nlohmann::json j;
-    j["narrative"] = Narrative; 
-    res.set_content(j.dump(), "application/json");
+    /*
+    json logs = g_combatDirector->GetLogTailJson(30);
+    for(auto& entry : logs){
+        if(DARA_DEBUG_STORYLOG)std::cout << "StoryLog:" << entry["turnId"] << " " << entry["text"] << std::endl;
+    }
+    */
+
+    nlohmann::json n;
+    n["narrative"] = "what a wonderful world"; 
+    res.set_content(n.dump(), "application/json");
     return;
 
 });
@@ -646,6 +654,14 @@ server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
 
     const std::string body = CombatLogState.GetJsonCached();
     res.set_content(body, "application/json");
+    json out= g_combatDirector->GetCombatState();
+    res.status = 200;
+    res.set_content(
+        out.dump(),
+        "application/json"
+    );
+    if(DARA_DEBUG_COMBATLOG) std::cout << "CombatLog: " << out.dump() <<std::endl;
+    return;
 
     if (true) 
     {
