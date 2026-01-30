@@ -116,13 +116,13 @@ UIState::json UIState::PartyMemberToJson(const Combatant& c)
     out["id"]    = GetStringOr(j, "name", c.GetName());
 
     out["hp"]    = j.value("hp", c.GetHP());
-    out["hpMax"] = j.value("maxHp", j.value("hpMax", c.GetHP()));
+    out["hpMax"] = j.value("maxHp", j.value("hpMax", c.GetMaxHP()));
 
     out["en"]    = j.value("energy", c.GetEnergy());
-    out["enMax"] = j.value("maxEnergy", j.value("enMax", c.GetEnergy()));
+    out["enMax"] = j.value("maxEnergy", j.value("enMax", c.GetMaxEnergy()));
 
     out["mn"]    = j.value("mana", c.GetMana());
-    out["mnMax"] = j.value("maxMana", j.value("mnMax", c.GetMana()));
+    out["mnMax"] = j.value("maxMana", j.value("mnMax", c.GetMaxMana()));
 
     // Optional "active" flag (current player highlight etc.)
     out["active"] = j.value("active", c.GetActive());

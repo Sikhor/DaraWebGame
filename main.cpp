@@ -13,9 +13,11 @@
 #include "combatlog.h"
 #include "CombatDirector.h"
 #include "sessions.h"
+#include "MobTemplateStore.h"
+#include "DaraConfig.h"
 
 CombatDirector* g_combatDirector = nullptr;
-
+MobTemplateStore g_mobTemplates;
 
 void TrimHistory(std::vector<json>& hist);
 
@@ -38,6 +40,21 @@ static std::mutex g_historyMutex;
 static constexpr size_t kMaxHistoryMessages = 12;
 
 std::string Narrative= "Some cool story that I have here ..";
+
+void InitializeMobStore()
+{
+    std::string err;
+    std::string filePath= (std::string)DARA_MOB_STORE;
+    if(!g_mobTemplates.LoadFromFile(filePath, &err)) {
+        DaraLog("FILE", "Loading mob templates from "+filePath);
+        std::cerr << "Mob template load failed: " << err << "\n";
+        DaraLog("ERROR", "Loading mob templates from "+filePath+ " failed");
+        DaraLog("ERROR", "Error description: "+ err);
+        return;
+    }
+    DaraLog("FILE", "Loaded mob templates");
+
+}
 
 static std::string GeneratePlayerName(const std::string& base)
 {
@@ -320,8 +337,6 @@ void InitialActions()
 {
     std::srand((unsigned int)std::time(nullptr));
     // Example initial actions to setup the game state
-    g_combatDirector->SpawnMob("Kinora", ECombatantType::Mob,20.f,20.f,20.f,"Spider",0,2);
-    g_combatDirector->SpawnMob("Troubie", ECombatantType::Mob,20.f,20.f,20.f,"Spider",0,3);
 }
 
 static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vector<PendingAction> actionsCopy)
@@ -424,11 +439,17 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
     std::string actionId     = body.value("actionId", "");
     std::string actionTarget = body.value("actionTarget", "");
     std::string actionMsg    = body.value("actionMsg", "");
-    std::cout << "Received action from player " << playerName
-              << ": " << actionId << " " << actionTarget << " Msg: " << actionMsg << "\n";
+    DaraLog("Action", "Received action from player "+ playerName
+              + ": " + actionId + " " + actionTarget + " ActionMsg: " + actionMsg );
 
     std::string err;
-    //g_combatDirector->AddOrUpdatePlayer(playerName);
+
+
+    if(g_combatDirector->GetPhase()==EGamePhase::GameOverPause){
+        res.status = 200;
+        res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
+        return;
+    }
     bool ok = g_combatDirector->SubmitPlayerAction(playerName, actionId, actionTarget, actionMsg, &err);
 
     if (!ok || !err.empty()) {
@@ -439,11 +460,11 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
 
     std::string logMsg;
 
-    g_combatDirector->ApplyDamageToMob(actionTarget, 10.f, &logMsg); // trigger condition updates
+    g_combatDirector->ApplyDamageToMob(actionTarget, 50.f, &logMsg); // trigger condition updates
     if(logMsg .empty()==false){
         std::cout << "ApplyDamageToMob logMsg: " << logMsg << "\n";
     }
-
+    
     res.status = 200;
     res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
 });
@@ -468,7 +489,9 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
     const std::string& playerName = session.playerName;
 
     json out = g_combatDirector->GetUIStateSnapshotJsonLocked();
-    if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
+    if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
+    if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["party"].dump(2) <<std::endl;
+    if(DARA_DEBUG_FULLSTATE) std::cout << "/state reply: " << out.dump(2) <<std::endl;
 
     res.set_content(out.dump(), "application/json");
 
@@ -582,12 +605,12 @@ server.Options("/me", [](const httplib::Request&, httplib::Response& res){
     AddCorsHeadersAuth(res);
     res.status = 204;
 });
-
+    InitializeMobStore();
     g_combatDirector->Start();
 
     SetOnNewPlayerCallback(NewPlayer);
     InitialActions();
-    std::cout << "REST API läuft auf http://0.0.0.0:"<<WEBSERVER_PORT<<"/action\n";
+    DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(WEBSERVER_PORT)+"e.g. /action");
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
 

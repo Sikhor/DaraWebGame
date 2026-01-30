@@ -28,6 +28,11 @@
     --topbarH: 50px;
 
     --partyMaxHMobile: 32vh;
+
+    /* ===== Encounter responsiveness (NEW) ===== */
+    --sceneMinH: 420px;     /* desktop default */
+    --mobCardSize: 96px;    /* desktop default */
+    --mobImgSize: 64px;     /* desktop default */
   }
 
   html, body { height: 100%; }
@@ -49,7 +54,7 @@
     gap: var(--gap);
     padding: 10px;
     box-sizing: border-box;
-    }
+  }
 
   .topbar{
     height: var(--topbarH);
@@ -129,12 +134,15 @@
     color: var(--muted);
   }
 
-  /* ---------- ENCOUNTER GRID ---------- */
+  /* ---------- ENCOUNTER (legacy grid styles left intact) ---------- */
   .lanes{
     padding: 8px;
     overflow: hidden; /* no scrolling here */
+    min-height: 0;
+    height: 100%;
   }
 
+  /* legacy lane/slot styles kept (not used by scene, but safe) */
   .lane{
     margin-bottom: 8px;
     border-radius: 10px;
@@ -185,191 +193,230 @@
     border-radius: 8px;
     opacity: 0.75;
   }
-  .slot.attackable{
-    box-shadow: 0 0 0 2px rgba(255,80,80,0.32);
+  .slot.attackable{ box-shadow: 0 0 0 2px rgba(255,80,80,0.32); }
+  .slot.selected{ box-shadow: 0 0 0 2px rgba(120,200,255,0.55); }
+
+  /* =========================
+     ENCOUNTER SCENE (Depth + Background)  [UPDATED]
+     ========================= */
+  .encounterPanel{ min-height: 0; }
+
+  .encounterPanel .lanes{
+    padding: 10px;
   }
-  .slot.selected{
-    box-shadow: 0 0 0 2px rgba(120,200,255,0.55);
+
+  .scene{
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+
+    background:
+      radial-gradient(600px 420px at 50% 10%, rgba(120,180,255,0.20) 0%, rgba(0,0,0,0) 60%),
+      linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.58) 70%, rgba(0,0,0,0.85) 100%),
+      radial-gradient(1200px 700px at 50% 100%, rgba(30,60,110,0.22) 0%, rgba(0,0,0,0) 55%),
+      linear-gradient(180deg, #08101c 0%, #04060c 100%);
   }
 
-/* =========================
-   ENCOUNTER SCENE (Depth + Background)
-   ========================= */
+  /* tunnel light cone */
+  .scene::before{
+    content:"";
+    position:absolute;
+    inset:-22% -12%;
+    background:
+      conic-gradient(from 200deg at 50% 35%,
+        rgba(140,210,255,0.0) 0deg,
+        rgba(140,210,255,0.16) 18deg,
+        rgba(140,210,255,0.0) 46deg,
+        rgba(140,210,255,0.0) 360deg);
+    filter: blur(6px);
+    opacity: 0.95;
+    pointer-events:none;
+    animation: conePulse 5.5s ease-in-out infinite;
+  }
+  @keyframes conePulse{
+    0%,100% { opacity:0.78; transform: translate3d(0,0,0) scale(1); }
+    50%     { opacity:1.00; transform: translate3d(0,2px,0) scale(1.01); }
+  }
 
-.encounterPanel .lanes{
-  padding: 10px;
-}
+  /* fog layers */
+  .fog{
+    position:absolute;
+    left:-25%; right:-25%;
+    height:40%;
+    bottom:-10%;
+    background:
+      radial-gradient(60% 80% at 50% 60%, rgba(200,220,255,0.08) 0%, rgba(0,0,0,0) 65%),
+      linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.38) 100%);
+    filter: blur(12px);
+    opacity:0.92;
+    pointer-events:none;
+    animation: fogDrift1 12s linear infinite;
+  }
+  .fog.f2{
+    height:52%;
+    bottom:-22%;
+    opacity:0.62;
+    filter: blur(18px);
+    animation: fogDrift2 18s linear infinite;
+  }
+  @keyframes fogDrift1{
+    0%   { transform: translate3d(-40px, 0, 0) scale(1.02); }
+    50%  { transform: translate3d( 40px,-6px,0) scale(1.04); }
+    100% { transform: translate3d(-40px, 0, 0) scale(1.02); }
+  }
+  @keyframes fogDrift2{
+    0%   { transform: translate3d( 60px, 0, 0) scale(1.08); }
+    50%  { transform: translate3d(-60px,-10px,0) scale(1.10); }
+    100% { transform: translate3d( 60px, 0, 0) scale(1.08); }
+  }
 
-.scene{
-  position: relative;
-  height: 100%;
-  min-height: 260px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  overflow: hidden;
+  /* Depth layers container */
+  .depthLayers{
+    position:absolute;
+    inset:0;
+    display:grid;
+    grid-template-rows: 1fr 1fr 1fr; /* back, mid, front */
+    padding: 6px 10px 10px;
+    pointer-events:none;
+  }
 
-  background:
-    radial-gradient(600px 420px at 50% 10%, rgba(120,180,255,0.20) 0%, rgba(0,0,0,0) 60%),
-    linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.58) 70%, rgba(0,0,0,0.85) 100%),
-    radial-gradient(1200px 700px at 50% 100%, rgba(30,60,110,0.22) 0%, rgba(0,0,0,0) 55%),
-    linear-gradient(180deg, #08101c 0%, #04060c 100%);
-}
+  .depthRow{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap: 8px;
+    position:relative;
+  }
 
-/* tunnel light cone */
-.scene::before{
-  content:"";
-  position:absolute;
-  inset:-22% -12%;
-  background:
-    conic-gradient(from 200deg at 50% 35%,
-      rgba(140,210,255,0.0) 0deg,
-      rgba(140,210,255,0.16) 18deg,
-      rgba(140,210,255,0.0) 46deg,
-      rgba(140,210,255,0.0) 360deg);
-  filter: blur(6px);
-  opacity: 0.95;
-  pointer-events:none;
-  animation: conePulse 5.5s ease-in-out infinite;
-}
-@keyframes conePulse{
-  0%,100% { opacity:0.78; transform: translate3d(0,0,0) scale(1); }
-  50%     { opacity:1.00; transform: translate3d(0,2px,0) scale(1.01); }
-}
+  /* row tuning */
+  .depthRow.back  { transform: translateY(-4px); opacity:0.65; filter: blur(1.2px); }
+  .depthRow.mid   { transform: translateY( 2px); opacity:0.85; filter: blur(0.4px); }
+  .depthRow.front { transform: translateY( 8px); opacity:1.00; filter: blur(0px); }
 
-/* fog layers */
-.fog{
-  position:absolute;
-  left:-25%; right:-25%;
-  height:40%;
-  bottom:-10%;
-  background:
-    radial-gradient(60% 80% at 50% 60%, rgba(200,220,255,0.08) 0%, rgba(0,0,0,0) 65%),
-    linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.38) 100%);
-  filter: blur(12px);
-  opacity:0.92;
-  pointer-events:none;
-  animation: fogDrift1 12s linear infinite;
-}
-.fog.f2{
-  height:52%;
-  bottom:-22%;
-  opacity:0.62;
-  filter: blur(18px);
-  animation: fogDrift2 18s linear infinite;
-}
-@keyframes fogDrift1{
-  0%   { transform: translate3d(-40px, 0, 0) scale(1.02); }
-  50%  { transform: translate3d( 40px,-6px,0) scale(1.04); }
-  100% { transform: translate3d(-40px, 0, 0) scale(1.02); }
-}
-@keyframes fogDrift2{
-  0%   { transform: translate3d( 60px, 0, 0) scale(1.08); }
-  50%  { transform: translate3d(-60px,-10px,0) scale(1.10); }
-  100% { transform: translate3d( 60px, 0, 0) scale(1.08); }
-}
+  /* Mob card */
+  .mobCardWrap{
+    pointer-events:auto;
+    transform-origin: 50% 90%;
+    transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--s, 1));
+  }
 
-/* Depth layers container */
-.depthLayers{
-  position:absolute;
-  inset:0;
-  display:grid;
-  grid-template-rows: 1fr 1fr 1fr; /* back, mid, front */
-  padding: 14px;
-  pointer-events:none;
-}
+  .mobCard{
+    width: var(--mobCardSize);
+    height: var(--mobCardSize);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: linear-gradient(180deg, rgba(20,28,40,0.55) 0%, rgba(0,0,0,0.35) 100%);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.45);
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+  }
 
-.depthRow{
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap: 10px;
-  position:relative;
-}
+  /* scale per depth (applies on WRAP for perspective) */
+  .depthRow.back  .mobCardWrap{ --s: 0.45; }
+  .depthRow.mid   .mobCardWrap{ --s: 0.75; }
+  .depthRow.front .mobCardWrap{ --s: 1.08; }
 
-/* row tuning */
-.depthRow.back  { transform: translateY(-10px); opacity:0.65; filter: blur(1.2px); }
-.depthRow.mid   { transform: translateY( 10px); opacity:0.85; filter: blur(0.4px); }
-.depthRow.front { transform: translateY( 30px); opacity:1.00; filter: blur(0px); }
+  /* threat glow */
+  .mobCard.threat{
+    border-color: rgba(120,200,255,0.28);
+  }
+  .mobCard.threat::after{
+    content:"";
+    position:absolute; inset:-2px;
+    border-radius:14px;
+    pointer-events:none;
+    box-shadow: 0 0 0 1px rgba(120,200,255,0.35), 0 0 22px rgba(120,200,255,0.16);
+    animation: threatPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes threatPulse{
+    0%,100% { opacity:0.55; filter: blur(0px); }
+    50%     { opacity:1.00; filter: blur(0.2px); }
+  }
 
-/* Mob card (uses your mobImg + hpBar styles) */
-.mobCardWrap{
-  pointer-events:auto;
-  transform-origin: 50% 90%;
-}
+  /* “alive” animation (card bob).
+     IMPORTANT: we animate mobCard, not the wrap, so wrap keeps its offsets. */
+  .mobCard{
+    --bobY: 6px;
+    --bobT: 3.6s;
+    animation: mobBob var(--bobT) ease-in-out infinite;
+  }
+  .depthRow.back .mobCard{ --bobY: 4px; --bobT: 5.2s; }
+  .depthRow.mid  .mobCard{ --bobY: 6px; --bobT: 4.2s; }
+  .depthRow.front .mobCard{ --bobY: 7px; --bobT: 3.3s; }
 
-/* the card itself */
-.mobCard{
-  width: 92px;
-  height: 92px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: linear-gradient(180deg, rgba(20,28,40,0.55) 0%, rgba(0,0,0,0.35) 100%);
-  box-shadow: 0 14px 28px rgba(0,0,0,0.45);
-  position:relative;
-  overflow:hidden;
-  cursor:pointer;
-}
+  .mobCard.t1{ animation-delay: -0.3s; }
+  .mobCard.t2{ animation-delay: -1.1s; }
+  .mobCard.t3{ animation-delay: -2.0s; }
+  .mobCard.t4{ animation-delay: -0.6s; }
 
-/* scale per depth */
-.depthRow.back  .mobCardWrap{ transform: scale(0.72); }
-.depthRow.mid   .mobCardWrap{ transform: scale(0.88); }
-.depthRow.front .mobCardWrap{ transform: scale(1.08); }
+  @keyframes mobBob{
+    0%,100% { transform: translate3d(0,0,0) rotate(-0.15deg); }
+    50%     { transform: translate3d(0,var(--bobY),0) rotate(0.20deg); }
+  }
 
-/* threat glow */
-.mobCard.threat{
-  border-color: rgba(120,200,255,0.28);
-}
-.mobCard.threat::after{
-  content:"";
-  position:absolute; inset:-2px;
-  border-radius:14px;
-  pointer-events:none;
-  box-shadow: 0 0 0 1px rgba(120,200,255,0.35), 0 0 22px rgba(120,200,255,0.16);
-  animation: threatPulse 2.2s ease-in-out infinite;
-}
-@keyframes threatPulse{
-  0%,100% { opacity:0.55; filter: blur(0px); }
-  50%     { opacity:1.00; filter: blur(0.2px); }
-}
+  /* put your mob image centered nicely */
+  .mobCard .mob{
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+  }
 
-/* “alive” animation (card bob + breathe).
-   IMPORTANT: we animate mobCard, not the wrap, so wrap keeps its offsets. */
-.mobCard{
-  --bobY: 6px;
-  --bobT: 3.6s;
-  animation: mobBob var(--bobT) ease-in-out infinite;
-}
-.depthRow.back .mobCard{ --bobY: 4px; --bobT: 5.2s; }
-.depthRow.mid  .mobCard{ --bobY: 6px; --bobT: 4.2s; }
-.depthRow.front.mobCard{ --bobY: 7px; --bobT: 3.3s; }
+  /* keep hp bar at bottom like before */
+  .mobCard .hpBar{ bottom:4px; }
 
-.mobCard.t1{ animation-delay: -0.3s; }
-.mobCard.t2{ animation-delay: -1.1s; }
-.mobCard.t3{ animation-delay: -2.0s; }
-.mobCard.t4{ animation-delay: -0.6s; }
+  /* ===== Selected mob marker (NEW) ===== */
+  .mobCard.selected{
+    border-color: rgba(120,200,255,0.70) !important;
+    box-shadow:
+      0 0 0 2px rgba(120,200,255,0.55),
+      0 0 22px rgba(120,200,255,0.22),
+      0 18px 30px rgba(0,0,0,0.45);
+  }
+  .mobCard.selected::before{
+    content:"";
+    position:absolute;
+    inset: 6px;
+    border-radius: 12px;
+    background:
+      linear-gradient(#7ad3ff,#7ad3ff) left top / 12px 2px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) left top / 2px 12px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) right top / 12px 2px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) right top / 2px 12px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) left bottom / 12px 2px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) left bottom / 2px 12px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) right bottom / 12px 2px no-repeat,
+      linear-gradient(#7ad3ff,#7ad3ff) right bottom / 2px 12px no-repeat;
+    opacity: 0.95;
+    pointer-events:none;
+  }
+  .mobCard .targetTag{
+    position:absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .4px;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: rgba(120,200,255,0.16);
+    border: 1px solid rgba(120,200,255,0.28);
+    color: rgba(235,245,255,0.95);
+    display:none;
+    z-index: 3;
+  }
+  .mobCard.selected .targetTag{ display:block; }
 
-@keyframes mobBob{
-  0%,100% { transform: translate3d(0,0,0) rotate(-0.15deg); }
-  50%     { transform: translate3d(0,var(--bobY),0) rotate(0.20deg); }
-}
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .scene::before, .fog, .fog.f2, .mobCard{ animation:none !important; }
+  }
 
-/* put your mob image centered nicely */
-.mobCard .mob{
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-}
-
-/* keep hp bar at bottom like before (your existing .hpBar works) */
-.mobCard .hpBar{ bottom:8px; }
-
-/* reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .scene::before, .fog, .fog.f2, .mobCard{ animation:none !important; }
-}
-
-
+  /* ===== Shared mob visuals ===== */
   .mob{
     position:absolute;
     inset:0;
@@ -388,10 +435,10 @@
   }
   .hpBar{
     position:absolute;
-    left:6px;
-    right:6px;
-    bottom:6px;
-    height:6px;
+    left:10%;
+    right:10%;
+    bottom:4px;
+    height:3px;
     background: rgba(255,255,255,0.14);
     border-radius: 6px;
     overflow:hidden;
@@ -400,33 +447,30 @@
     height:100%;
     background: linear-gradient(90deg, #3cff9a, #ffd166, #ff4d4d);
   }
+
+  /* IMPORTANT: mobImg now follows variables for scene cards */
   .mobImg{
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;              /* eher game-like als voll rund */
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,0.22);
-  box-shadow: 0 0 14px rgba(0,0,0,0.45);
- }
-   .avatarImg{
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;              /* eher game-like als voll rund */
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,0.22);
-  box-shadow: 0 0 14px rgba(0,0,0,0.45);
- }
+    width: var(--mobImgSize);
+    height: var(--mobImgSize);
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 0 14px rgba(0,0,0,0.45);
+  }
 
-
-    /* mobile/landscape kleiner (passt zu deinem 1024-block) */
-    @media (orientation: landscape) and (max-width: 1024px){
-    .mobImg{ width: 28px; height: 28px; border-radius: 8px; }
-    }
+  .avatarImg{
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 0 14px rgba(0,0,0,0.45);
+  }
 
   /* ---------- PARTY (ONLY THIS SCROLLS) ---------- */
   .pRow.selected{
-  box-shadow: 0 0 0 2px rgba(120,200,255,0.55);
-  background: rgba(30,60,120,0.18);
+    box-shadow: 0 0 0 2px rgba(120,200,255,0.55);
+    background: rgba(30,60,120,0.18);
   }
 
   .partyList{
@@ -448,27 +492,26 @@
   }
 
   .partyHeaderRight{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
 
-.partyLogoutBtn{
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.28);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.partyLogoutBtn:active{ transform: translateY(1px); }
-/* On desktop: hide party logout (because topbar exists) */
-@media (min-width: 1025px){
-  .partyLogoutBtn{ display: none; }
-}
+  .partyLogoutBtn{
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .partyLogoutBtn:active{ transform: translateY(1px); }
+  @media (min-width: 1025px){
+    .partyLogoutBtn{ display: none; }
+  }
 
   .pAvatar{
     width: 32px;
@@ -535,42 +578,42 @@
   .pBar.mn > div{ background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(120,80,255,0.85)); }
 
   /* ---------- BOTTOM HUD (10 ACTION BUTTONS + INPUTS) ---------- */
- .hud{
-  border: 1px solid var(--border);
-  background: var(--bg);
-  border-radius: var(--panel-radius);
-  padding: 8px;
-  box-sizing: border-box;
-}
+  .hud{
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--panel-radius);
+    padding: 8px;
+    box-sizing: border-box;
+  }
 
   .hudBar{
     display: flex;
     align-items: center;
     gap: 10px;
-    }
+  }
 
   .target-input{
-  width: 120px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.28);
-  color: #fff;
-  padding: 0 10px;
-  font-size: 13px;
-  flex: 0 0 auto;
+    width: 120px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    padding: 0 10px;
+    font-size: 13px;
+    flex: 0 0 auto;
   }
 
   .chat-input{
-  flex: 1;                 /* nimmt restlichen Platz */
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.28);
-  color: #fff;
-  padding: 0 14px;
-  font-size: 14px;
-}
+    flex: 1;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    padding: 0 14px;
+    font-size: 14px;
+  }
 
   .chat-input::placeholder{ opacity: 0.65; }
   .chat-input:focus{
@@ -579,50 +622,50 @@
   }
 
   .actions{
-  display: grid;
-  grid-auto-flow: column;          /* <<< eine Reihe */
-  grid-auto-columns: 44px;         /* feste Buttonbreite */
-  gap: 8px;
-  justify-content: start;
-  flex: 0 0 auto;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 44px;
+    gap: 8px;
+    justify-content: start;
+    flex: 0 0 auto;
   }
   .action-btn{
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.25);
-  position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.25);
+    position: relative;
 
-  display: flex;
-  flex-direction: column;     /* <<< WICHTIG */
-  align-items: center;
-  justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-  overflow: hidden;
-  user-select: none;
-  cursor: pointer;
+    overflow: hidden;
+    user-select: none;
+    cursor: pointer;
   }
 
   .action-btn img{
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  pointer-events: none;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    pointer-events: none;
   }
 
   .action-btn .tip{
-  position: absolute;
-  bottom: 1px;
-  left: 3px;
-  right: 3px;
-  font-size: 9px;
-  opacity: 0.8;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
+    position: absolute;
+    bottom: 1px;
+    left: 3px;
+    right: 3px;
+    font-size: 9px;
+    opacity: 0.8;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
   }
 
   .action-btn:hover{ filter: brightness(1.15); }
@@ -654,7 +697,7 @@
     position: absolute;
     inset: 0;
     background: rgba(0,0,0,0.45);
-    transform: translateY(100%); /* hidden initially */
+    transform: translateY(100%);
     z-index: 1;
     pointer-events: none;
   }
@@ -664,7 +707,13 @@
     :root{
       --gap: 8px;
       --slotSize: 52px;
+
+      /* NEW: mobile scene tuning */
+      --sceneMinH: 240px;
+      --mobCardSize: 58px;
+      --mobImgSize: 36px;
     }
+
     .app{ padding: 8px; }
     .main{
       grid-template-columns: 1fr;
@@ -674,136 +723,175 @@
       max-height: var(--partyMaxHMobile);
       min-height: 0;
     }
-    .hudBar{
-        flex-wrap: wrap;
-    }
+    
+    .hudBar{ flex-wrap: wrap; }
+    .chat-input{ min-width: 160px; }
 
-    .chat-input{
-        min-width: 160px;
+    /* tighter scene */
+    .depthLayers{ padding: 6px 10px 10px; }
+    .depthRow{ gap: 6px; }
+    .fog{ height: 32%; }
+    .fog.f2{ height: 40%; }
+
+    /* ensure all 3 lanes fit visually */
+    .depthRow.back  { transform: translateY(-6px); }
+    .depthRow.mid   { transform: translateY(  4px); }
+    .depthRow.front { transform: translateY( 12px); }
+  }
+
+  @media (min-width: 901px){
+    :root{
+      /* NEW: PC scene tuning */
+      --sceneMinH: 520px;
+      --mobCardSize: 128px;
+      --mobImgSize: 96px;
     }
   }
 
   @media (max-width: 420px){
     :root{ --slotSize: 48px; }
-    .actions{
-        grid-template-columns: repeat(5, 40px);
-    }
-    .action-btn{
-        width: 40px;
-        height: 40px;
-    }
-    .action-btn img{
-        width: 24px;
-        height: 24px;
-    }
+    .actions{ grid-template-columns: repeat(5, 40px); }
+    .action-btn{ width: 40px; height: 40px; }
+    .action-btn img{ width: 24px; height: 24px; }
   }
- 
+
   #rotateHint{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  @media (orientation: portrait){
+    #rotateHint{ display: flex; }
+  }
+
+  /* ===== ONE Landscape Mobile Block (merge all here) ===== */
+  @media (orientation: landscape) and (max-width: 1024px){
+    :root{
+      --gap: 6px;
+      --slotSize: 40px;
+
+      /* NEW: keep scene compact in landscape on mobile/tablet */
+      --sceneMinH: 220px;
+      --mobCardSize: 58px;
+      --mobImgSize: 32px;
+    }
+
+    .topbar{ display: none; }
+
+    .app{
+      grid-template-rows: 1fr auto; /* main | hud */
+    }
+
+    .main{
+      grid-template-columns: 400px 200px;
+      grid-template-rows: 1fr;
+      gap: 6px;
+    }
+
+    .partyPanel{ max-height: none; }
+
+    .panelHeader{
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+    .panelHeader .sub{ font-size: 11px; }
+
+    .lanes{ padding: 6px; }
+
+    .lane{ margin-bottom: 6px; border-radius: 9px; position: relative; padding-top: 18px; }
+    .laneTitle{ display: none; }
+    .lane{ padding-top: 0; }
+    .laneGrid{ padding: 6px; gap: 6px; }
+
+    .avatar{ width: 26px; height: 26px; font-size: 9px; }
+    .hpBar{ left: 10%; right: 10%; bottom: 4px; height: 4px; }
+
+    .hudBar{ flex-wrap: nowrap; }
+    .chat-input{ min-width: 0; height: 32px; font-size: 13px; }
+    .target-input{ width: 95px; height: 32px; font-size: 12px; }
+
+    .actions{ grid-auto-columns: 40px; gap: 6px; }
+    .action-btn{ width: 40px; height: 40px; }
+    .action-btn img{ width: 24px; height: 24px; }
+
+    /* tighter scene */
+    .depthLayers{ padding: 1px 3px 15px; }
+    .depthRow{ gap: 6px; }
+    .fog{ height: 30%; }
+    .fog.f2{ height: 36%; }
+
+    .depthRow.back  { transform: translateY(-6px); }
+    .depthRow.mid   { transform: translateY(  3px); }
+    .depthRow.front { transform: translateY( 10px); }
+  }
+
+  /* ===== GAME OVER OVERLAY ===== */
+.overlay{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.9);
-  z-index: 99999;
-  display: none;
-  align-items: center;
-  justify-content: center;
+  z-index: 99998; /* under rotateHint (99999), above everything else */
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(6px);
+}
+
+.overlay.hidden{ display:none; }
+
+.overlayCard{
+  width: min(520px, 92vw);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: linear-gradient(180deg, rgba(25,10,12,0.86) 0%, rgba(0,0,0,0.55) 100%);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.65);
+  padding: 18px 18px 16px;
   text-align: center;
-  color: #fff;
-  font-weight: 800;
-  letter-spacing: 0.5px;
 }
 
-@media (orientation: portrait){
-  #rotateHint{ display: flex; }
+.overlayTitle{
+  font-weight: 900;
+  letter-spacing: 1px;
+  font-size: 34px;
+  text-transform: uppercase;
+  text-shadow: 0 0 22px rgba(255,70,70,0.25);
 }
 
-
-/* ===== ONE Landscape Mobile Block (merge all here) ===== */
-@media (orientation: landscape) and (max-width: 1024px){
-
-  /* overall tighter */
-  :root{
-    --gap: 6px;
-    --slotSize: 40px; /* smaller so all 3 lanes fit */
-  }
- /* hide top bar completely */
-  .topbar{
-    display: none;
-  }
-
-  /* reclaim the space in the main grid */
-  .app{
-    grid-template-rows: 1fr auto; /* main | hud */
-  }
-
-
-  /* MAIN: fixed/narrow encounter, party uses the rest */
-  .main{
-    /* grid-template-columns: 300px 1fr; /* encounter | party */
-    grid-template-columns: 300px 240px;
-    grid-template-rows: 1fr;
-    gap: 6px;
-  }
-  /* .encounterPanel .panelHeader{display:none;}  hide encounter completely */
-
-  .partyPanel{ max-height: none; }
-
-  /* Panel headers smaller */
-  .panelHeader{
-    padding: 6px 10px;
-    font-size: 13px;
-  }
-  .panelHeader .sub{ font-size: 11px; }
-
-  /* Encounter: reduce vertical space */
-  
-  .lanes{ padding: 6px; }
-
-  .lane{
-    margin-bottom: 6px;
-    border-radius: 9px;
-    position: relative;     /* for badge */
-    padding-top: 18px;      /* room for badge */
-  }
-
-  /* Lane title becomes a compact overlay badge (not a full row) */
-  .laneTitle{
-    display: none;
-  }
-  /* undo spacing that was reserved for the badge */
-  .lane{
-    padding-top: 0;
-  }
-
-  .laneGrid{
-    padding: 6px;
-    gap: 6px;
-  }
-
-  /* Mob visuals smaller */
-  .avatar{
-    width: 26px;
-    height: 26px;
-    font-size: 9px;
-  }
-  .hpBar{
-    left: 4px;
-    right: 4px;
-    bottom: 4px;
-    height: 4px;
-  }
-
-  /* HUD: keep one line + compact */
-  .hudBar{ flex-wrap: nowrap; }
-  .chat-input{ min-width: 0; height: 32px; font-size: 13px; }
-  .target-input{ width: 95px; height: 32px; font-size: 12px; }
-
-  .actions{ grid-auto-columns: 40px; gap: 6px; }
-  .action-btn{ width: 40px; height: 40px; }
-  .action-btn img{ width: 24px; height: 24px; }
+.overlayReason{
+  margin-top: 6px;
+  color: rgba(255,255,255,0.85);
+  font-size: 14px;
 }
 
+.overlayTimer{
+  margin-top: 14px;
+  font-weight: 900;
+  font-size: 16px;
+  color: rgba(255,255,255,0.92);
+}
 
+.overlayHint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+}
 
+/* lock the UI feel while overlay is up */
+body.locked .action-btn,
+body.locked .chat-input,
+body.locked .target-input{
+  pointer-events: none;
+  filter: grayscale(0.4);
+  opacity: 0.85;
+}
 </style>
 </head>
 
@@ -838,7 +926,7 @@
     <div class="panel encounterPanel">
       <div class="panelHeader">
         <span>Encounter</span>
-        <span class="sub">Lanes / Slots</span>
+        <span class="sub">Depth / Threat</span>
       </div>
       <div class="lanes" id="lanes"></div>
     </div>
@@ -859,18 +947,18 @@
 
   <!-- BOTTOM HUD (10 buttons + inputs) -->
   <div class="hud">
-  <div class="hudBar">
-    <div class="actions" id="actions"></div>
+    <div class="hudBar">
+      <div class="actions" id="actions"></div>
 
-    <input id="actionTarget"
-           class="target-input"
-           placeholder="Target" />
+      <input id="actionTarget"
+             class="target-input"
+             placeholder="Target" />
 
-    <input id="actionMsg"
-           class="chat-input"
-           placeholder="Action / Message…" />
+      <input id="actionMsg"
+             class="chat-input"
+             placeholder="Action / Message…" />
+    </div>
   </div>
-</div>
 
 </div>
 
@@ -903,34 +991,29 @@
 
   async function doLogout() {
     const token = getToken();
-    // Disable buttons immediately so user can’t spam actions while logging out
     try {
       document.getElementById("btnLogout")?.setAttribute("disabled", "disabled");
       document.getElementById("btnLogoutParty")?.setAttribute("disabled", "disabled");
     } catch (e) {}
 
-    // Always clear local state at the end (even if request fails)
     const clearLocal = () => {
       localStorage.removeItem("sessionToken");
       localStorage.removeItem("playerName");
       localStorage.removeItem("gameId");
     };
-    // If no token: just clear + redirect
+
     if (!token) {
       clearLocal();
       window.location.href = LOGIN_PAGE;
       return;
     }
     try {
-        // Call server logout (best effort)
         const res = await fetch(LOGOUT_URL, {
           method: "POST",
           headers: authHeaders({ "Content-Type": "application/json" }),
-          // body not required, but harmless if your server ignores it
           body: JSON.stringify({ gameId: String(getGameId()) })
         });
 
-        // If server answers non-OK, we still proceed with local logout
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
           console.warn("Logout not OK:", res.status, txt);
@@ -947,22 +1030,19 @@
   const btnLogoutParty = document.getElementById("btnLogoutParty");
   if (btnLogoutParty) btnLogoutParty.addEventListener("click", doLogout);
 
-  // Enforce auth on entry
   requireAuthOrRedirect();
-  /* =========================
-     checking if we have new state (optimistic updates)
-     ========================= */
+
   const lastStateUpdateHash= "";
 
   /* =========================
-     API ENDPOINTS (same as your hud.html example)
+     API ENDPOINTS
      ========================= */
   const ACTION_URL = "/api/v001/darawebgame/action";
   const STATE_URL  = "/api/v001/darawebgame/state";
   const LOGOUT_URL = "/api/v001/darawebgame/auth/logout";
 
   /* =========================
-     MEDIA ICONS + HUD ACTIONS (your 10 buttons)
+     MEDIA ICONS + HUD ACTIONS
      ========================= */
   const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
   const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
@@ -985,7 +1065,7 @@
   const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
 
   const ACTION_SOUNDS = {
-    attack:   new Audio(SOUND_BASE+"explosion.wav"),
+    attack:   new Audio(SOUND_BASE+"Attack.wav"),
     fireball: new Audio(SOUND_BASE+"Fireball.wav"),
     heal:     new Audio(SOUND_BASE+"Heal.wav"),
     defend:   new Audio(SOUND_BASE+"Defend.wav"),
@@ -996,20 +1076,18 @@
     usepotion:new Audio(SOUND_BASE+"Potion.wav"),
     move:     new Audio(SOUND_BASE+"Move.wav"),
     mobdeath: new Audio(SOUND_BASE+"MobDeath.wav"),
-};
-
+    gameover: new Audio(SOUND_BASE+"explosion"),
+  };
 
   function playSound(key){
-  const snd = ACTION_SOUNDS[key];
-  if(!snd) return;
-
-  try{
-    snd.pause();
-    snd.currentTime = 0;
-    snd.play().catch(()=>{});
-  }catch(e){}
-}
-
+    const snd = ACTION_SOUNDS[key];
+    if(!snd) return;
+    try{
+      snd.pause();
+      snd.currentTime = 0;
+      snd.play().catch(()=>{});
+    }catch(e){}
+  }
 
   const ACTIONS = [
     { id: "attack",     label: "Attack",   cd: 2  },
@@ -1024,14 +1102,12 @@
     { id: "evac",       label: "Evac",     cd: 20 },
   ];
 
-  
   const actionsEl = document.getElementById("actions");
   const actionTargetEl = document.getElementById("actionTarget");
   const actionMsgEl = document.getElementById("actionMsg");
 
   function getActionTarget(){ return (actionTargetEl.value || "").trim(); }
   function getActionMsg(){ return (actionMsgEl.value || "").trim(); }
-
 
   /* Cooldown state */
   const cooldownUntil = new Map(); // actionId -> timestamp(ms)
@@ -1060,7 +1136,6 @@
     const sec = Math.ceil(remainingMs / 1000);
     if (timeEl) timeEl.textContent = String(sec);
 
-    // Fill from top down: remaining 100% => y=0, remaining 0% => y=100
     const pct = (remainingMs / totalMs) * 100;
     const y = 100 - pct;
     if (fill) fill.style.transform = `translateY(${y}%)`;
@@ -1127,9 +1202,7 @@
             })
           });
 
-          // Optional: if server says token invalid -> logout
           if (res.status === 401) doLogout();
-
         } catch (e) {
           console.error("Action POST failed:", e);
         }
@@ -1148,25 +1221,21 @@
     });
   }
 
-  // Enter-to-send: uses "attack" by default if you want
   actionMsgEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      // you can decide what Enter means later; for now trigger "talk"
       const talkBtn = document.querySelector('.action-btn[data-action="talk"]');
       if (talkBtn) talkBtn.click();
     }
   });
 
   /* =========================
-     GAME STATE (Encounter + Party) – UI skeleton with demo fallback
-     Later your /state can return the real structure.
+     GAME STATE (Encounter + Party)
      ========================= */
 
   function clamp01(x){ return Math.max(0, Math.min(1, x)); }
   function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; }
 
-  // Minimal demo state if /state doesn't provide encounter info yet:
   let uiState = {
     turn: 1,
     slots: 5,
@@ -1203,145 +1272,174 @@
     document.getElementById("partyCount").textContent = "Players: " + (uiState.party?.length ?? 0);
   }
 
-function renderEncounter(){
-  const lanesEl = document.getElementById("lanes");
-  lanesEl.style.setProperty("--slots", String(uiState.slots || 5));
-  lanesEl.innerHTML = "";
+  /* ===== Encounter: Depth Scene (UPDATED with selection marker) ===== */
+  function renderEncounter(){
+    const lanesEl = document.getElementById("lanes");
+    lanesEl.innerHTML = "";
 
-  (uiState.lanes || []).forEach((l, laneIndex) => {
-    const lane = document.createElement("div");
-    lane.className = "lane " + l.cls;
+    const scene = document.createElement("div");
+    scene.className = "scene";
 
-    // Lane title (hidden in mobile via CSS if you want)
-    const title = document.createElement("div");
-    title.className = "laneTitle";
-    title.innerHTML = `<span>${l.name}</span><span>${l.range || ""}</span>`;
-    lane.appendChild(title);
+    const fog1 = document.createElement("div");
+    fog1.className = "fog";
+    const fog2 = document.createElement("div");
+    fog2.className = "fog f2";
 
-    const grid = document.createElement("div");
-    grid.className = "laneGrid";
+    const layers = document.createElement("div");
+    layers.className = "depthLayers";
 
-    for(let s = 0; s < (uiState.slots || 5); s++){
-      const slot = document.createElement("div");
-      slot.className = "slot empty";
+    const rowBack  = document.createElement("div"); rowBack.className  = "depthRow back";
+    const rowMid   = document.createElement("div"); rowMid.className   = "depthRow mid";
+    const rowFront = document.createElement("div"); rowFront.className = "depthRow front";
 
-      const mob = (uiState.mobs || []).find(
-        m => m.lane === laneIndex && m.slot === s
-      );
+    const mobs = (uiState.mobs || []).filter(m => Number(m.hp) > 0);
 
-      if (mob){
-        slot.classList.remove("empty");
-
-        const isAttackable = (laneIndex === 2) && mob.hp > 0;
-        if (isAttackable) slot.classList.add("attackable");
-        if (uiState.selectedMobId === mob.id) slot.classList.add("selected");
-
-        const imgUrl = mobImageUrl(mob.avatarId);
-
-        slot.innerHTML = `
-          <div class="mob">
-            <img class="mobImg"
-                 src="${escapeHtml(imgUrl)}"
-                 alt="${escapeHtml(mob.avatarId)}"
-                 loading="lazy"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
-
-            <div class="avatar" style="display:none">
-              ${escapeHtml(mob.id).slice(0,3)}
-            </div>
-
-            <div class="hpBar">
-              <div class="hpFill" style="width:${pct(mob.hp, mob.max)*100}%"></div>
-            </div>
-          </div>
-        `;
-
-        // CLICK: select mob + write target
-        slot.onclick = () => {
-          uiState.selectedMobId = mob.id;
-          uiState.selectedPartyId = null;
-
-          actionTargetEl.value = mob.id;
-          renderAll();
-        };
-
-      } else {
-        // Empty slot click clears selection
-        slot.onclick = () => {
-          uiState.selectedMobId = null;
-          renderAll();
-        };
-      }
-
-      grid.appendChild(slot);
-    }
-
-    lane.appendChild(grid);
-    lanesEl.appendChild(lane);
-  });
-}
-
-  function renderParty(){
-  const partyEl = document.getElementById("party");
-  partyEl.innerHTML = "";
-
-  (uiState.party || []).forEach(p => {
-    const row = document.createElement("div");
-    row.className = "pRow";
-
-    // selected highlight
-    if (uiState.selectedPartyId === p.id) {
-      row.classList.add("selected");
-    }
-
-    const hpP = pct(p.hp, p.hpMax);
-    const enP = pct(p.en, p.enMax);
-    const mnP = pct(p.mn, p.mnMax);
-
-    const imgUrl = playerImageUrl(p.avatarId);
-
-    row.innerHTML = `
-      <div class="pAvatar">
-        <img class="avatarImg"
-             src="${escapeHtml(imgUrl)}"
-             alt="${escapeHtml(p.id || "")}"
-             loading="lazy"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
-        <div class="avatarText" style="display:none">
-          ${escapeHtml((p.id||"?").slice(0,2).toUpperCase())}
-        </div>
-      </div>
-
-      <div class="pInfo">
-        <div class="pNameLine">
-          <span class="name">${escapeHtml(p.id || "")}</span>
-          <span class="meta">${p.active ? "ACTIVE" : ""}</span>
-        </div>
-
-        <div class="pBars">
-          ${barRow("HP", hpP, `${p.hp}/${p.hpMax}`, "hp")}
-          ${barRow("EN", enP, `${p.en}/${p.enMax}`, "en")}
-          ${barRow("MN", mnP, `${p.mn}/${p.mnMax}`, "mn")}
-        </div>
-      </div>
-    `;
-
-    // CLICK: select party member + write into target (same behavior as mobs)
-    row.onclick = () => {
-      const name = (p.id || "").trim();
-      if (!name) return;
-
-      actionTargetEl.value = name;
-
-      uiState.selectedPartyId = p.id; // mark party
-      uiState.selectedMobId = null;   // unselect mobs
-
-      renderAll(); // refresh highlights
+    const hpRatio = (m) => {
+      const max = Number(m.max || m.hpMax || 1);
+      const hp  = Number(m.hp || 0);
+      return max > 0 ? Math.max(0, Math.min(1, hp / max)) : 0;
     };
 
-    partyEl.appendChild(row);
-  });
-}
+    const isThreat = (m) => {
+      const r = hpRatio(m);
+      const inMelee = (m.lane === 2);
+      const selected = (uiState.selectedMobId === m.id);
+      return selected || inMelee || r >= 0.75;
+    };
+
+    function makeMobCard(m, idx){
+      const wrap = document.createElement("div");
+      wrap.className = "mobCardWrap";
+
+      const x = ((m.slot ?? idx) - 2) * 18 + (idx % 2 ? 10 : -8);
+      const y = (m.lane === 0 ? -10 : (m.lane === 1 ? -6 : -12));
+      wrap.style.setProperty("--tx", `${x}px`);
+      wrap.style.setProperty("--ty", `${y}px`);
+
+      const card = document.createElement("div");
+      card.className = "mobCard " + (isThreat(m) ? "threat" : "");
+      card.classList.add(["t1","t2","t3","t4"][idx % 4]);
+
+      if (uiState.selectedMobId === m.id){
+        card.classList.add("selected");
+      }
+
+      const hpPct = hpRatio(m) * 100;
+      const imgUrl = mobImageUrl(m.avatarId || m.id);
+
+      card.innerHTML = `
+        <div class="mob">
+          <div class="targetTag">TARGET</div>
+
+          <img class="mobImg"
+               src="${escapeHtml(imgUrl)}"
+               alt="${escapeHtml(m.id)}"
+               loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+          <div class="avatar" style="display:none">${escapeHtml(m.id).slice(0,3)}</div>
+
+          <div class="hpBar">
+            <div class="hpFill" style="width:${hpPct}%"></div>
+          </div>
+        </div>
+      `;
+
+      wrap.onclick = () => {
+        uiState.selectedMobId = m.id;
+        uiState.selectedPartyId = null;
+        actionTargetEl.value = m.id;
+        renderAll();
+      };
+
+      wrap.appendChild(card);
+      return wrap;
+    }
+
+    const byThreatThenHP = (a,b) => {
+      const ta = isThreat(a) ? 1 : 0;
+      const tb = isThreat(b) ? 1 : 0;
+      if (tb !== ta) return tb - ta;
+      return hpRatio(b) - hpRatio(a);
+    };
+
+    const backMobs  = mobs.filter(m => m.lane === 0).sort(byThreatThenHP);
+    const midMobs   = mobs.filter(m => m.lane === 1).sort(byThreatThenHP);
+    const frontMobs = mobs.filter(m => m.lane === 2).sort(byThreatThenHP);
+
+    backMobs.forEach((m,i)  => rowBack.appendChild(makeMobCard(m,i)));
+    midMobs.forEach((m,i)   => rowMid.appendChild(makeMobCard(m,i)));
+    frontMobs.forEach((m,i) => rowFront.appendChild(makeMobCard(m,i)));
+
+    layers.appendChild(rowBack);
+    layers.appendChild(rowMid);
+    layers.appendChild(rowFront);
+
+    scene.appendChild(layers);
+    scene.appendChild(fog1);
+    scene.appendChild(fog2);
+
+    lanesEl.appendChild(scene);
+  }
+
+  function renderParty(){
+    const partyEl = document.getElementById("party");
+    partyEl.innerHTML = "";
+
+    (uiState.party || []).forEach(p => {
+      const row = document.createElement("div");
+      row.className = "pRow";
+
+      if (uiState.selectedPartyId === p.id) {
+        row.classList.add("selected");
+      }
+
+      const hpP = pct(p.hp, p.hpMax);
+      const enP = pct(p.en, p.enMax);
+      const mnP = pct(p.mn, p.mnMax);
+
+      const imgUrl = playerImageUrl(p.avatarId);
+
+      row.innerHTML = `
+        <div class="pAvatar">
+          <img class="avatarImg"
+               src="${escapeHtml(imgUrl)}"
+               alt="${escapeHtml(p.id || "")}"
+               loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+          <div class="avatarText" style="display:none">
+            ${escapeHtml((p.id||"?").slice(0,2).toUpperCase())}
+          </div>
+        </div>
+
+        <div class="pInfo">
+          <div class="pNameLine">
+            <span class="name">${escapeHtml(p.id || "")}</span>
+            <span class="meta">${p.active ? "ACTIVE" : ""}</span>
+          </div>
+
+          <div class="pBars">
+            ${barRow("HP", hpP, `${p.hp}/${p.hpMax}`, "hp")}
+            ${barRow("EN", enP, `${p.en}/${p.enMax}`, "en")}
+            ${barRow("MN", mnP, `${p.mn}/${p.mnMax}`, "mn")}
+          </div>
+        </div>
+      `;
+
+      row.onclick = () => {
+        const name = (p.id || "").trim();
+        if (!name) return;
+
+        actionTargetEl.value = name;
+
+        uiState.selectedPartyId = p.id;
+        uiState.selectedMobId = null;
+
+        renderAll();
+      };
+
+      partyEl.appendChild(row);
+    });
+  }
 
   function barRow(label, percent01, rightText, cls){
     const w = Math.round(percent01 * 100);
@@ -1355,42 +1453,39 @@ function renderEncounter(){
   }
 
   let lastState = null;
-const playedDeaths = new Set(); // mobId -> already played this death sound
+  const playedDeaths = new Set();
 
-function extractMobsMap(state){
-  const map = new Map();
-  (state?.mobs || []).forEach(m => map.set(m.id, m));
-  return map;
-}
-
-function detectMobDeaths(prev, next){
-  const prevMap = extractMobsMap(prev);
-  const nextMap = extractMobsMap(next);
-
-  // Case A: mob still exists but hp crossed to <= 0
-  for(const [id, nextMob] of nextMap){
-    const prevMob = prevMap.get(id);
-    const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true; // treat newly seen as alive
-    const isDead   = Number(nextMob.hp) <= 0;
-
-    if (wasAlive && isDead && !playedDeaths.has(id)){
-      playedDeaths.add(id);
-      playSound("mobdeath");
-    }
+  function extractMobsMap(state){
+    const map = new Map();
+    (state?.mobs || []).forEach(m => map.set(m.id, m));
+    return map;
   }
 
-  // Case B: mob disappeared from list (killed/removed)
-  for(const [id, prevMob] of prevMap){
-    const existedBefore = true;
-    const existsNow = nextMap.has(id);
-    const wasAlive = Number(prevMob.hp) > 0;
+  function detectMobDeaths(prev, next){
+    const prevMap = extractMobsMap(prev);
+    const nextMap = extractMobsMap(next);
 
-    if (existedBefore && wasAlive && !existsNow && !playedDeaths.has(id)){
-      playedDeaths.add(id);
-      playSound("mobdeath");
+    for(const [id, nextMob] of nextMap){
+      const prevMob = prevMap.get(id);
+      const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
+      const isDead   = Number(nextMob.hp) <= 0;
+
+      if (wasAlive && isDead && !playedDeaths.has(id)){
+        playedDeaths.add(id);
+        playSound("mobdeath");
+      }
+    }
+
+    for(const [id, prevMob] of prevMap){
+      const existsNow = nextMap.has(id);
+      const wasAlive = Number(prevMob.hp) > 0;
+
+      if (wasAlive && !existsNow && !playedDeaths.has(id)){
+        playedDeaths.add(id);
+        playSound("mobdeath");
+      }
     }
   }
-}
 
   function renderAll(){
     renderBadges();
@@ -1411,32 +1506,30 @@ function detectMobDeaths(prev, next){
       }
 
       if(!res.ok){
-        // keep demo state
         return;
       }
 
       const s = await res.json();
 
-      // detect deaths BEFORE overwriting uiState
       detectMobDeaths(lastState || uiState, s);
 
-      // Minimal compatibility:
-      // If your server only returns {hpPct, energyPct, manaPct} currently,
-      // we still render the demo encounter/party, but you can expand later.
-      //
-      // If later you return full encounter/party state, map it here:
-      // uiState = { ...uiState, ...s };
-
-      // Keep local selection if server sends null/undefined
       const keepSelectedMobId   = uiState.selectedMobId;
       const keepSelectedPartyId = uiState.selectedPartyId;
-      uiState= s;
-      // Restore selection if server didn't provide a real value
+
+      uiState = s;
+      // If server provides phase/gameover fields
+      if (String(s.phase || "") === "gameover") {
+        showGameOverOverlay(s.gameOverReason, s.restartInMs);
+        playSound("gameover");
+      } else {
+        hideGameOverOverlay();
+      }
+
+
       if (s.selectedMobId == null)   uiState.selectedMobId   = keepSelectedMobId;
       if (s.selectedPartyId == null) uiState.selectedPartyId = keepSelectedPartyId;
 
       lastState = s;
-      //console.log("State changed, re-rendering UI");
       renderAll();
     } catch(e){
       // ignore network errors for now
@@ -1449,19 +1542,57 @@ function detectMobDeaths(prev, next){
     }[c]));
   }
 
-    function mobImageUrl(mobId){
+  function mobImageUrl(mobId){
     if (!mobId) return "";
-    // Sicherheits-Sanitizing: nur erlaubte Zeichen
     const safe = mobId.replace(/[^a-zA-Z0-9_-]/g, "");
     return IMG_BASE + safe + IMG_EXT;
-    }
-    function playerImageUrl(avatarId){
+  }
+  function playerImageUrl(avatarId){
     if (!avatarId) return "";
-    // Sicherheits-Sanitizing: nur erlaubte Zeichen
     const safe = avatarId.replace(/[^a-zA-Z0-9_-]/g, "");
     return AVATAR_IMG_BASE + safe + IMG_EXT;
-    }
+  }
 
+  /* =========================
+   KEYBOARD SHORTCUTS (PC)
+   ========================= */
+
+  // Detect "desktop-ish" devices (fine pointer = mouse)
+  const isDesktopInput = window.matchMedia("(pointer: fine)").matches;
+
+  document.addEventListener("keydown", (e) => {
+    if (!isDesktopInput) return;
+
+    // Don't trigger while typing
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    // Only digits 0–9
+    if (!/^[0-9]$/.test(e.key)) return;
+
+    // Map key -> action index
+    const key = e.key;
+    const index = key === "0" ? 9 : (Number(key) - 1);
+
+    if (index < 0 || index >= ACTIONS.length) return;
+
+    const actionId = ACTIONS[index].id;
+
+    const btn = document.querySelector(
+      `.action-btn[data-action="${actionId}"]`
+    );
+
+    if (!btn) return;
+
+    // Prevent browser shortcuts (e.g. page search on some layouts)
+    e.preventDefault();
+
+    // Respect cooldowns (same behavior as clicking)
+    if (btn.classList.contains("cooldown")) return;
+
+    // Fire the action
+    btn.click();
+  });
 
   /* =========================
      BOOT
@@ -1472,10 +1603,53 @@ function detectMobDeaths(prev, next){
 
   renderAll();
 
-  // Poll state (adjust later)
   setInterval(updateState, 2500);
   updateState();
+
+
+  /* =========================
+     Game Over
+     ========================= */
+function showGameOverOverlay(reason, restartInMs){
+  const overlay = document.getElementById("gameOverOverlay");
+  const reasonEl = document.getElementById("gameOverReason");
+  const secEl = document.getElementById("gameOverSeconds");
+
+  if (!overlay) return;
+
+  reasonEl.textContent = reason || "You lost";
+  const sec = Math.max(0, Math.ceil((Number(restartInMs) || 0) / 1000));
+  secEl.textContent = String(sec);
+
+  overlay.classList.remove("hidden");
+  overlay.setAttribute("aria-hidden", "false");
+  document.body.classList.add("locked");
+}
+
+function hideGameOverOverlay(){
+  const overlay = document.getElementById("gameOverOverlay");
+  if (!overlay) return;
+
+  overlay.classList.add("hidden");
+  overlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("locked");
+}
+
 </script>
 
+
+<!-- GAME OVER OVERLAY -->
+<div id="gameOverOverlay" class="overlay hidden" aria-hidden="true">
+  <div class="overlayCard">
+    <div class="overlayTitle">YOU LOST</div>
+    <div class="overlayReason" id="gameOverReason">All players are dead</div>
+
+    <div class="overlayTimer">
+      Restarting in <span id="gameOverSeconds">3</span>s…
+    </div>
+
+    <div class="overlayHint">Tip: choose a different target or try “Defend” early.</div>
+  </div>
+</div>
 </body>
 </html>

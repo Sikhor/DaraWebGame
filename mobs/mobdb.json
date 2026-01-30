@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "mobs": [
+    {
+      "id": "Spider",
+      "displayName": "Spider",
+      "mobClass": "Spider",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Insect",
+      "displayName": "Insect",
+      "mobClass": "Insect",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Kinora",
+      "displayName": "Kinora",
+      "mobClass": "Kinora",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Yesti",
+      "displayName": "Yesti",
+      "mobClass": "Yesti",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Snapi",
+      "displayName": "Snapi",
+      "mobClass": "Snapi",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Catorn",
+      "displayName": "Catorn",
+      "mobClass": "Catorn",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Franka",
+      "displayName": "Franka",
+      "mobClass": "Franka",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Brolla",
+      "displayName": "Brolla",
+      "mobClass": "Brolla",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    {
+      "id": "Insect",
+      "displayName": "Insect",
+      "mobClass": "Insect",
+      "difficulty": "Normal",
+      "attackType": "Melee",
+      "maxHP": 30,
+      "maxEnergy": 100,
+      "maxMana": 0,
+      "baseDamage": 5,
+      "baseDefense": 1
+    },
+    
+    {
+      "id": "Chicka",
+      "displayName": "Chicka",
+      "mobClass": "Chicka",
+      "difficulty": "Boss",
+      "attackType": "Ranged",
+      "maxHP": 45,
+      "maxEnergy": 80,
+      "maxMana": 20,
+      "baseDamage": 7,
+      "baseDefense": 2
+    },
+    {
+      "id": "Banoreth",
+      "displayName": "Banoreth",
+      "mobClass": "Banoreth",
+      "difficulty": "Boss",
+      "attackType": "Combi",
+      "maxHP": 300,
+      "maxEnergy": 150,
+      "maxMana": 200,
+      "baseDamage": 18,
+      "baseDefense": 5
+    },
+    {
+      "id": "Kornrex",
+      "displayName": "Kornrex",
+      "mobClass": "Kornrex",
+      "difficulty": "Boss",
+      "attackType": "Combi",
+      "maxHP": 300,
+      "maxEnergy": 150,
+      "maxMana": 200,
+      "baseDamage": 18,
+      "baseDefense": 5
+    }
+  ]
+}

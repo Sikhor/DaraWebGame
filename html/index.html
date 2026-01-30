@@ -204,6 +204,50 @@
       #hudFrame { height: 320px; }
       #combatLogFrame { height: 140px; }
     }
+
+    /* =========================
+   MOBILE LANDSCAPE: keep full login visible
+   ========================= */
+@media (orientation: landscape) and (max-width: 1024px){
+
+  /* Allow the overlay to scroll if content is taller than the screen */
+  #loginOverlay{
+    align-items: flex-start;     /* don’t vertically center (causes cut-off) */
+    justify-content: center;
+    overflow-y: auto;            /* IMPORTANT */
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 0;             /* gives top/bottom breathing room */
+  }
+
+  /* Make the content box a bit shorter */
+  .login-content{
+    padding: 16px 16px;
+    max-width: 520px;            /* can be wider in landscape */
+    width: calc(100% - 24px);
+    margin: 10px 0;
+  }
+
+  /* Reduce big elements so it fits */
+  .login-icon{
+    width: 44px;
+    height: 44px;
+    margin-bottom: 10px;
+  }
+
+  /* Make chat tighter so it doesn’t push the button below the fold */
+  .login-chat{
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  .chat-msg{ margin-bottom: 6px; }
+  .chat-body{ padding: 6px 8px; }
+  .chat-avatar{ width: 22px; height: 22px; }
+
+  /* Ensure Google button area doesn’t add extra vertical gaps */
+  .google-login-wrap{ margin-top: 4px; }
+  .reset-login-btn{ margin-top: 10px; padding: 10px 12px; }
+}
   </style>
 </head>
 
@@ -225,6 +269,14 @@
       <!-- START login chat -->
 <div class="login-chat">
 
+  <div class="chat-msg station">
+    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Soldorn-300x300.jpg">
+    <div class="chat-body">
+      Today its foggy on Marina Station.<br>
+      Wait... I see something in the distance.<br>
+    </div>
+  </div>
+
   <div class="chat-msg system">
     <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Soldorn-300x300.jpg">
     <div class="chat-body">
@@ -232,34 +284,26 @@
     </div>
   </div>
 
-  <div class="chat-msg station">
-    <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Soldorn-300x300.jpg">
-    <div class="chat-body">
-      Marina Station is silent.<br>
-      Power levels critical.<br>
-      Systems failing.
-    </div>
-  </div>
 
   <div class="chat-msg ai">
     <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Tira-300x300.jpg">
     <div class="chat-body">
       Any agent receiving this transmission,<br>
-      we are running out of time.
+      Marina Station is under attack!!!
     </div>
   </div>
 
   <div class="chat-msg control">
     <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Christi-300x300.jpg">
     <div class="chat-body">
-      All available operatives are authorized to respond.
+      All available operatives: Help!
     </div>
   </div>
 
   <div class="chat-msg system">
     <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Turnario-300x300.jpg">
     <div class="chat-body">
-      &gt;&gt; Awaiting authentication…
+      &gt;&gt; Awaiting authentication to port…
     </div>
   </div>
 

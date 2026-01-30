@@ -13,6 +13,13 @@
 
 #include "json.hpp"
 #include "combatant.h"
+#include "DaraConfig.h"
+
+enum class EGamePhase
+{
+    Running,
+    GameOverPause
+};
 
 inline void DaraLog(const std::string area, const std::string& msg)
 {
@@ -61,13 +68,14 @@ public:
 
     // Player/mob management (call when joining/leaving/spawning)
     void AddOrUpdatePlayer(const std::string& playerName);
-    bool ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err);
+    bool ApplyDamageToPlayer(const std::string& playerName, float dmg);
+    bool ApplyDamageToPlayerLocked(const std::string& playerName, float dmg);
     void RemovePlayer(const std::string& playerName);
 
     json GetPlayerStateJson(const std::string& playerName) const;
 
     void AddOrUpdateMob(const std::string& mobName);
-    void SpawnMob(const std::string& name, ECombatantType type, float hp, float energy, float mana, std::string mobClass, int lane, int slot);
+    void SpawnMob(const std::string& mobId, int lane, int slot);
 
     bool ApplyDamageToMob(const std::string& mobName, float dmg, std::string* err);
     void RemoveMob(const std::string& mobName);
@@ -76,9 +84,6 @@ public:
     json GetCombatState() const;
     json SerializePlayersLocked() const;
     json SerializeMobsLocked() const;
-    // Snapshot helpers for logging
-    json SerializePlayersAllLocked() const;
-    json SerializeMobsAllLocked() const;
 
     json GetUIStateSnapshotJsonLocked() const;
     void SetLane(std::string mobname, int lanenumber, int slotnumber);
@@ -104,6 +109,10 @@ public:
 
     // Optional: get current turn id (for clients / debug)
     uint64_t GetCurrentTurnId() const;
+
+    EGamePhase GetPhase();
+    bool CheckGameOverLocked(std::string& outReason);
+    void ResetGameLocked();
 
 private:
     // Thread loop
@@ -140,6 +149,12 @@ private:
 
 private:
     const std::string GameId;
+    // Game over handling
+    EGamePhase Phase = EGamePhase::Running;
+    std::string GameOverReason;
+    std::chrono::steady_clock::time_point GameOverUntil{};
+    std::chrono::milliseconds GameOverPauseDuration{DARA_GAMEOVER_PAUSE}; // 3 seconds
+    uint64_t LastGameOverTurnId = 0;
 
     // ---- guarded by CacheMutex ----
     mutable std::mutex CacheMutex;
@@ -171,7 +186,7 @@ private:
     std::unordered_map<std::string, PlayerAction> BufferedActions;  // playerName -> action
 
     // config
-    std::chrono::milliseconds TurnTimeout { 5000 };
+    std::chrono::milliseconds TurnTimeout { DARA_TURN_TIMEOUT };
 
     // injected AI callback
     AiCallback AiCb;

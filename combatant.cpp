@@ -1,6 +1,5 @@
 #include "combatant.h"
 
-
 float GetRandomFloat(float min, float max)
 {
     static std::random_device rd;
@@ -49,13 +48,26 @@ Combatant::Combatant(const std::string& name, ECombatantType type, float hp, flo
     Id = GenerateUUID();
     Name = name;
     Type = type;
-    HP = hp;
-    Energy = energy;
-    Mana = mana;
+    AttackType= ECombatantAttackType::Melee;
+    Difficulty= ECombatantDifficulty::Normal;
     AvatarId= mobClass;
-    mobClass= mobClass;
+    MobClass= mobClass;
+
+    HP = hp;
+    MaxHP= hp;
+    Energy = energy;
+    MaxEnergy= energy;
+    Mana = mana;
+    MaxMana= mana;
     Lane= lane;
     Slot= slot;
+}
+void Combatant::Revive()
+{
+    HP=MaxHP;
+    Energy= MaxEnergy;
+    Mana= MaxMana;
+    AvatarId=MobClass;
 }
 
 bool Combatant::IsAlive() const
@@ -84,9 +96,9 @@ void Combatant::RegenTurn()
     Mana += GetRandomFloat(0.f, 3.f);
     Energy += GetRandomFloat(0.f, 3.f);
 
-    if (HP > MAXHP) HP = MAXHP;
-    if (Mana > MAXMANA) Mana = MAXMANA;
-    if (Energy > MAXENERGY) Energy = MAXENERGY;
+    if (HP > MaxHP) HP = MaxHP;
+    if (Mana > MaxMana) Mana = MaxMana;
+    if (Energy > MaxEnergy) Energy = MaxEnergy;
 }
 
 std::string Combatant::GetName() const
@@ -121,7 +133,10 @@ float Combatant::AttackSpell(const std::string& target)
 void Combatant::ApplyDamage(float dmg)
 {
     HP -= dmg;
-    if (HP < 0.f) HP = 0.f;
+    if (HP <= 0.f){ 
+        HP = 0.f;
+        AvatarId= DARA_DEAD_AVATAR_PLAYER;
+    }
 }
 
 float Combatant::GetHPPct() const
@@ -170,8 +185,89 @@ void Combatant::SetLane(int lane, int slot)
 bool Combatant::ShouldMove()
 {
     CurrentField+=Speed;
-    return CurrentField>Lane && Lane<MAXLANES;
+    return CurrentField>(Lane+1) && Lane<MAXLANES;
+}
+
+bool Combatant::ShouldAttack()
+{
+    switch (AttackType)
+    {
+        case ECombatantAttackType::Melee:
+            // Strong, close-range
+            return Lane>=MAXLANES-1;
+
+        case ECombatantAttackType::Ranged:
+            // Safer, slightly weaker
+            return Lane>=MAXLANES-1;
+
+        case ECombatantAttackType::Combi:
+            // Flexible, tactical
+            return true;
+
+        case ECombatantAttackType::Healer:
+            // No damage – healing handled elsewhere
+            return false;
+
+        default:
+            // Should never happen, but safe fallback
+            return false;
+    }
+
+}
+
+float Combatant::Attack(float DefenseOfTarget)
+{
+    float NormalDmg= 5.f;
+    switch (Difficulty)
+    {
+        case ECombatantDifficulty::Normal:
+            return NormalDmg;
+
+        case ECombatantDifficulty::Boss:
+            return NormalDmg+5.f;
+
+        case ECombatantDifficulty::GroupMob:
+            return NormalDmg+6.f;
+
+        case ECombatantDifficulty::GroupBoss:
+            return NormalDmg+10.f;
+
+        case ECombatantDifficulty::RaidMob:
+            return NormalDmg+11.f;
+
+        case ECombatantDifficulty::RaidBoss:
+            return NormalDmg+15.f;
+
+        default:
+            return 1.f;
+    }
 }
 
 
 
+void Combatant::InitFromMobTemplate(
+    const std::string& mobClass,
+    ECombatantAttackType attackType,
+    ECombatantDifficulty difficulty,
+    int maxHP,
+    int maxEnergy,
+    int maxMana,
+    int baseDamage,
+    int baseDefense
+)
+{
+    MobClass = mobClass;
+    AvatarId = mobClass;
+    AttackType = attackType;
+    Difficulty = difficulty;
+
+    MaxHP = maxHP;     
+    HP = maxHP;
+    MaxEnergy = maxEnergy; 
+    Energy = maxEnergy;
+    MaxMana = maxMana; 
+    Mana = maxMana;
+
+    BaseDamage = baseDamage;
+    BaseDefense = baseDefense;
+}

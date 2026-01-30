@@ -2,14 +2,22 @@
 #include "combatant.h"
 #include <algorithm>
 #include <iostream>
-#include "DaraConfig.h"
 #include "uistate.h"
+#include "MobTemplateStore.h"
+
+extern MobTemplateStore g_mobTemplates;
 
 int RandSlot()
 {
     static thread_local std::mt19937 rng{ std::random_device{}() };
     static std::uniform_int_distribution<int> dist(0, MAXSLOTS-1);
     return dist(rng);
+}
+bool ShallMobSpawn()
+{
+    static thread_local std::mt19937 rng{ std::random_device{}() };
+    static std::uniform_int_distribution<int> dist(0, 100);
+    return dist(rng)>70;
 }
 
 CombatDirector::CombatDirector(std::string gameId)
@@ -82,14 +90,12 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
 json CombatDirector::GetPlayerStateJson(const std::string& playerName) const
 {
     std::shared_ptr<Combatant> p;
-
-    { // nur kurz locken
+    {
         std::lock_guard<std::mutex> lk(CacheMutex);
         auto it = Players.find(playerName);
         if (it == Players.end())
             return json{{"error","Unknown player"}};
-
-        p = it->second; // shared_ptr kopieren
+        p = it->second;
     }
 
     // außerhalb vom CacheMutex lesen
@@ -121,13 +127,26 @@ json CombatDirector::SerializePlayersLocked() const
     for (const auto& [name, player] : Players)
     {
         json p;
-        p["player"]    = player->GetName();
-        p["hpPct"]     = player->GetHPPct();              // int 0–100
+        p["hp"]    = player->GetHP();
+        p["hpMax"] = player->GetMaxHP();
+        p["en"]    = player->GetEnergy();
+        p["enMax"] = player->GetMaxEnergy();
+        p["mn"]    = player->GetMana();
+        p["mnMax"] = player->GetMaxMana();
+
         p["combatLog"] = "";   // string
         p["action"]    = "";   // "attack", "defend", ...
+       
+        std::cout << "SER " << name
+          << " HP=" << player->GetHP()
+          << " MaxHP=" << player->GetMaxHP()
+          << " ptr=" << player.get()
+          << "\n";
+          
 
         arr.push_back(std::move(p));
     }
+
 
     return arr;
 }
@@ -139,7 +158,8 @@ json CombatDirector::SerializeMobsLocked() const
     {
         json m;
         m["mob"]    = mob->GetName();
-        m["hpPct"]     = mob->GetHPPct();              // int 0–100
+        m["hp"]     = mob->GetHP();              
+        m["hpMax"]     = mob->GetMaxHP();              
         m["combatLog"] = "";   // string
         m["action"]    = "";   // "attack", "defend", ...
         arr.push_back(std::move(m));
@@ -149,21 +169,27 @@ json CombatDirector::SerializeMobsLocked() const
 }
 
 
-bool CombatDirector::ApplyDamageToPlayer(const std::string& playerName, float dmg, std::string* err)
+bool CombatDirector::ApplyDamageToPlayer(const std::string& playerName, float dmg)
 {
-    std::shared_ptr<Combatant> p;
+    std::lock_guard<std::mutex> lk(CacheMutex);
+    return ApplyDamageToPlayerLocked(playerName, dmg);
+}
 
-    {
-        std::lock_guard<std::mutex> lk(CacheMutex);
-        auto it = Players.find(playerName);
-        if (it == Players.end()) {
-            if (err) *err = "Unknown player";
-            return false;
-        }
-        p = it->second;
+bool CombatDirector::ApplyDamageToPlayerLocked(const std::string& playerName, float dmg)
+{
+    auto it = Players.find(playerName);
+    if (it == Players.end()) {
+        DaraLog("ERROR", "ApplyDamageToPlayer Unknown player"+playerName);
+        return false;
     }
+    std::shared_ptr<Combatant> p=it->second;
+    p->ApplyDamage(dmg);
 
-    p->ApplyDamage(dmg); // außerhalb CacheMutex
+    std::cout <<"DMG HP=" << p->GetHP()
+          << " MaxHP=" << p->GetMaxHP()
+          << " dmg " <<dmg 
+          << "\n";
+          
     return true;
 }
 
@@ -177,19 +203,17 @@ void CombatDirector::RemovePlayer(const std::string& playerName)
     BufferedActions.erase(playerName);
     Cv.notify_all();
 }
-
-void CombatDirector::AddOrUpdateMob(const std::string& mobName)
+EGamePhase CombatDirector::GetPhase()
 {
-    if (mobName.empty()) return;
-
-    if (!Mobs.count(mobName))
-        Mobs.emplace(mobName, std::make_shared<Combatant>(mobName, ECombatantType::Mob, MAXHP, MAXENERGY, MAXMANA));
-}
+    std::lock_guard<std::mutex> lk(CacheMutex);
+    return Phase;
+};
 
 void CombatDirector::SetLane(std::string mobName, int lanenumber, int slotnumber)
 {
     std::shared_ptr<Combatant> m;
     {
+        std::lock_guard<std::mutex> lk(CacheMutex);
         auto it = Mobs.find(mobName);
         if (it == Mobs.end()) {
             std::cerr << "CombatDirector::SetLane: Unknown mob"<< std::endl;    
@@ -204,17 +228,15 @@ void CombatDirector::SetLane(std::string mobName, int lanenumber, int slotnumber
 
 bool CombatDirector::ApplyDamageToMob(const std::string& mobName, float dmg, std::string* err)
 {
+    std::lock_guard<std::mutex> lk(CacheMutex);
     std::shared_ptr<Combatant> m;
 
-    {
-        std::lock_guard<std::mutex> lk(CacheMutex);
-        auto it = Mobs.find(mobName);
-        if (it == Mobs.end()) {
-            if (err) *err = "Unknown mob";
-            return false;
-        }
-        m = it->second;
+    auto it = Mobs.find(mobName);
+    if (it == Mobs.end()) {
+        if (err) *err = "Unknown mob";
+        return false;
     }
+    m = it->second;
 
     m->ApplyDamage(dmg); // außerhalb CacheMutex
     return true;
@@ -308,6 +330,22 @@ CombatDirector::json CombatDirector::GetStateSnapshotJson(size_t lastLogLines) c
     out["players"] = SerializePlayersLocked();
     out["mobs"] = SerializeMobsLocked();
 
+    // Game Over handling
+    out["phase"] = (Phase == EGamePhase::Running) ? "running" : "gameover";
+    out["gameOverReason"] = GameOverReason;
+
+    if (Phase == EGamePhase::GameOverPause)
+    {
+        auto now = std::chrono::steady_clock::now();
+        auto msLeft = (GameOverUntil > now)
+            ? std::chrono::duration_cast<std::chrono::milliseconds>(GameOverUntil - now).count()
+            : 0;
+        out["restartInMs"] = msLeft;
+    }
+    else
+    {
+        out["restartInMs"] = 0;
+    }
     // last N log lines
     out["log"] = json::array();
     const size_t n = std::min(lastLogLines, Log.size());
@@ -317,36 +355,6 @@ CombatDirector::json CombatDirector::GetStateSnapshotJson(size_t lastLogLines) c
     return out;
 }
 
-CombatDirector::json CombatDirector::SerializePlayersAllLocked() const
-{
-    json arr = json::array();
-    for (const auto& kv : Players)
-    {
-        const auto& c = kv.second;
-        arr.push_back({
-            {"name", c->GetName()},
-            {"hp", c->GetHP()},
-            {"energy", c->GetEnergy()},
-            {"mana", c->GetMana()}
-        });
-    }
-    return arr;
-}
-
-CombatDirector::json CombatDirector::SerializeMobsAllLocked() const
-{
-    json arr = json::array();
-    for (const auto& kv : Mobs)
-    {
-        const auto& c = kv.second;
-        arr.push_back({
-            {"name", c->GetName()},
-            {"energy", c->GetEnergy()},
-            {"mana", c->GetMana()}
-        });
-    }
-    return arr;
-}
 
 void CombatDirector::ResolverLoop()
 {
@@ -404,11 +412,15 @@ void CombatDirector::ResolverLoop()
                       });
         }
 
-        // Step B: resolve players (no lock)
-        std::vector<std::string> turnLog;
-        turnLog.push_back("=== TURN " + std::to_string(turnId) + " ===");
-        ResolvePlayers(actions, turnLog);
+            // Step B: resolve players (no lock) initially... but maybe thats the bug ?
 
+            std::vector<std::string> turnLog;
+            turnLog.push_back("=== TURN " + std::to_string(turnId) + " ===");
+        {
+            // Ai said no lock here std::unique_lock<std::mutex> lk(CacheMutex);
+
+            ResolvePlayers(actions, turnLog);
+        }
 
         // Step C: AI (no lock). Build snapshot under lock, then call AI unlocked.
         json aiRequest;
@@ -449,22 +461,47 @@ void CombatDirector::ResolverLoop()
             std::string reason;
             if (CheckGameOverLocked(reason))
             {
-                turnLog.push_back("GAME OVER: " + reason);
-                // you might set a flag here to stop resolving further turns
+                // Show a friendly lose message in log (UI will read it)
+                turnLog.push_back("YOU LOST! " + reason);
+                turnLog.push_back("Restarting in " + std::to_string((int)GameOverPauseDuration.count()/1000) + "s...");
+                DaraLog("GAMESTATE", "Game Over");
             }
 
+            // write logs
             AppendLogLocked(turnId, turnLog);
 
             // advance turn
             CurrentTurnId++;
             Resolving = false;
-
-            // Move buffered (queued) actions into the new open turn
             PendingActions = std::move(BufferedActions);
             BufferedActions.clear();
 
+            // If we're in game-over pause, do NOT continue instantly.
+            // We'll idle until the deadline and then reset.
             Cv.notify_all();
         }
+        // After finishing the turn, if game over: sleep/wait until restart time, then reset
+        {
+            std::unique_lock<std::mutex> lk(CacheMutex);
+            if (Phase == EGamePhase::GameOverPause)
+            {
+                auto until = GameOverUntil;
+                lk.unlock();
+
+                // wait without holding CacheMutex
+                std::this_thread::sleep_until(until);
+
+                lk.lock();
+                // Check again (in case something changed)
+                if (Phase == EGamePhase::GameOverPause && std::chrono::steady_clock::now() >= GameOverUntil)
+                {
+                    ResetGameLocked();
+                    // optional: add a log line that a new run started
+                    Log.push_back(LogEntry{0, "=== NEW RUN STARTED ===", std::chrono::system_clock::now()});
+                }
+            }
+        }
+
     }
 }
 
@@ -509,6 +546,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
 
 CombatDirector::json CombatDirector::BuildAiRequestSnapshotLocked(uint64_t turnId) const
 {
+
     json req;
     req["gameId"] = GameId;
     req["turnId"] = turnId;
@@ -538,12 +576,18 @@ void CombatDirector::ApplyAiResults(const json& aiJson,
 
 void CombatDirector::ResolveDeadMobs()
 {
+    bool isDeleteAllMobs= false;
+    
+    if (Players.empty()) {
+        isDeleteAllMobs= true;
+        DaraLog("INFO", "Players map is empty");
+    }
       for (auto it = Mobs.begin(); it != Mobs.end(); )
     {
         const auto& mobName = it->first;
         const auto& mob = it->second;
 
-        if(mob->GetAvatarId()=="Dead"){
+        if(mob->GetAvatarId()=="Dead" || isDeleteAllMobs){
             it = Mobs.erase(it);     // <- korrekt: erase gibt nächsten Iterator zurück
             continue;
         }
@@ -584,33 +628,36 @@ void CombatDirector::GetFilledSlotArray()
             OpenSlotAmount--;
         }
     }
-    std::cout << "OpenSlots: "<< OpenSlotAmount << " FilledSlotAmount: "<< SpawnedMobsAmount<< std::endl;
+    //std::cout << "OpenSlots: "<< OpenSlotAmount << " FilledSlotAmount: "<< SpawnedMobsAmount<< std::endl;
 
 }
-void CombatDirector::SpawnMob(const std::string& mobName, ECombatantType type, float hp, float energy, float mana, std::string mobClass, int lane, int slot)
+void CombatDirector::SpawnMob(const std::string& mobId, int lane, int slot)
 {
-    if (mobName.empty()) return;
+    if (mobId.empty()) return;
 
-    if (!Mobs.count(mobName) && SpawnedMobsAmount<=DARA_MAX_MOBS){
-        Mobs.emplace(mobName, std::make_shared<Combatant>(mobName, ECombatantType::Mob, hp, energy, mana, mobClass, lane, slot));
-        if(DARA_DEBUG_SPAWNS) std::cout <<"Spawn Mob"<< mobName<<" Class"<< mobClass<< " Slot:" << slot <<std::endl;
+    // IMPORTANT: assume CacheMutex already held by caller (ResolveMobs)
+    auto it = Mobs.find(mobId);
+    if (it != Mobs.end())
+        return;
 
-    }
+    // Create instance from template
+    auto mob = g_mobTemplates.CreateMobInstancePtr(mobId, lane, slot);
 
+    Mobs.emplace(mobId, std::move(mob));
 }
+
 
 void CombatDirector::ResolveSpawnMobs()
 {
     static int MobNumber=0;
-    std::string MobClass="Spider";
     int slot= RandSlot();
     
     GetFilledSlotArray();
 
-    if(!FilledSlotArray[0][slot]){
-        std::string MobName= MobClass+std::to_string(MobNumber);
-        MobNumber++;
-        SpawnMob(MobName, ECombatantType::Mob, 20.f, 20.f,20.f, MobClass, 0, slot);
+    if(!FilledSlotArray[0][slot] && ShallMobSpawn() && !Players.empty()){
+        const std::string mobId = g_mobTemplates.PickRandomMobId();
+        if (mobId.empty()) throw std::runtime_error("No mob templates loaded");
+            SpawnMob(mobId, 0, slot);
 
     }
 }
@@ -644,7 +691,7 @@ void CombatDirector::ResolveMobs(const json& aiJson,
                                 std::vector<std::string>& outTurnLog)
 {
     (void)aiJson;
-    // 1) Dead mobs entfernen (LOCK ist schon gehalten!)
+    // 1) Dead mobs entfernen oder alle entfernen wenn kein player mehr da (LOCK ist schon gehalten!)
     ResolveDeadMobs();
     // 2) Spawn Mobs
     ResolveSpawnMobs();
@@ -669,7 +716,7 @@ void CombatDirector::ResolveMobs(const json& aiJson,
     static thread_local std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<size_t> pick(0, alivePlayers.size() - 1);
 
-    constexpr float kDamage = 1.0f;
+    float kDamage = 5.0f;
 
     for (auto& [mobName, mob] : Mobs)
     {
@@ -681,18 +728,16 @@ void CombatDirector::ResolveMobs(const json& aiJson,
         if (!target) continue;
 
         // Apply damage directly (NO second CacheMutex lock!)
-        target->ApplyDamage(kDamage);
-        mob->AttackMelee(target->GetName());    
+        if(mob->ShouldAttack()){
+            kDamage= mob->Attack(0.f);
+            ApplyDamageToPlayerLocked(target->GetName(), kDamage);
 
-        // Log globally (turn log)
-        outTurnLog.push_back(
-            mobName + " attacks " + target->GetName() +
-            " for " + std::to_string((int)kDamage) + " dmg."
-        );
+            // Log globally (turn log)
+            std::string logMsg= mobName + " attacks " + target->GetName() +
+                " for " + std::to_string((int)kDamage) + " dmg.";
+            outTurnLog.push_back(logMsg);
 
-        if(DARA_DEBUG_COMBATLOG) {
-            std::cout << "CombatLog: " << mobName << " attacks " << target->GetName() <<
-                " for " << (int)kDamage << " dmg." <<std::endl;
+            if(DARA_DEBUG_COMBATLOG) DaraLog("MobAttack", logMsg);
         }
         // Optional per-entity log fields if you have them:
         // mob->SetLastAction("attack");
@@ -700,29 +745,6 @@ void CombatDirector::ResolveMobs(const json& aiJson,
         // target->SetCombatLog("Hit by " + mobName);
     }
     
-}
-
-bool CombatDirector::CheckGameOverLocked(std::string& outReason) const
-{
-    if (Players.empty())
-        return false;
-
-    bool allDead = true;
-    for (const auto& kv : Players)
-    {
-        if (kv.second->GetHP() > 0)
-        {
-            allDead = false;
-            break;
-        }
-    }
-
-    if (allDead)
-    {
-        outReason = "All players are dead";
-        return true;
-    }
-    return false;
 }
 
 void CombatDirector::AppendLogLocked(uint64_t turnId, const std::vector<std::string>& lines)
@@ -771,12 +793,106 @@ CombatDirector::json CombatDirector::GetLogTailJson(size_t lastN) const
 
 json CombatDirector::GetUIStateSnapshotJsonLocked() const
 {
-        UIState ui;
+    std::lock_guard<std::mutex> lk(CacheMutex);
+
+    UIState ui;
 
     ui.SetTurn(CurrentTurnId);
     ui.SetSlots(5); // your encounter grid width
 
     // Convert Players + Mobs → JSON
+    // Wrong version? 
     nlohmann::json uiJson = ui.ToJson(Players, Mobs);
+    
+    /*
+    nlohmann::json uiJson;
+    uiJson["party"] = SerializePlayersLocked();
+    uiJson["mobs"] = SerializeMobsLocked();
+    */
+
+
+     // ---- Add game-over attributes for the web UI ----
+    // If you have: Running / GameOverPause / maybe other phases
+    const bool isGameOver = (Phase == EGamePhase::GameOverPause);
+
+    uiJson["turnId"] = CurrentTurnId;                       // optional, but handy
+    uiJson["phase"]  = isGameOver ? "gameover" : "running"; // what the UI checks
+    uiJson["gameOverReason"] = GameOverReason;
+
+    if (isGameOver)
+    {
+        auto now = std::chrono::steady_clock::now();
+        auto msLeft = (GameOverUntil > now)
+            ? std::chrono::duration_cast<std::chrono::milliseconds>(GameOverUntil - now).count()
+            : 0;
+        uiJson["restartInMs"] = msLeft;
+    }
+    else
+    {
+        uiJson["restartInMs"] = 0;
+    }
+
     return uiJson;
+}
+
+bool CombatDirector::CheckGameOverLocked(std::string& outReason)
+{
+    if (Players.empty())
+        return false;
+
+    bool allDead = true;
+    for (const auto& kv : Players)
+    {
+        if (kv.second && kv.second->IsAlive())
+        {
+            allDead = false;
+            break;
+        }
+    }
+
+    if (!allDead)
+        return false;
+
+    outReason = "All players are dead";
+
+    // If we just entered game over, start the pause timer
+    if (Phase != EGamePhase::GameOverPause)
+    {
+        Phase = EGamePhase::GameOverPause;
+        GameOverReason = outReason;
+        GameOverUntil = std::chrono::steady_clock::now() + GameOverPauseDuration;
+        LastGameOverTurnId = CurrentTurnId;
+    }
+
+    return true;
+}
+
+void CombatDirector::ResetGameLocked()
+{
+    // Clear mobs and actions
+    Mobs.clear();
+    PendingActions.clear();
+    BufferedActions.clear();
+
+    // Reset players stats (keep them logged in)
+    for (auto& [name, p] : Players)
+    {
+        if (!p) continue;
+
+        // Use whatever your Combatant supports:
+        // p->SetHP(MAXHP); p->SetEnergy(MAXENERGY); p->SetMana(MAXMANA);
+        // If you don't have setters, add a method like p->ResetVitals(...)
+        p->Revive(); // recommended helper
+    }
+
+    // Optional: clear log or keep it
+    // Log.clear();
+
+    // Restart turns
+    CurrentTurnId = 0;
+    Resolving = false;
+
+    // Clear game over state
+    Phase = EGamePhase::Running;
+    GameOverReason.clear();
 }
