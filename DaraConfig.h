@@ -12,4 +12,8 @@ inline constexpr int DARA_DEBUG_AI_REPLIES= 0;
 inline constexpr int DARA_DEBUG_MSGSTATS= 0;
 inline constexpr int DARA_DEBUG_PLAYERSTATS= 0; 
 inline constexpr int DARA_DEBUG_COMBATLOG= 0;
-inline constexpr int DARA_DEBUG_STORYLOG= 1;
+inline constexpr int DARA_DEBUG_STORYLOG= 0;
+inline constexpr int DARA_DEBUG_SPAWNS= 1;
+
+inline constexpr int DARA_MAX_MOBS= 4;
+

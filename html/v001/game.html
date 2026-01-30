@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#05070b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<title>Dara – Game</title>
+
+<style>
+  :root{
+    --gap: 10px;
+    --panel-radius: 12px;
+    --border: #2a3340;
+    --bg: rgba(10,14,20,0.90);
+    --bg2: rgba(0,0,0,0.28);
+    --text: #e6e6e6;
+    --muted: #9aa6b2;
+
+    --laneLong: rgba(60,120,255,0.18);
+    --laneMid:  rgba(255,160,60,0.18);
+    --laneMelee:rgba(255,60,60,0.18);
+
+    --slotSize: 58px;
+    --topbarH: 50px;
+    --actionsH: 164px; /* enough for 2 rows of 5 action buttons + inputs */
+
+    --partyMaxHMobile: 32vh;
+  }
+
+  html, body { height: 100%; }
+  html { background:#05070b; }
+  body{
+    margin:0;
+    background: radial-gradient(1200px 600px at 50% 20%, #121a2a 0%, #05070b 55%);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    overflow: hidden; /* no page scroll */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .app{
+    height: 100%;
+    display: grid;
+    grid-template-rows: var(--topbarH) 1fr var(--actionsH);
+    gap: var(--gap);
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .topbar{
+    height: var(--topbarH);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--panel-radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+  .title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .badge{
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    padding: 4px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .topbarRight{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .btnTop{
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+  }
+  .btnTop:hover { filter: brightness(1.15); }
+  .btnTop:active { transform: translateY(1px); }
+
+  .main{
+    display: grid;
+    grid-template-columns: 1fr 300px; /* encounter | party */
+    gap: var(--gap);
+    min-height: 0;
+  }
+
+  .panel{
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--panel-radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .panelHeader{
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    font-weight: 800;
+  }
+  .panelHeader .sub{
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ---------- ENCOUNTER GRID ---------- */
+  .lanes{
+    padding: 8px;
+    overflow: hidden; /* no scrolling here */
+  }
+
+  .lane{
+    margin-bottom: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .lane.long { background: var(--laneLong); }
+  .lane.mid  { background: var(--laneMid); }
+  .lane.melee{ background: var(--laneMelee); }
+
+  .laneTitle{
+    padding: 6px 10px;
+    font-size: 12px;
+    opacity: 0.9;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display:flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .laneTitle span:last-child{
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .laneGrid{
+    display: grid;
+    grid-template-columns: repeat(var(--slots, 5), var(--slotSize));
+    gap: 8px;
+    padding: 8px;
+    justify-content: start;
+  }
+
+  .slot{
+    width: var(--slotSize);
+    height: var(--slotSize);
+    border-radius: 10px;
+    background: rgba(0,0,0,0.30);
+    border: 1px solid rgba(255,255,255,0.14);
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .slot.empty::after{
+    content:"";
+    position:absolute;
+    inset: 8px;
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 8px;
+    opacity: 0.75;
+  }
+  .slot.attackable{
+    box-shadow: 0 0 0 2px rgba(255,80,80,0.32);
+  }
+  .slot.selected{
+    box-shadow: 0 0 0 2px rgba(120,200,255,0.55);
+  }
+
+  .mob{
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+  }
+  .avatar{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(0,0,0,0.35));
+    display:grid;
+    place-items:center;
+    font-weight: 900;
+    font-size: 12px;
+  }
+  .hpBar{
+    position:absolute;
+    left:6px;
+    right:6px;
+    bottom:6px;
+    height:6px;
+    background: rgba(255,255,255,0.14);
+    border-radius: 6px;
+    overflow:hidden;
+  }
+  .hpFill{
+    height:100%;
+    background: linear-gradient(90deg, #3cff9a, #ffd166, #ff4d4d);
+  }
+
+  /* ---------- PARTY (ONLY THIS SCROLLS) ---------- */
+  .partyList{
+    padding: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+  }
+
+  .pRow{
+    display:grid;
+    grid-template-columns: 32px 1fr;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.18);
+    margin-bottom: 8px;
+  }
+
+  .pAvatar{
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.45);
+    display:grid;
+    place-items:center;
+    font-weight: 900;
+    font-size: 12px;
+  }
+
+  .pInfo{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .pNameLine{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    min-width:0;
+  }
+  .pNameLine .name{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .pNameLine .meta{
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    font-weight: 700;
+  }
+
+  .pBars{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+
+  .pBarRow{
+    display:grid;
+    grid-template-columns: 26px 1fr 38px;
+    gap: 8px;
+    align-items:center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.82);
+  }
+  .pBar{
+    height: 6px;
+    background: rgba(255,255,255,0.14);
+    border-radius: 6px;
+    overflow:hidden;
+  }
+  .pBar > div { height:100%; width:50%; }
+  .pBar.hp > div{ background: linear-gradient(90deg, #3cff9a, #ffd166, #ff4d4d); }
+  .pBar.en > div{ background: linear-gradient(90deg, rgba(120,200,255,0.95), rgba(80,150,255,0.85)); }
+  .pBar.mn > div{ background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(120,80,255,0.85)); }
+
+  /* ---------- BOTTOM HUD (10 ACTION BUTTONS + INPUTS) ---------- */
+  .hud{
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--panel-radius);
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .hudRow{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+  }
+
+  .target-input{
+    width: 140px;
+    flex: 0 0 auto;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: #fff;
+    padding: 0 10px;
+    outline: none;
+    font-size: 13px;
+  }
+
+  .chat-input{
+    flex: 1;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: #fff;
+    padding: 0 14px;
+    outline: none;
+    font-size: 14px;
+  }
+
+  .chat-input::placeholder{ opacity: 0.65; }
+  .chat-input:focus{
+    border-color: rgba(120,170,255,0.55);
+    box-shadow: 0 0 0 3px rgba(120,170,255,0.15);
+  }
+
+  .actions{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .action-btn{
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.25);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  .action-btn img{
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .action-btn .tip{
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    right: 4px;
+    font-size: 10px;
+    opacity: 0.85;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
+  .action-btn:hover{ filter: brightness(1.15); }
+  .action-btn:active{ transform: translateY(1px); }
+
+  /* Cooldown overlay */
+  .cd-overlay{
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.55);
+    z-index: 2;
+  }
+  .cd-time{
+    font-weight: 900;
+    font-size: 14px;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9);
+  }
+
+  .action-btn.cooldown{
+    filter: grayscale(0.6);
+    opacity: 0.9;
+  }
+  .action-btn.cooldown .cd-overlay{ display:flex; }
+
+  .cd-fill{
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    transform: translateY(100%); /* hidden initially */
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ---------- MOBILE: stack encounter above party ---------- */
+  @media (max-width: 900px){
+    :root{
+      --gap: 8px;
+      --slotSize: 52px;
+      --actionsH: 176px;
+    }
+    .app{ padding: 8px; }
+    .main{
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    .partyPanel{
+      max-height: var(--partyMaxHMobile);
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 420px){
+    :root{ --slotSize: 48px; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="title">
+      <span>DARA – Encounter</span>
+      <span class="badge" id="playerBadge">Player: (loading…)</span>
+      <span class="badge" id="turnBadge">Turn: 1</span>
+    </div>
+    <div class="topbarRight">
+      <span class="badge" id="gameBadge">Game: 0</span>
+      <button class="btnTop" id="btnLogout" title="Logout">Logout</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ENCOUNTER -->
+    <div class="panel encounterPanel">
+      <div class="panelHeader">
+        <span>Encounter</span>
+        <span class="sub">Lanes / Slots</span>
+      </div>
+      <div class="lanes" id="lanes"></div>
+    </div>
+
+    <!-- PARTY -->
+    <div class="panel partyPanel">
+      <div class="panelHeader">
+        <span>Party</span>
+        <span class="sub" id="partyCount">Players: 0</span>
+      </div>
+      <div class="partyList" id="party"></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM HUD (10 buttons + inputs) -->
+  <div class="hud">
+    <div class="actions" id="actions"></div>
+
+    <div class="hudRow">
+      <input id="actionTarget" class="target-input" placeholder="Your target" value="" />
+      <input id="actionMsg" class="chat-input" placeholder="Type a message… (Enter to send)" />
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* =========================
+     AUTH + STORAGE
+     ========================= */
+  const LOGIN_PAGE = "index.html"; // keep index.html as login page
+
+  function getToken() {
+    return localStorage.getItem("sessionToken") || "";
+  }
+
+  function getPlayerName() {
+    return localStorage.getItem("playerName") || "";
+  }
+
+  function authHeaders(extra = {}) {
+    const t = getToken();
+    if (!t) return extra;
+    return { ...extra, "Authorization": "Bearer " + t };
+  }
+
+  function requireAuthOrRedirect() {
+    const t = getToken();
+    if (!t) {
+      window.location.href = LOGIN_PAGE;
+    }
+  }
+
+  function doLogout() {
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("playerName");
+    localStorage.removeItem("gameId");
+    window.location.href = LOGIN_PAGE;
+  }
+
+  document.getElementById("btnLogout").addEventListener("click", doLogout);
+
+  // Enforce auth on entry
+  requireAuthOrRedirect();
+
+  /* =========================
+     API ENDPOINTS (same as your hud.html example)
+     ========================= */
+  const ACTION_URL = "/api/v001/darawebgame/action";
+  const STATE_URL  = "/api/v001/darawebgame/state";
+
+  /* =========================
+     MEDIA ICONS + HUD ACTIONS (your 10 buttons)
+     ========================= */
+  const MEDIA = {
+    images: {
+      attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+      defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+      fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+      mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+      heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+      flee: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+      evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+      talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+      usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+      move: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+    }
+  };
+
+  const ACTIONS = [
+    { id: "attack",     label: "Attack",   cd: 2  },
+    { id: "defend",     label: "Defend",   cd: 3  },
+    { id: "fireball",   label: "Fireball", cd: 5  },
+    { id: "heal",       label: "Heal",     cd: 6  },
+    { id: "mezmerize",  label: "Mez",      cd: 8  },
+    { id: "move",       label: "Move",     cd: 1  },
+    { id: "usepotion",  label: "Potion",   cd: 10 },
+    { id: "talk",       label: "Talk",     cd: 1  },
+    { id: "flee",       label: "Flee",     cd: 12 },
+    { id: "evac",       label: "Evac",     cd: 20 },
+  ];
+
+  const actionsEl = document.getElementById("actions");
+  const actionTargetEl = document.getElementById("actionTarget");
+  const actionMsgEl = document.getElementById("actionMsg");
+
+  function getActionTarget(){ return (actionTargetEl.value || "").trim(); }
+  function getActionMsg(){ return (actionMsgEl.value || "").trim(); }
+
+  /* Cooldown state */
+  const cooldownUntil = new Map(); // actionId -> timestamp(ms)
+  function nowMs(){ return Date.now(); }
+  function startCooldown(actionId, seconds){
+    cooldownUntil.set(actionId, nowMs() + seconds * 1000);
+  }
+  function getRemaining(actionId){
+    const until = cooldownUntil.get(actionId) || 0;
+    return Math.max(0, until - nowMs());
+  }
+
+  function setButtonCooldownUI(btn, remainingMs, totalMs){
+    const timeEl = btn.querySelector(".cd-time");
+    const fill = btn.querySelector(".cd-fill");
+
+    if (remainingMs <= 0) {
+      btn.classList.remove("cooldown");
+      if (timeEl) timeEl.textContent = "";
+      if (fill) fill.style.transform = "translateY(100%)";
+      return;
+    }
+
+    btn.classList.add("cooldown");
+
+    const sec = Math.ceil(remainingMs / 1000);
+    if (timeEl) timeEl.textContent = String(sec);
+
+    // Fill from top down: remaining 100% => y=0, remaining 0% => y=100
+    const pct = (remainingMs / totalMs) * 100;
+    const y = 100 - pct;
+    if (fill) fill.style.transform = `translateY(${y}%)`;
+  }
+
+  function buildButtons(){
+    actionsEl.innerHTML = "";
+
+    for(const a of ACTIONS){
+      const btn = document.createElement("button");
+      btn.className = "action-btn";
+      btn.type = "button";
+      btn.dataset.action = a.id;
+      btn.dataset.cd = String(a.cd);
+
+      const img = document.createElement("img");
+      img.src = MEDIA.images[a.id] || "";
+      img.alt = a.id;
+      btn.appendChild(img);
+
+      const fill = document.createElement("div");
+      fill.className = "cd-fill";
+      btn.appendChild(fill);
+
+      const overlay = document.createElement("div");
+      overlay.className = "cd-overlay";
+      overlay.innerHTML = `<div class="cd-time"></div>`;
+      btn.appendChild(overlay);
+
+      const tip = document.createElement("div");
+      tip.className = "tip";
+      tip.textContent = a.label;
+      btn.appendChild(tip);
+
+      btn.addEventListener("click", async () => {
+        const actionId = a.id;
+        const cdSec = a.cd;
+
+        if (getRemaining(actionId) > 0) return;
+
+        const userName = getPlayerName();
+        if (!userName) {
+          console.warn("No playerName in localStorage yet");
+          return;
+        }
+
+        startCooldown(actionId, cdSec);
+        tickCooldowns();
+
+        const actionTarget = getActionTarget();
+        const actionMsg = getActionMsg() || actionId;
+
+        try {
+          const res = await fetch(ACTION_URL, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+              gameId: String(getGameId()),
+              userName,
+              actionId,
+              actionTarget,
+              actionMsg
+            })
+          });
+
+          // Optional: if server says token invalid -> logout
+          if (res.status === 401) doLogout();
+
+        } catch (e) {
+          console.error("Action POST failed:", e);
+        }
+      });
+
+      actionsEl.appendChild(btn);
+    }
+  }
+
+  function tickCooldowns(){
+    document.querySelectorAll(".action-btn").forEach(btn => {
+      const actionId = btn.dataset.action;
+      const totalMs = Number(btn.dataset.cd) * 1000;
+      const remainingMs = getRemaining(actionId);
+      setButtonCooldownUI(btn, remainingMs, totalMs);
+    });
+  }
+
+  // Enter-to-send: uses "attack" by default if you want
+  actionMsgEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // you can decide what Enter means later; for now trigger "talk"
+      const talkBtn = document.querySelector('.action-btn[data-action="talk"]');
+      if (talkBtn) talkBtn.click();
+    }
+  });
+
+  /* =========================
+     GAME STATE (Encounter + Party) – UI skeleton with demo fallback
+     Later your /state can return the real structure.
+     ========================= */
+
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+  function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; }
+
+  // Minimal demo state if /state doesn't provide encounter info yet:
+  let uiState = {
+    turn: 1,
+    slots: 5,
+    lanes: [
+      { name: "LONG RANGE",  cls: "long",  range: "8–10m" },
+      { name: "MID RANGE",   cls: "mid",   range: "4–7m"  },
+      { name: "MELEE RANGE", cls: "melee", range: "0–3m"  },
+    ],
+    mobs: [
+      { id: "Bat", lane:0, slot:1, hp:3, max:6 },
+      { id: "Gob", lane:1, slot:0, hp:3, max:6 },
+      { id: "Shm", lane:1, slot:2, hp:14, max:14 },
+      { id: "Orc", lane:2, slot:1, hp:15, max:30 },
+    ],
+    party: [
+      { id:"Dara",   hp:7,  hpMax:15, en:40, enMax:40, mn:40, mnMax:40, active:true },
+      { id:"Korlan", hp:16, hpMax:20, en:45, enMax:45, mn:45, mnMax:45 },
+      { id:"Viper",  hp:11, hpMax:12, en:35, enMax:35, mn:55, mnMax:55 },
+      { id:"Terik",  hp:8,  hpMax:10, en:55, enMax:55, mn:50, mnMax:50 },
+    ],
+    selectedMobId: null
+  };
+
+  function getGameId(){
+    return localStorage.getItem("gameId") || "0";
+  }
+
+  function renderBadges(){
+    document.getElementById("playerBadge").textContent = "Player: " + (getPlayerName() || "(not set)");
+    document.getElementById("gameBadge").textContent = "Game: " + getGameId();
+    document.getElementById("turnBadge").textContent = "Turn: " + (uiState.turn ?? 1);
+    document.getElementById("partyCount").textContent = "Players: " + (uiState.party?.length ?? 0);
+  }
+
+  function renderEncounter(){
+    const lanesEl = document.getElementById("lanes");
+    lanesEl.style.setProperty("--slots", String(uiState.slots || 5));
+    lanesEl.innerHTML = "";
+
+    (uiState.lanes || []).forEach((l, laneIndex) => {
+      const lane = document.createElement("div");
+      lane.className = "lane " + l.cls;
+
+      const title = document.createElement("div");
+      title.className = "laneTitle";
+      title.innerHTML = `<span>${l.name}</span><span>${l.range || ""}</span>`;
+      lane.appendChild(title);
+
+      const grid = document.createElement("div");
+      grid.className = "laneGrid";
+
+      for(let s=0; s<(uiState.slots||5); s++){
+        const slot = document.createElement("div");
+        slot.className = "slot empty";
+
+        const mob = (uiState.mobs || []).find(m => m.lane === laneIndex && m.slot === s);
+        if(mob){
+          slot.classList.remove("empty");
+          const isAttackable = (laneIndex === 2) && mob.hp > 0;
+          if(isAttackable) slot.classList.add("attackable");
+          if(uiState.selectedMobId === mob.id) slot.classList.add("selected");
+
+          slot.innerHTML = `
+            <div class="mob">
+              <div class="avatar">${escapeHtml(mob.id).slice(0,3)}</div>
+              <div class="hpBar"><div class="hpFill" style="width:${pct(mob.hp, mob.max)*100}%"></div></div>
+            </div>
+          `;
+
+          slot.onclick = () => {
+            uiState.selectedMobId = mob.id;
+            // convenience: write target into the target input
+            actionTargetEl.value = mob.id;
+            renderAll();
+          };
+        } else {
+          slot.onclick = () => {
+            uiState.selectedMobId = null;
+            renderAll();
+          };
+        }
+
+        grid.appendChild(slot);
+      }
+
+      lane.appendChild(grid);
+      lanesEl.appendChild(lane);
+    });
+  }
+
+  function renderParty(){
+    const partyEl = document.getElementById("party");
+    partyEl.innerHTML = "";
+
+    (uiState.party || []).forEach(p => {
+      const row = document.createElement("div");
+      row.className = "pRow";
+
+      const hpP = pct(p.hp, p.hpMax);
+      const enP = pct(p.en, p.enMax);
+      const mnP = pct(p.mn, p.mnMax);
+
+      row.innerHTML = `
+        <div class="pAvatar">${escapeHtml((p.id||"?").slice(0,2).toUpperCase())}</div>
+        <div class="pInfo">
+          <div class="pNameLine">
+            <span class="name">${escapeHtml(p.id || "")}</span>
+            <span class="meta">${p.active ? "ACTIVE" : ""}</span>
+          </div>
+          <div class="pBars">
+            ${barRow("HP", hpP, `${p.hp}/${p.hpMax}`, "hp")}
+            ${barRow("EN", enP, `${p.en}/${p.enMax}`, "en")}
+            ${barRow("MN", mnP, `${p.mn}/${p.mnMax}`, "mn")}
+          </div>
+        </div>
+      `;
+      partyEl.appendChild(row);
+    });
+  }
+
+  function barRow(label, percent01, rightText, cls){
+    const w = Math.round(percent01 * 100);
+    return `
+      <div class="pBarRow">
+        <div style="font-weight:900;opacity:.9;">${label}</div>
+        <div class="pBar ${cls}"><div style="width:${w}%;"></div></div>
+        <div style="text-align:right;opacity:.85;">${escapeHtml(rightText)}</div>
+      </div>
+    `;
+  }
+
+  function renderAll(){
+    renderBadges();
+    renderEncounter();
+    renderParty();
+  }
+
+  async function updateState(){
+    try{
+      const res = await fetch(STATE_URL, {
+        headers: authHeaders(),
+        cache: "no-store"
+      });
+
+      if (res.status === 401) {
+        doLogout();
+        return;
+      }
+
+      if(!res.ok){
+        // keep demo state
+        return;
+      }
+
+      const s = await res.json();
+
+      // Minimal compatibility:
+      // If your server only returns {hpPct, energyPct, manaPct} currently,
+      // we still render the demo encounter/party, but you can expand later.
+      //
+      // If later you return full encounter/party state, map it here:
+      // uiState = { ...uiState, ...s };
+
+      // Example: If your server already returns turn / party / mobs, merge it:
+      uiState = { ...uiState, ...s };
+
+      // If your server uses different keys, you can map them:
+      // uiState.turn = s.turnId ?? uiState.turn;
+
+      renderAll();
+    } catch(e){
+      // ignore network errors for now
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[c]));
+  }
+
+  /* =========================
+     BOOT
+     ========================= */
+  buildButtons();
+  setInterval(tickCooldowns, 100);
+  tickCooldowns();
+
+  renderAll();
+
+  // Poll state (adjust later)
+  setInterval(updateState, 2500);
+  updateState();
+</script>
+
+</body>
+</html>

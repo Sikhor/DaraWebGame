@@ -12,6 +12,7 @@
 #include "parse.h"
 #include "combatlog.h"
 #include "CombatDirector.h"
+#include "sessions.h"
 
 CombatDirector* g_combatDirector = nullptr;
 
@@ -36,13 +37,6 @@ static std::mutex g_historyMutex;
 // Wie viel Kontext behalten? (z.B. 12 Messages = 6 Turns)
 static constexpr size_t kMaxHistoryMessages = 12;
 
-
-std::unordered_map<std::string, CombatantPtr> Players;
-std::mutex PlayersMutex;
-std::unordered_map<std::string, CombatantPtr> Mobs;
-std::mutex MobsMutex;
-
-CombatLog CombatLogState(Players, PlayersMutex, Mobs, MobsMutex);
 std::string Narrative= "Some cool story that I have here ..";
 
 static std::string GeneratePlayerName(const std::string& base)
@@ -68,16 +62,13 @@ std::string NewPlayer(const std::string& userName,
                       const std::string& displayName,
                       const std::string& pictureUrl)
 {
-    std::cout << "[LOGIN] Player: " << userName
-              << " (" << displayName << ")\n";
-
     std::string playerName = GeneratePlayerName(displayName);
     // Your join logic:
     g_combatDirector->AddOrUpdatePlayer(playerName);
-    //GetOrCreatePlayer(userName);
+    DaraLog("LOGIN", userName + " " + displayName + " "+ playerName);
 
     // Optional: welcome narrative / combatlog
-    CombatLogState.PushPlayerLog(playerName, "You arrive on Dara III.", "talk");
+    //CombatLogState.PushPlayerLog(playerName, "You arrive on Dara III.", "talk");
     return playerName;
 }
 
@@ -104,104 +95,6 @@ static std::string TrimCopy(std::string s)
     s.erase(std::find_if(s.rbegin(), s.rend(), notSpace).base(), s.end());
     return s;
 }
-Combatant* GetRandomMob()
-{
-    std::lock_guard<std::mutex> lk(MobsMutex);
-
-    if (Mobs.empty())
-        return nullptr;
-
-    static thread_local std::mt19937 rng{ std::random_device{}() };
-
-    std::uniform_int_distribution<size_t> dist(0, Mobs.size() - 1);
-
-    auto it = Mobs.begin();
-    std::advance(it, dist(rng));
-
-    return it->second.get(); // pointer is stable (shared_ptr owns it)
-}
-
-Combatant& GetOrCreatePlayer(const std::string& playerName)
-{
-    std::lock_guard<std::mutex> lk(PlayersMutex);
-    if(playerName=="") throw std::runtime_error("Empty player name not allowed");
-
-    auto [it, inserted] = Players.try_emplace(
-        playerName,
-        std::make_shared<Combatant>(playerName, ECombatantType::Player, MAXHP, MAXENERGY, MAXMANA)
-    );
-
-    return *it->second;
-}
-Combatant& GetOrCreateMob(const std::string& mobName)
-{
-    std::lock_guard<std::mutex> lk(MobsMutex);
-    auto [it, inserted] = Mobs.try_emplace(
-        mobName,
-        std::make_shared<Combatant>(mobName, ECombatantType::Mob)
-    );
-
-    return *it->second;
-}
-
-std::string PlayerInfo(bool showAllInfo=false)
-{
-    std::lock_guard<std::mutex> lk(PlayersMutex);
-    std::ostringstream oss;
-
-    oss << "Players:\n";
-
-    if (Players.empty())
-    {
-        oss << "- none\n";
-        return oss.str();
-    }
-
-    for (const auto& [name, combatantPtr] : Players)
-    {
-        const Combatant& c = *combatantPtr;
-
-        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Dead")<<")";
-            if(showAllInfo){
-            oss << " | HP:" << c.GetHP()
-                << " | ENERGY:" << c.GetEnergy()
-                << " | MANA:" << c.GetMana();
-            }
-            oss<< "\n";
-    }
-
-    return oss.str();
-}
-
-std::string MobInfo(bool showAllInfo=false)
-{
-    std::lock_guard<std::mutex> lk(MobsMutex);
-
-    std::ostringstream oss;
-
-    oss << "Enemies:\n";
-
-    if (Mobs.empty())
-    {
-        oss << "- none\n";
-        return oss.str();
-    }
-
-    for (const auto& [name, combatantPtr] : Mobs)
-    {
-        const Combatant& c = *combatantPtr;
-
-        oss << "- " << name << " (" << (c.IsAlive() ? "Alive" : "Dead")<<")";
-        if(showAllInfo){
-        oss << " | HP:" << c.GetHP()
-            << " | ENERGY:" << c.GetEnergy()
-            << " | MANA:" << c.GetMana();
-        }
-        oss<< "\n";
-    }
-
-    return oss.str();
-}
 
 
 static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
@@ -212,44 +105,6 @@ static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
     return ptr;
 }
 
-static void StartPlayerCombatActions(std::string playerName, std::string action)
-{
-        if(action=="attack" && playerName!=""){
-
-            Combatant *mob = GetRandomMob();
-            if(mob==nullptr){
-                if(DARA_DEBUG_ATTACKS) std::cout<<"No mobs available to attack"<<std::endl;
-                return;
-            }else{
-                Combatant &player= GetOrCreatePlayer(playerName);
-                if (mob->IsAlive() && player.IsAlive())
-                {
-                    if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK: "<<player.GetName() <<" attacks "<<mob->GetName()<<std::endl;
-
-                    float dmg = player.AttackMelee("Chicka");
-                    mob->ApplyDamage(dmg);
-                    if(DARA_DEBUG_ATTACKS) std::cout<<"ATTACK RESULT: Damage "<<dmg <<" to the Mob "<<mob->GetName()<<std::endl;
-                    CombatLogState.PushPlayerLog(
-                        player.GetName(),
-                        "You attack " + mob->GetName() + " for " + std::to_string(static_cast<int>(dmg)) + " damage.",
-                        "attack"
-                    );
-                }
-            }
-
-        }else{
-            if(DARA_DEBUG_ATTACKS) std::cout<<"NO ATTACK or empty Playername"<<std::endl;
-        }
-
-        // Regen HP, Mana, Energy per turn
-        for(auto& [name, combatantPtr] : Players){
-            Combatant &player= *combatantPtr;
-            if(player.IsAlive()){
-                player.RegenTurn();
-            }
-        }
-
-}
 static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actions)
 {
     std::string combined = "PlayerActions:\n";
@@ -260,26 +115,11 @@ static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actio
         combined += a.actionId;
         // combined += "  ActionMsg: " + a.actionMsg + "\n";
         combined += "\n";
-        StartPlayerCombatActions(a.userName, a.actionId);
+        //StartPlayerCombatActions(a.userName, a.actionId);
     }
     return combined;
 }
 
-void DebugMsgStats(std::string msg="")
-{
-    if(DARA_DEBUG_MSGSTATS){
-        std::cout << "=== Current Game State ===\n";
-        std::cout << PlayerInfo(true);
-        std::cout << MobInfo(true);
-        std::cout << "==========================\n";
-    }
-    if(DARA_DEBUG_AI_REPLIES){
-        std::cout << "=======JSON===============\n";
-        std::cout << msg << std::endl;
-        std::cout << "=======END JSON===========\n";
-    }
-
-}
 void DebugMsg(const json& messages)
 {
     if(DARA_DEBUG_MESSAGES){
@@ -359,11 +199,6 @@ std::string ContactAI(
     }
 
     // 2) Build user turn and new message to AI
-    const std::string userTurn =
-        //"TurnId: " + std::to_string(turnId) +"\n"
-        "PlayerActions: " + turnMsg;
-    std::string newMsgToAI= PlayerInfo() + MobInfo()+ userTurn + "\n";
-    DebugNewMsg(newMsgToAI);
 
     // 3) Build messages
     json messages = json::array();
@@ -374,6 +209,10 @@ std::string ContactAI(
         messages.push_back(m);
     }
     // now add new message to AI
+    std::string newMsgToAI= "Here is the next turn:\n"+ turnMsg +
+                  "\nRespond with a JSON object containing at least the field 'narrative' describing the events of this turn. "
+                  "Optionally include 'enemy_intents' describing what enemies plan to do next turn. "
+                  "Ensure the JSON is properly formatted.";
     messages.push_back({{"role","user"}, {"content", newMsgToAI}});
     DebugMsg(messages);
 
@@ -453,12 +292,9 @@ std::string ContactAI(
         // -> ignore AI turn or retry
         formattedReply= "Error in json reply from AI: " + error;
     }else{
-        DebugMsgStats(reply);
         // set reply
         Narrative= aiJson["narrative"].get<std::string>();
         formattedReply = "Narrative:\n" + aiJson["narrative"].get<std::string>() + "\n";
-        formattedReply+=PlayerInfo(true)+MobInfo(true);
-        ParseActionsFromAI(aiJson, Players, Mobs);
 
         //if(DARA_DEBUG_AI_ACTIONS) std::cout<<"AI ACTION: "<<aiJson["enemy_intents"].get<std::string>()<<std::endl;
 
@@ -484,9 +320,8 @@ void InitialActions()
 {
     std::srand((unsigned int)std::time(nullptr));
     // Example initial actions to setup the game state
-    g_combatDirector->AddOrUpdateMob("Chicka");
-    g_combatDirector->AddOrUpdateMob("Goblin");
-    g_combatDirector->AddOrUpdateMob("Orc Warrior");
+    g_combatDirector->SpawnMob("Kinora", ECombatantType::Mob,20.f,20.f,20.f,"Spider",0,2);
+    g_combatDirector->SpawnMob("Troubie", ECombatantType::Mob,20.f,20.f,20.f,"Spider",0,3);
 }
 
 static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vector<PendingAction> actionsCopy)
@@ -534,7 +369,21 @@ std::string readPromptFromFile(const std::string& filename) {
     return ss.str();
 }
 
+void LogoutByToken(const std::string& token)
+{
+    Session s;
+    if (!TryGetSession(token, s)) {
+        return;
+    }
 
+    DaraLog("LOGOUT",s.playerName);
+    // IMPORTANT: Remove player by playerName (because you added playerName to CombatDirector)
+    if (!s.playerName.empty()) {
+        g_combatDirector->RemovePlayer(s.playerName);
+    }
+
+    RemoveSession(token);
+}
 
 int main()
 {
@@ -579,7 +428,7 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
               << ": " << actionId << " " << actionTarget << " Msg: " << actionMsg << "\n";
 
     std::string err;
-    g_combatDirector->AddOrUpdatePlayer(playerName);
+    //g_combatDirector->AddOrUpdatePlayer(playerName);
     bool ok = g_combatDirector->SubmitPlayerAction(playerName, actionId, actionTarget, actionMsg, &err);
 
     if (!ok || !err.empty()) {
@@ -618,14 +467,46 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
     // DAS ist jetzt deine Player-Identität
     const std::string& playerName = session.playerName;
 
-    json out = g_combatDirector->GetPlayerStateJson(playerName);
+    json out = g_combatDirector->GetUIStateSnapshotJsonLocked();
+    if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
 
     res.set_content(out.dump(), "application/json");
-    if(DARA_DEBUG_PLAYERSTATS)std::cout << "PlayerState for " << playerName << ": " << out.dump() <<std::endl;
 
     return;
  
 
+});
+
+server.Options("/auth/logout", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+
+server.Post("/auth/logout", [](const httplib::Request& req, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+
+    const std::string token = GetBearerToken(req); // use the helper from auth.h/auth.cpp
+    if (token.empty()) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Missing Authorization Bearer token"})", "application/json");
+        return;
+    }
+
+    Session s;
+    if (!TryGetSession(token, s)) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Invalid or expired session"})", "application/json");
+        return;
+    }
+    DaraLog("LOGOUT", s.userName+" "+s.playerName);
+    if (!s.playerName.empty()) {
+        g_combatDirector->RemovePlayer(s.playerName);
+    }
+
+    RemoveSession(token);
+
+    res.status = 200;
+    res.set_content(R"({"status":"ok"})", "application/json");
 });
 
 server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
@@ -652,8 +533,6 @@ server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
     AddCorsHeaders(res);
     res.status = 204;
 
-    const std::string body = CombatLogState.GetJsonCached();
-    res.set_content(body, "application/json");
     json out= g_combatDirector->GetCombatState();
     res.status = 200;
     res.set_content(

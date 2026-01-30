@@ -1,17 +1,9 @@
 #pragma once
 #include "httplib.h"
 #include <string>
+#include <functional>
+#include "sessions.h"
 
-// =======================================================
-// Session store (your own tokens)
-// =======================================================
-
-struct Session
-{
-    std::string userName; // use email as identity
-    std::string playerName; // use email as identity
-    std::chrono::system_clock::time_point expiresAt;
-};
 
 
 

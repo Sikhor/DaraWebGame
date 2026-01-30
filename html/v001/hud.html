@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dara HUD</title>
+
+<style>
+  body {
+    margin: 10px;
+    background: transparent;
+    color: #fff;
+    font-family: Arial, sans-serif;
+  }
+
+  /* --- Container oben --- */
+  .top {
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #2a3340;
+    background: rgba(10,14,20,0.85);
+    border-radius: 6px;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  input[type="text"]{
+    flex: 1;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid #2a3340;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    padding: 0 10px;
+    outline: none;
+  }
+  .bottom {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #2a3340;
+    background: rgba(10,14,20,0.85);
+    border-radius: 6px;
+
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+  }
+  .chat-input {
+    flex: 1;
+    height: 34px;                 /* kleiner */
+    border-radius: 999px;         /* chat bubble look */
+    border: 1px solid #2a3340;
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    padding: 0 14px;
+    outline: none;
+    font-size: 14px;
+  }
+
+  .chat-input::placeholder {
+    opacity: 0.65;
+  }
+
+  .chat-input:focus {
+    border-color: rgba(120,170,255,0.55);
+    box-shadow: 0 0 0 3px rgba(120,170,255,0.15);
+  }
+
+  .target-input {
+    width: 140px;                 /* kleiner Target */
+    flex: 0 0 auto;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #2a3340;
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    padding: 0 10px;
+    outline: none;
+    font-size: 13px;
+  }
+
+  button {
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 6px;
+    border: 1px solid #2a3340;
+    background: rgba(30,40,60,0.9);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.15); }
+  button:active { transform: translateY(1px); }
+
+  /* --- Action Grid --- */
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .action-btn {
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid #2a3340;
+    background: rgba(0,0,0,0.25);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .action-btn img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .action-btn .tip {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    right: 4px;
+    font-size: 10px;
+    opacity: 0.85;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
+  /* --- Cooldown overlay --- */
+  .cd-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.55);
+    z-index: 2;
+  }
+
+  .cd-time {
+    font-weight: 700;
+    font-size: 14px;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9);
+  }
+
+  .action-btn.cooldown {
+    filter: grayscale(0.6);
+    opacity: 0.9;
+  }
+  .action-btn.cooldown .cd-overlay {
+    display: flex;
+  }
+
+  /* Optional: “Füllstand” von oben runter (simple & game-like) */
+  .cd-fill {
+	  position: absolute;
+	  inset: 0;
+	  background: rgba(0,0,0,0.45);
+	  transform: translateY(100%);   /* <-- komplett weg */
+	  z-index: 1;
+	  pointer-events: none;
+	}
+
+  /* --- Bars --- */
+  .bar { margin-bottom: 8px; }
+  .label { font-size: 12px; margin-bottom: 2px; opacity: 0.95; }
+
+  .progress {
+    height: 16px;
+    background: #222;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .fill { height: 100%; transition: width 0.35s ease; }
+  .hp { background: #c0392b; }
+  .en { background: #f1c40f; }
+  .mp { background: #3498db; }
+
+  .hint { font-size: 11px; opacity: 0.8; margin-top: 8px; }
+
+  .send-btn {
+    visibility: hidden;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid #2a3340;
+    background: rgba(30,40,60,0.9);
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+
+  .send-btn:hover { filter: brightness(1.15); }
+  .send-btn:active { transform: translateY(1px); }
+</style>
+</head>
+
+<body>
+
+  <!-- Name + Actions ABOVE statbars -->
+  <div class="top">
+<div class="row">
+  <div id="playerNameLabel" style="
+      flex:1;
+      height:34px;
+      display:flex;
+      align-items:center;
+      padding:0 10px;
+      border-radius:6px;
+      border:1px solid #2a3340;
+      background: rgba(0,0,0,0.35);
+      color:#fff;
+      font-size:14px;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;">
+    You are <span id="playerNameText" style="margin-left:6px; opacity:0.95;">(loading…)</span>
+  </div>
+</div>
+  <!-- Statbars -->
+  <div class="bar">
+    <div class="label">HP</div>
+    <div class="progress"><div id="hp" class="fill hp" style="width:100%"></div></div>
+  </div>
+
+  <div class="bar">
+    <div class="label">Energy</div>
+    <div class="progress"><div id="en" class="fill en" style="width:100%"></div></div>
+  </div>
+
+  <div class="bar">
+    <div class="label">Mana</div>
+    <div class="progress"><div id="mp" class="fill mp" style="width:100%"></div></div>
+  </div>
+
+  <!-- Action Buttons -->
+
+  <div class="actions" id="actions"></div>
+  </div>
+
+  <div class="bottom">
+  <input id="actionTarget"
+         class="target-input"
+         placeholder="Your target"
+         value="" />
+
+  <input id="actionMsg"
+         class="chat-input"
+         placeholder="Type a message… (Enter to send)" />
+
+         <!--
+        <button id="btnSend"
+                class="send-btn">
+          Send
+        </button>
+      -->
+</div>
+
+
+<script>
+
+  
+  function getToken() {
+    return localStorage.getItem("sessionToken") || "";
+  }
+
+  function authHeaders(extra = {}) {
+    const t = getToken();
+    if (!t) return extra;
+    return { ...extra, "Authorization": "Bearer " + t };
+  }
+
+const playerNameText = document.getElementById("playerNameText");
+
+function getPlayerName() {
+  return localStorage.getItem("playerName") || ""; // wird von index.html nach Login gesetzt
+}
+
+function renderPlayerName() {
+  const pn = getPlayerName();
+  playerNameText.textContent = pn ? pn : "(not set)";
+}
+
+
+
+
+
+  // 1) WO der POST hingeht:
+  // Wenn du Apache Proxy nutzt, wäre "/action" am saubersten.
+  // Du wolltest explizit "auf darempire seite", darum hier volle URL:
+  const ACTION_URL = "/api/v001/darawebgame/action"; // <- ggf. anpassen (z.B. https://gameinfo.daraempire.com:9050/action wenn du das so exposed hast)
+
+  // 2) Deine Media Icons
+  const MEDIA = {
+    images: {
+      attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+      defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+      fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+      mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+      heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+      flee: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+      evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+      talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+      usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+      move: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+    }
+  };
+
+  // 3) Actions + Cooldowns (Sekunden)
+  const ACTIONS = [
+    { id: "attack",     label: "Attack",  cd: 2 },
+    { id: "defend",     label: "Defend",  cd: 3 },
+    { id: "fireball",   label: "Fireball",cd: 5 },
+    { id: "heal",       label: "Heal",    cd: 6 },
+    { id: "mezmerize",  label: "Mez",     cd: 8 },
+    { id: "move",       label: "Move",    cd: 1 },
+    { id: "usepotion",  label: "Potion",  cd: 10 },
+    { id: "talk",       label: "Talk",    cd: 1 },
+    { id: "flee",       label: "Flee",    cd: 12 },
+    { id: "evac",       label: "Evac",    cd: 20 },
+  ];
+
+  const actionsEl = document.getElementById("actions");
+
+  // --- Cooldown state ---
+  const cooldownUntil = new Map(); // actionId -> timestamp(ms)
+
+  function nowMs() { return Date.now(); }
+
+  function startCooldown(actionId, seconds) {
+    cooldownUntil.set(actionId, nowMs() + seconds * 1000);
+  }
+
+  function getRemaining(actionId) {
+    const until = cooldownUntil.get(actionId) || 0;
+    return Math.max(0, until - nowMs());
+  }
+
+  function setButtonCooldownUI(btn, remainingMs, totalMs) {
+    const overlay = btn.querySelector(".cd-overlay");
+    const timeEl  = btn.querySelector(".cd-time");
+    const fill    = btn.querySelector(".cd-fill");
+
+    if (remainingMs <= 0) {
+      btn.classList.remove("cooldown");
+      if (timeEl) timeEl.textContent = "";
+      if (fill) fill.style.transform = "translateY(0%)";
+      return;
+    }
+
+    btn.classList.add("cooldown");
+
+    const sec = Math.ceil(remainingMs / 1000);
+    timeEl.textContent = String(sec);
+
+    // Fill: 100% -> 0% (von oben runter)
+    const pct = (remainingMs / totalMs) * 100; // 0..100
+    // 100% remaining => translateY(0), 0% remaining => translateY(100)
+    const y = 100 - pct;
+    fill.style.transform = `translateY(${y}%)`;
+  }
+
+  const actionTargetEl = document.getElementById("actionTarget");
+  const actionMsgEl = document.getElementById("actionMsg");
+  const btnSend = document.getElementById("btnSend");
+
+  function getActionTarget() {
+    return (actionTargetEl.value || "").trim();
+  }
+  function getActionMsg() {
+    return (actionMsgEl.value || "").trim();
+  }
+
+
+  // --- Build buttons with icons ---
+  function buildButtons() {
+    actionsEl.innerHTML = "";
+
+    for (const a of ACTIONS) {
+      const btn = document.createElement("button");
+      btn.className = "action-btn";
+      btn.type = "button";
+      btn.dataset.action = a.id;
+      btn.dataset.cd = String(a.cd);
+
+      const img = document.createElement("img");
+      img.src = MEDIA.images[a.id] || "";
+      img.alt = a.id;
+      btn.appendChild(img);
+
+      const fill = document.createElement("div");
+      fill.className = "cd-fill";
+      btn.appendChild(fill);
+
+      const overlay = document.createElement("div");
+      overlay.className = "cd-overlay";
+      overlay.innerHTML = `<div class="cd-time"></div>`;
+      btn.appendChild(overlay);
+
+      const tip = document.createElement("div");
+      tip.className = "tip";
+      tip.textContent = a.label;
+      btn.appendChild(tip);
+
+      btn.addEventListener("click", async () => {
+        const actionId = a.id;
+        const cdSec = a.cd;
+
+        if (getRemaining(actionId) > 0) return;
+
+        const userName = getPlayerName();
+        if (!userName) {
+          console.warn("No playerName in localStorage yet");
+          return;
+        }
+
+        startCooldown(actionId, cdSec);
+        tickCooldowns();
+
+        const actionTarget = getActionTarget();
+        const actionMsg = getActionMsg() || actionId;  // fallback
+
+        try {
+          await fetch(ACTION_URL, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+              gameId: "0",
+              userName,
+              actionId,
+              actionTarget,
+              actionMsg
+            })
+          });
+        } catch (e) {
+          console.error("Action POST failed:", e);
+        }
+      });
+      
+      actionsEl.appendChild(btn);
+    }
+  }
+
+  function tickCooldowns() {
+    // update all buttons every 100ms for smooth overlay
+    document.querySelectorAll(".action-btn").forEach(btn => {
+      const actionId = btn.dataset.action;
+      const totalMs = Number(btn.dataset.cd) * 1000;
+      const remainingMs = getRemaining(actionId);
+      setButtonCooldownUI(btn, remainingMs, totalMs);
+    });
+  }
+
+  // --- Statbar update (optional, your server should return {hp, energy, mana} 0..100) ---
+  async function updateBars() {
+	  try {
+      const res = await fetch("/api/v001/darawebgame/state", {
+              headers: authHeaders(),
+              cache: "no-store"
+              });
+
+      if (!res.ok) {
+        console.error("state HTTP", res.status, await res.text());
+        return;
+      }
+
+      const s = await res.json();
+      console.log("Bar Values:", s);
+      document.getElementById("hp").style.width = `${Number(s.hpPct ?? 100)}%`;
+      document.getElementById("en").style.width = `${Number(s.energyPct ?? 100)}%`;
+      document.getElementById("mp").style.width = `${Number(s.manaPct ?? 100)}%`;
+		} catch (e) {
+		console.error("updateBars failed:", e);
+	  }
+	}
+
+  buildButtons();
+  setInterval(tickCooldowns, 100);
+  tickCooldowns();
+
+  setInterval(updateBars, 5000);
+  updateBars();
+
+  // einmalig + alle 2s (falls index.html es später setzt)
+  renderPlayerName();
+  setInterval(renderPlayerName, 2000);
+
+
+</script>
+
+</body>
+</html>

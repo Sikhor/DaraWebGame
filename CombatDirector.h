@@ -14,6 +14,25 @@
 #include "json.hpp"
 #include "combatant.h"
 
+inline void DaraLog(const std::string area, const std::string& msg)
+{
+    using namespace std::chrono;
+
+    const auto now = system_clock::now();
+    const std::time_t tt = system_clock::to_time_t(now);
+
+    std::tm tm{};
+#ifdef _WIN32
+    localtime_s(&tm, &tt);
+#else
+    localtime_r(&tt, &tm);
+#endif
+
+    std::cout << std::put_time(&tm, "%Y-%m-%d %H:%M:%S")
+              << " ["<<area << "] " << msg << std::endl;
+}
+
+
 class CombatDirector
 {
 public:
@@ -48,6 +67,8 @@ public:
     json GetPlayerStateJson(const std::string& playerName) const;
 
     void AddOrUpdateMob(const std::string& mobName);
+    void SpawnMob(const std::string& name, ECombatantType type, float hp, float energy, float mana, std::string mobClass, int lane, int slot);
+
     bool ApplyDamageToMob(const std::string& mobName, float dmg, std::string* err);
     void RemoveMob(const std::string& mobName);
 
@@ -58,6 +79,10 @@ public:
     // Snapshot helpers for logging
     json SerializePlayersAllLocked() const;
     json SerializeMobsAllLocked() const;
+
+    json GetUIStateSnapshotJsonLocked() const;
+    void SetLane(std::string mobname, int lanenumber, int slotnumber);
+
 
     // Submit action for the currently-open turn (server authoritative).
     // If the turn is resolving, the action is queued for the next turn.
@@ -100,10 +125,17 @@ private:
 
     void ResolveMobs(const json& aiJson,
                      std::vector<std::string>& outTurnLog);
+    void ResolveDeadMobs();
+    void ResolveSpawnMobs(); //Spawn Mobs
+    void ResolveMobAttacks();
+
+    void GetFilledSlotArray();
+
 
     bool CheckGameOverLocked(std::string& outReason) const;
 
     void AppendLogLocked(uint64_t turnId, const std::vector<std::string>& lines);
+
 
 
 private:
@@ -115,6 +147,10 @@ private:
 
     std::unordered_map<std::string, std::shared_ptr<Combatant>> Players;
     std::unordered_map<std::string, std::shared_ptr<Combatant>> Mobs;
+
+    bool FilledSlotArray[MAXLANES][MAXSLOTS];
+    int OpenSlotAmount=0;
+    int SpawnedMobsAmount=0;
 
     struct LogEntry
     {
@@ -135,7 +171,7 @@ private:
     std::unordered_map<std::string, PlayerAction> BufferedActions;  // playerName -> action
 
     // config
-    std::chrono::milliseconds TurnTimeout { 60000 };
+    std::chrono::milliseconds TurnTimeout { 5000 };
 
     // injected AI callback
     AiCallback AiCb;

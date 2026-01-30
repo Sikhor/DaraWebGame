@@ -3,10 +3,21 @@
 #include <algorithm>
 #include <iostream>
 #include "DaraConfig.h"
+#include "uistate.h"
+
+int RandSlot()
+{
+    static thread_local std::mt19937 rng{ std::random_device{}() };
+    static std::uniform_int_distribution<int> dist(0, MAXSLOTS-1);
+    return dist(rng);
+}
 
 CombatDirector::CombatDirector(std::string gameId)
     : GameId(std::move(gameId))
 {
+    for (int l = 0; l < MAXLANES; ++l)
+    for (int s = 0; s < MAXSLOTS; ++s)
+        FilledSlotArray[l][s] = false;
 }
 
 CombatDirector::~CombatDirector()
@@ -169,11 +180,26 @@ void CombatDirector::RemovePlayer(const std::string& playerName)
 
 void CombatDirector::AddOrUpdateMob(const std::string& mobName)
 {
-    std::lock_guard<std::mutex> lk(CacheMutex);
     if (mobName.empty()) return;
 
     if (!Mobs.count(mobName))
         Mobs.emplace(mobName, std::make_shared<Combatant>(mobName, ECombatantType::Mob, MAXHP, MAXENERGY, MAXMANA));
+}
+
+void CombatDirector::SetLane(std::string mobName, int lanenumber, int slotnumber)
+{
+    std::shared_ptr<Combatant> m;
+    {
+        auto it = Mobs.find(mobName);
+        if (it == Mobs.end()) {
+            std::cerr << "CombatDirector::SetLane: Unknown mob"<< std::endl;    
+            return;
+        }
+        m = it->second;
+    }
+
+    m->SetLane(lanenumber, slotnumber) ; // außerhalb CacheMutex
+  
 }
 
 bool CombatDirector::ApplyDamageToMob(const std::string& mobName, float dmg, std::string* err)
@@ -510,10 +536,120 @@ void CombatDirector::ApplyAiResults(const json& aiJson,
     }
 }
 
+void CombatDirector::ResolveDeadMobs()
+{
+      for (auto it = Mobs.begin(); it != Mobs.end(); )
+    {
+        const auto& mobName = it->first;
+        const auto& mob = it->second;
+
+        if(mob->GetAvatarId()=="Dead"){
+            it = Mobs.erase(it);     // <- korrekt: erase gibt nächsten Iterator zurück
+            continue;
+        }
+        if (!mob || !mob->IsAlive())
+        {
+            mob->SetAvatarId("Dead");
+            ++it;
+            continue;
+        }
+        ++it;
+    }
+}
+
+void CombatDirector::GetFilledSlotArray()
+{
+    // alles auf false
+    for (int l = 0; l < MAXLANES; ++l)
+        for (int s = 0; s < MAXSLOTS; ++s)
+            FilledSlotArray[l][s] = false;
+    OpenSlotAmount=MAXLANES*MAXSLOTS;
+    SpawnedMobsAmount=0;
+
+    // check which is open
+    for (const auto& [name, mob] : Mobs)
+    {
+        if (!mob || mob->GetHP() <= 0){
+            continue;
+        }
+
+        int lane = mob->GetLane();
+        int slot = mob->GetSlot();
+
+        if (lane >= 0 && lane < MAXLANES &&
+            slot >= 0 && slot < MAXSLOTS)
+        {
+            FilledSlotArray[lane][slot] = true; // belegt
+            SpawnedMobsAmount++;
+            OpenSlotAmount--;
+        }
+    }
+    std::cout << "OpenSlots: "<< OpenSlotAmount << " FilledSlotAmount: "<< SpawnedMobsAmount<< std::endl;
+
+}
+void CombatDirector::SpawnMob(const std::string& mobName, ECombatantType type, float hp, float energy, float mana, std::string mobClass, int lane, int slot)
+{
+    if (mobName.empty()) return;
+
+    if (!Mobs.count(mobName) && SpawnedMobsAmount<=DARA_MAX_MOBS){
+        Mobs.emplace(mobName, std::make_shared<Combatant>(mobName, ECombatantType::Mob, hp, energy, mana, mobClass, lane, slot));
+        if(DARA_DEBUG_SPAWNS) std::cout <<"Spawn Mob"<< mobName<<" Class"<< mobClass<< " Slot:" << slot <<std::endl;
+
+    }
+
+}
+
+void CombatDirector::ResolveSpawnMobs()
+{
+    static int MobNumber=0;
+    std::string MobClass="Spider";
+    int slot= RandSlot();
+    
+    GetFilledSlotArray();
+
+    if(!FilledSlotArray[0][slot]){
+        std::string MobName= MobClass+std::to_string(MobNumber);
+        MobNumber++;
+        SpawnMob(MobName, ECombatantType::Mob, 20.f, 20.f,20.f, MobClass, 0, slot);
+
+    }
+}
+
+void CombatDirector::ResolveMobAttacks()
+{
+    for (auto it = Mobs.begin(); it != Mobs.end(); ++it)
+    {
+        const auto& mob = it->second;
+        if (!mob) continue;
+
+        int nextLane = mob->GetLane() + 1;
+        int slot = mob->GetSlot();
+
+        if (nextLane < MAXLANES && !FilledSlotArray[nextLane][slot] && mob->ShouldMove())
+        {
+            // slot in current lane frei machen
+            FilledSlotArray[mob->GetLane()][slot] = false;
+
+            mob->SetLane(nextLane, slot);
+
+            // slot in next lane belegen
+            FilledSlotArray[nextLane][slot] = true;
+        }
+    }
+}
+
+
+
 void CombatDirector::ResolveMobs(const json& aiJson,
                                 std::vector<std::string>& outTurnLog)
 {
     (void)aiJson;
+    // 1) Dead mobs entfernen (LOCK ist schon gehalten!)
+    ResolveDeadMobs();
+    // 2) Spawn Mobs
+    ResolveSpawnMobs();
+    // 3) Mobs move and attack 
+    ResolveMobAttacks();
 
     if (!Mobs.empty())
         outTurnLog.push_back("Mobs act (placeholder).");
@@ -630,4 +766,17 @@ CombatDirector::json CombatDirector::GetLogTailJson(size_t lastN) const
     out["total"] = total;
     out["entries"] = std::move(arr);
     return out;
+}
+
+
+json CombatDirector::GetUIStateSnapshotJsonLocked() const
+{
+        UIState ui;
+
+    ui.SetTurn(CurrentTurnId);
+    ui.SetSlots(5); // your encounter grid width
+
+    // Convert Players + Mobs → JSON
+    nlohmann::json uiJson = ui.ToJson(Players, Mobs);
+    return uiJson;
 }

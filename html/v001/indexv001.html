@@ -183,7 +183,35 @@
       transform: translateY(1px);
     }
 
-    
+    /* ---------- GAME LAYOUT ---------- */
+    .layout {
+      display: none; /* hidden until logged in */
+      height: 100dvh;
+      gap: var(--gap);
+      padding: var(--gap);
+      box-sizing: border-box;
+
+      grid-template-columns: 420px 1fr;
+      grid-template-rows: 320px 1fr;
+      grid-template-areas:
+        "log story"
+        "hud story";
+
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: var(--panel-radius);
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
 
     @media (max-width: 900px) {
       .layout {
@@ -221,7 +249,7 @@
         class="login-icon"
       />
 
-      <h1>Dara III Marina Station: Last Stand</h1>
+      <h1>Dara III Rescue of Marina Station</h1>
       <!-- START login chat -->
 <div class="login-chat">
 
@@ -283,6 +311,20 @@
     </div>
   </div>
 
+  <!-- ================= GAME UI ================= -->
+  <div class="layout" id="gameUI">
+    <div class="panel" style="grid-area:log;">
+      <iframe id="combatLogFrame" src="https://gameinfo.daraempire.com/ui/combatlog.html"></iframe>
+    </div>
+
+    <div class="panel" style="grid-area:story;">
+      <iframe id="storyFrame" src="story.html"></iframe>
+    </div>
+
+    <div class="panel" style="grid-area:hud;">
+      <iframe id="hudFrame" src="hud.html"></iframe>
+    </div>
+  </div>
 
   <script>
     // ---------- GOOGLE BUTTON RENDER ----------
@@ -327,16 +369,20 @@
       }
     });
 
+    // ---------- AUTH STATE ----------
+    function showGame() {
+      document.getElementById("loginOverlay").style.display = "none";
+      document.getElementById("gameUI").style.display = "grid";
 
-    // ---------- SHOW GAME UI ----------
-    function goToGame() {
-    // optional: damit man nicht per "Back" wieder im eingeloggten Zustand landet
-      window.location.replace("game.html");
+      // reload iframes so they re-read localStorage token
+      document.getElementById("hudFrame").contentWindow.location.reload();
+      document.getElementById("storyFrame").contentWindow.location.reload();
+      document.getElementById("combatLogFrame").contentWindow.location.reload();
     }
 
-    // ---------- AUTH STATE ----------
     function showLogin() {
       document.getElementById("loginOverlay").style.display = "flex";
+      document.getElementById("gameUI").style.display = "none";
       renderGoogleButton();
     }
 
@@ -378,7 +424,7 @@
 
       localStorage.setItem("sessionToken", j.token);
       localStorage.setItem("playerName", j.playerName || "Unknown Agent");
-      goToGame();
+      showGame();
     }
 
     // ---------- INIT ----------
@@ -408,7 +454,7 @@
         });
 
         if (r.ok) {
-          goToGame();
+          showGame();
         } else {
           showLogin();
         }

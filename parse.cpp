@@ -30,6 +30,8 @@ void ParseActionsFromAI(
                 // no action to take
                 continue;
             }
+            /* ATTENTION NEEDS TO BE WRITTEN WITH COMBATDIRECTOR */
+            /*
             Combatant& mob = GetOrCreateMob(enemyId);
             Combatant& player = GetOrCreatePlayer(targetPlayer);
             if (action == "ATTACK")
@@ -37,6 +39,7 @@ void ParseActionsFromAI(
                 float dmg = mob.AttackMelee(player.GetName());
                 player.ApplyDamage(dmg);
             }
+                */
 
         }
     }
@@ -55,7 +58,8 @@ void ParseActionsFromAI(
                 // no action to take
                 continue;
             }
-            GetOrCreateMob(name);
+            // ATTENTION
+            //GetOrCreateMob(name);
         }
 
     }
@@ -75,7 +79,6 @@ void ParseActionsFromAI(
                 // no action to take
                 continue;
             }
-            std::lock_guard<std::mutex> lk(MobsMutex);
             auto it = Mobs.find(enemyId);
             if (it != Mobs.end())
             {

@@ -44,7 +44,7 @@ Combatant::Combatant(const std::string& name, ECombatantType type)
     Type = type;
 }
 
-Combatant::Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana)
+Combatant::Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana, std::string mobClass, int lane, int slot)
 {
     Id = GenerateUUID();
     Name = name;
@@ -52,6 +52,10 @@ Combatant::Combatant(const std::string& name, ECombatantType type, float hp, flo
     HP = hp;
     Energy = energy;
     Mana = mana;
+    AvatarId= mobClass;
+    mobClass= mobClass;
+    Lane= lane;
+    Slot= slot;
 }
 
 bool Combatant::IsAlive() const
@@ -157,6 +161,17 @@ json Combatant::ToJson() const
     return j;
 }
 
+void Combatant::SetLane(int lane, int slot)
+{
+    Lane = lane;
+    Slot = slot;
+}
+
+bool Combatant::ShouldMove()
+{
+    CurrentField+=Speed;
+    return CurrentField>Lane && Lane<MAXLANES;
+}
 
 
 

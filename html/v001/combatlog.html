@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dara Combat Log</title>
+
+<style>
+  body { background: transparent; padding: 10px; font-size: 12px; color:#fff; font-family: Arial, sans-serif; }
+  #combatLog { white-space: normal; }
+
+  .bar { margin: 6px 0 10px; }
+  .label { font-size: 12px; margin-bottom: 2px; opacity: 0.95; }
+  .progress { height: 16px; background: #222; border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; }
+  .hp-high   { background: #27ae60; }  /* green  */
+  .hp-mid    { background: #f1c40f; }  /* yellow */
+  .hp-low    { background: #e67e22; }  /* orange */
+  .hp-crit   { background: #c0392b; }  /* red    */
+
+  .section-title {
+    margin: 10px 0 6px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    opacity: 0.95;
+  }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .log-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .log-icon img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+
+  .log-text {
+    line-height: 1.4;
+  }
+
+  .muted {
+    opacity: 0.75;
+  }
+</style>
+</head>
+
+<body>
+<div id="combatLog">Loading combat log…</div>
+
+<script>
+  // ============================================================
+  // Auth helpers (Google-only)
+  // ============================================================
+
+  function getToken() {
+    return localStorage.getItem("sessionToken") || "";
+  }
+
+  function authHeaders(extra = {}) {
+    const t = getToken();
+    if (!t) return extra;
+    return { ...extra, "Authorization": "Bearer " + t };
+  }
+
+  // ============================================================
+  // Endpoint config (recommended: same origin via reverse proxy)
+  // ============================================================
+
+  const COMBATLOG_URL = "/api/v001/darawebgame/combatlog";
+
+  // If you MUST call cross-origin:
+  // const COMBATLOG_URL = "https://gameinfo.daraempire.com/api/v001/darawebgame/combatlog";
+
+  // ============================================================
+  // Media Icons
+  // ============================================================
+
+  const MEDIA = {
+    images: {
+      attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+      defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+      fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+      mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+      heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+      flee: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+      evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+      talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+      usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+      move: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+    }
+  };
+
+  const combatLogEl = document.getElementById("combatLog");
+
+  function safeId(s) {
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, "_");
+  }
+
+  function hpClassFromPct(hp) {
+    if (hp < 25) return "hp-crit";
+    if (hp < 50) return "hp-low";
+    if (hp < 75) return "hp-mid";
+    return "hp-high";
+  }
+
+  function clampPct(x) {
+    const n = Number(x);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  async function loadLog() {
+    try {
+      const token = getToken();
+      if (!token) {
+        combatLogEl.innerHTML = `<div class="muted">Not logged in. Please login on the main page.</div>`;
+        return;
+      }
+
+      const res = await fetch(COMBATLOG_URL, {
+        headers: authHeaders(),
+        cache: "no-store"
+      });
+
+      if (res.status === 401) {
+        combatLogEl.innerHTML = `<div class="muted">Unauthorized. Please login again on the main page.</div>`;
+        return;
+      }
+
+      if (!res.ok) {
+        const txt = await res.text();
+        combatLogEl.innerHTML = `<div class="muted">Combatlog error: HTTP ${res.status}<br>${txt}</div>`;
+        return;
+      }
+
+      const s = await res.json();
+
+      const players = Array.isArray(s.Players) ? s.Players : [];
+      const mobs    = Array.isArray(s.Mobs) ? s.Mobs : [];
+
+      let html = "";
+
+      // ---- Players HP bars ----
+      if (players.length) {
+        html += `<div class="section-title">Players</div>`;
+        for (const entry of players) {
+          const name = entry.player ?? "Unknown";
+          const hp = clampPct(entry.hpPct ?? 0);
+          const hpClass = hpClassFromPct(hp);
+          const pid = safeId(name);
+
+          html += `
+            <div class="bar">
+              <div class="label">${name} HP: ${hp}%</div>
+              <div class="progress">
+                <div id="hp-${pid}" class="fill ${hpClass}" style="width:${hp}%"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        // ---- Player log lines ----
+        for (const entry of players) {
+          const name = entry.player ?? "Unknown";
+          const msg  = entry.combatLog ?? "";
+          const imgKey = entry.action ?? "";
+          const imgSrc = MEDIA.images[imgKey];
+
+          html += `<div class="log-entry">`;
+          if (imgSrc) {
+            html += `<div class="log-icon"><img src="${imgSrc}" alt="${imgKey}"></div>`;
+          } else {
+            html += `<div class="log-icon"></div>`;
+          }
+          html += `<div class="log-text"><b>${name}</b>: ${msg}</div></div>`;
+        }
+      } else {
+        html += `<div class="muted">No player combat logs yet.</div>`;
+      }
+
+      // ---- Mobs HP bars ----
+      if (mobs.length) {
+        html += `<div class="section-title">Enemies</div>`;
+        for (const entry of mobs) {
+          const name = entry.mob ?? "Unknown";
+          const hp = clampPct(entry.hpPct ?? 0);
+          const hpClass = hpClassFromPct(hp);
+          const mid = safeId(name);
+
+          html += `
+            <div class="bar">
+              <div class="label">${name} HP: ${hp}%</div>
+              <div class="progress">
+                <div id="hp-${mid}" class="fill ${hpClass}" style="width:${hp}%"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Optional mob log lines if your backend adds them later
+        for (const entry of mobs) {
+          if (!entry.combatLog) continue;
+
+          const name = entry.mob ?? "Unknown";
+          const msg  = entry.combatLog ?? "";
+          const imgKey = entry.action ?? "";
+          const imgSrc = MEDIA.images[imgKey];
+
+          html += `<div class="log-entry">`;
+          if (imgSrc) {
+            html += `<div class="log-icon"><img src="${imgSrc}" alt="${imgKey}"></div>`;
+          } else {
+            html += `<div class="log-icon"></div>`;
+          }
+          html += `<div class="log-text"><b>${name}</b>: ${msg}</div></div>`;
+        }
+      }
+
+      combatLogEl.innerHTML = html;
+    }
+    catch (e) {
+      console.error("loadLog failed:", e);
+      combatLogEl.innerHTML = `<div class="muted">loadLog failed: ${String(e)}</div>`;
+    }
+  }
+
+  setInterval(loadLog, 1000);
+  loadLog();
+</script>
+</body>
+</html>

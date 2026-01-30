@@ -16,7 +16,7 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/bn.h>
-
+#include "sessions.h"
 using json = nlohmann::json;
 
 //global here to be set in main.cpp
@@ -121,8 +121,6 @@ static std::string GoogleJwksUrl()
 }
 
 
-static std::unordered_map<std::string, Session> g_sessions;
-static std::mutex g_sessionsMutex;
 
 // Adjust as you like
 static constexpr int kSessionDays = 7;

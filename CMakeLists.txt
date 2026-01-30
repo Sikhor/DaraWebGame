@@ -42,7 +42,9 @@ add_executable(DaraWebGameServer
     combatant.cpp
     combatlog.cpp
     CombatDirector.cpp
+    uistate.cpp
     auth.cpp
+    sessions.cpp
 )
 
 target_include_directories(DaraWebGameServer PRIVATE
