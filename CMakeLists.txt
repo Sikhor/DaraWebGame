@@ -7,6 +7,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 # -------------------------
+# Build types (default Debug for single-config generators)
+# -------------------------
+if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+
+# Optional: enable sanitizers in Debug (GCC/Clang)
+option(DARA_SANITIZE "Enable sanitizers in Debug" OFF)
+
+# -------------------------
 # CPR (local subproject)
 # -------------------------
 set(CPR_USE_SYSTEM_CURL ON CACHE BOOL "" FORCE)
@@ -33,9 +44,9 @@ if (NOT jwt-cpp_FOUND)
     FetchContent_MakeAvailable(jwt-cpp)
 endif()
 
-# -------------------------
+# =========================
 # DaraWebGameServer executable
-# -------------------------
+# =========================
 add_executable(DaraWebGameServer
     main.cpp
     parse.cpp
@@ -74,6 +85,34 @@ if (UNIX)
     target_link_libraries(DaraWebGameServer PRIVATE pthread)
 endif()
 
+# -------------------------
+# Debug / Release compile flags + defines (per-config)
+# -------------------------
+target_compile_options(DaraWebGameServer PRIVATE
+    -Wall -Wextra -Wpedantic
+    $<$<CONFIG:Debug>:-O0 -g3 -fno-omit-frame-pointer>
+    $<$<CONFIG:RelWithDebInfo>:-O2 -g>
+    $<$<CONFIG:Release>:-O3>
+)
+
+target_compile_definitions(DaraWebGameServer PRIVATE
+    $<$<CONFIG:Debug>:DARA_DEBUG=1 DARA_DEBUG_COMBATLOG=1>
+    $<$<CONFIG:RelWithDebInfo>:DARA_DEBUG=1>
+    $<$<CONFIG:Release>:DARA_DEBUG=0>
+)
+
+# -------------------------
+# Optional sanitizers (Debug only, GCC/Clang)
+# -------------------------
+if (DARA_SANITIZE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(DaraWebGameServer PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+    target_link_options(DaraWebGameServer PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+endif()
+
 # =========================
 # Testgame Executable
 # =========================
@@ -87,5 +126,28 @@ target_include_directories(testgame PRIVATE
 
 if (UNIX)
     target_link_libraries(testgame PRIVATE pthread)
+endif()
+
+# Optional: same warnings/debug defines for testgame
+target_compile_options(testgame PRIVATE
+    -Wall -Wextra -Wpedantic
+    $<$<CONFIG:Debug>:-O0 -g3 -fno-omit-frame-pointer>
+    $<$<CONFIG:RelWithDebInfo>:-O2 -g>
+    $<$<CONFIG:Release>:-O3>
+)
+
+target_compile_definitions(testgame PRIVATE
+    $<$<CONFIG:Debug>:DARA_DEBUG=1>
+    $<$<CONFIG:RelWithDebInfo>:DARA_DEBUG=1>
+    $<$<CONFIG:Release>:DARA_DEBUG=0>
+)
+
+if (DARA_SANITIZE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(testgame PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+    target_link_options(testgame PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
 endif()
 

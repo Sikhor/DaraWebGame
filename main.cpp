@@ -457,14 +457,7 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
         res.set_content((json{{"status","error"},{"message", err}}).dump(), "application/json");
         return;
     }
-
-    std::string logMsg;
-
-    g_combatDirector->ApplyDamageToMob(actionTarget, 50.f, &logMsg); // trigger condition updates
-    if(logMsg .empty()==false){
-        std::cout << "ApplyDamageToMob logMsg: " << logMsg << "\n";
-    }
-    
+  
     res.status = 200;
     res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
 });
@@ -562,7 +555,7 @@ server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
         out.dump(),
         "application/json"
     );
-    if(DARA_DEBUG_COMBATLOG) std::cout << "CombatLog: " << out.dump() <<std::endl;
+    if(DARA_DEBUG_COMBAT) std::cout << "CombatLog: " << out.dump() <<std::endl;
     return;
 
     if (true) 
@@ -610,7 +603,7 @@ server.Options("/me", [](const httplib::Request&, httplib::Response& res){
 
     SetOnNewPlayerCallback(NewPlayer);
     InitialActions();
-    DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(WEBSERVER_PORT)+"e.g. /action");
+    DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(WEBSERVER_PORT)+"  e.g. /action");
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
 

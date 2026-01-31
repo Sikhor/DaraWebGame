@@ -13,11 +13,12 @@ int RandSlot()
     static std::uniform_int_distribution<int> dist(0, MAXSLOTS-1);
     return dist(rng);
 }
-bool ShallMobSpawn()
+bool ShallMobSpawn(int turn)
 {
+    int chance= 1000-300-turn;
     static thread_local std::mt19937 rng{ std::random_device{}() };
-    static std::uniform_int_distribution<int> dist(0, 100);
-    return dist(rng)>70;
+    static std::uniform_int_distribution<int> dist(0, 1000);
+    return dist(rng)>turn;
 }
 
 CombatDirector::CombatDirector(std::string gameId)
@@ -137,12 +138,13 @@ json CombatDirector::SerializePlayersLocked() const
         p["combatLog"] = "";   // string
         p["action"]    = "";   // "attack", "defend", ...
        
+        /*
         std::cout << "SER " << name
           << " HP=" << player->GetHP()
           << " MaxHP=" << player->GetMaxHP()
           << " ptr=" << player.get()
           << "\n";
-          
+        */  
 
         arr.push_back(std::move(p));
     }
@@ -181,15 +183,12 @@ bool CombatDirector::ApplyDamageToPlayerLocked(const std::string& playerName, fl
     if (it == Players.end()) {
         DaraLog("ERROR", "ApplyDamageToPlayer Unknown player"+playerName);
         return false;
+    }else{
+        std::shared_ptr<Combatant> p=it->second;
+        p->ApplyDamage(dmg);
     }
-    std::shared_ptr<Combatant> p=it->second;
-    p->ApplyDamage(dmg);
 
-    std::cout <<"DMG HP=" << p->GetHP()
-          << " MaxHP=" << p->GetMaxHP()
-          << " dmg " <<dmg 
-          << "\n";
-          
+    if(DARA_DEBUG_MOBCOMBAT) DaraLog("COMBAT", "ApplyDamageToPlayer "+playerName+" "+std::to_string(dmg));
     return true;
 }
 
@@ -355,6 +354,14 @@ CombatDirector::json CombatDirector::GetStateSnapshotJson(size_t lastLogLines) c
     return out;
 }
 
+void CombatDirector::RegenPlayers()
+{
+    for (auto& [name, player] : Players)
+    {
+        if (player && player->IsAlive())
+            player->RegenTurn();
+    }
+}
 
 void CombatDirector::ResolverLoop()
 {
@@ -417,9 +424,10 @@ void CombatDirector::ResolverLoop()
             std::vector<std::string> turnLog;
             turnLog.push_back("=== TURN " + std::to_string(turnId) + " ===");
         {
-            // Ai said no lock here std::unique_lock<std::mutex> lk(CacheMutex);
+            std::unique_lock<std::mutex> lk(CacheMutex);
 
             ResolvePlayers(actions, turnLog);
+            RegenPlayers();
         }
 
         // Step C: AI (no lock). Build snapshot under lock, then call AI unlocked.
@@ -538,9 +546,76 @@ bool CombatDirector::WaitForTurnBarrier(std::unique_lock<std::mutex>& lk,
 void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
                                    std::vector<std::string>& outTurnLog)
 {
+    //DaraLog("RESOLVE", "Started resolve Players with actions in queue: "+std::to_string(actions.size()));
+    float dmg=0.f;
+    std::string logMsg;
     for (const auto& a : actions)
     {
+        DaraLog("DEBUG", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
         outTurnLog.push_back(a.playerName + " does: " + a.actionId + " (" + a.actionMsg + ")");
+            std::string logMsg;
+
+        if(a.actionId=="attack" || a.actionId=="fireball"|| a.actionId=="shoot"|| a.actionId=="mezz"){
+            std::shared_ptr<Combatant> target;
+            std::shared_ptr<Combatant> player;
+            auto pit=Players.find(a.playerName);
+            auto tit=Mobs.find(a.actionTarget);           
+
+            if(pit!=Players.end() && tit!=Players.end()){
+                player= pit->second;
+                target= tit->second;
+                if(a.actionId=="attack")dmg= player->AttackMelee(target);
+                if(a.actionId=="fireball")dmg= player->AttackFireball(target);
+                if(a.actionId=="shoot")dmg= player->AttackShoot(target);
+                if(a.actionId=="mezz")dmg= player->AttackMezz(target);
+                logMsg= "Success "+std::to_string(dmg);                
+            }else{
+                logMsg="Could not find player or target";
+            }
+
+            if(logMsg.empty()==false){
+                DaraLog("COMBAT", a.playerName + " " + a.actionId +" "+ a.actionTarget+" Result: " + logMsg);
+            }
+        }
+        if(a.actionId=="heal" ||a.actionId=="revive" ){
+            std::shared_ptr<Combatant> target;
+            std::shared_ptr<Combatant> player;
+            auto pit=Players.find(a.playerName);
+            auto tit=Players.find(a.actionTarget);           
+
+            if(pit!=Players.end() && tit!=Players.end()){
+                player= pit->second;
+                target= tit->second;
+                if(a.actionId=="heal") player->Heal(target);
+                if(a.actionId=="revive") target->Revive();
+
+                logMsg= "Success";                
+            }else{
+                logMsg="Could not find player or target";
+            }
+
+            if(logMsg.empty()==false){
+                DaraLog("COMBAT", a.playerName + " " + a.actionId +" "+ a.actionTarget+": " + logMsg);
+            }
+        }
+        if(a.actionId=="defense" ||a.actionId=="usepotion" ){
+            std::shared_ptr<Combatant> player;
+            auto pit=Players.find(a.playerName);
+
+            if(pit!=Players.end()){
+                player= pit->second;
+                if(a.actionId=="defense") player->BuffDefense();
+                if(a.actionId=="usepotion") player->UsePotion();
+
+                logMsg= "Success";                
+            }else{
+                logMsg="Could not find player or target";
+            }
+
+            if(logMsg.empty()==false){
+                DaraLog("COMBAT", a.playerName + " " + a.actionId +" "+ a.actionTarget+": " + logMsg);
+            }
+        }
     }
 }
 
@@ -642,6 +717,7 @@ void CombatDirector::SpawnMob(const std::string& mobId, int lane, int slot)
 
     // Create instance from template
     auto mob = g_mobTemplates.CreateMobInstancePtr(mobId, lane, slot);
+    //mob->DebugShort();
 
     Mobs.emplace(mobId, std::move(mob));
 }
@@ -653,8 +729,8 @@ void CombatDirector::ResolveSpawnMobs()
     int slot= RandSlot();
     
     GetFilledSlotArray();
-
-    if(!FilledSlotArray[0][slot] && ShallMobSpawn() && !Players.empty()){
+    DaraLog("TURN", "Turn: "+std::to_string(CurrentTurnId));
+    if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty()){
         const std::string mobId = g_mobTemplates.PickRandomMobId();
         if (mobId.empty()) throw std::runtime_error("No mob templates loaded");
             SpawnMob(mobId, 0, slot);
@@ -729,7 +805,8 @@ void CombatDirector::ResolveMobs(const json& aiJson,
 
         // Apply damage directly (NO second CacheMutex lock!)
         if(mob->ShouldAttack()){
-            kDamage= mob->Attack(0.f);
+            if(DARA_DEBUG_MOBCOMBAT)DaraLog("COMBAT", mob->GetName()+" should attack randomly " + target->GetName()+" Mob AttackType:"+mob->GetAttackType());
+            mob->MobAttack(target);
             ApplyDamageToPlayerLocked(target->GetName(), kDamage);
 
             // Log globally (turn log)
@@ -737,7 +814,7 @@ void CombatDirector::ResolveMobs(const json& aiJson,
                 " for " + std::to_string((int)kDamage) + " dmg.";
             outTurnLog.push_back(logMsg);
 
-            if(DARA_DEBUG_COMBATLOG) DaraLog("MobAttack", logMsg);
+            if(DARA_DEBUG_COMBAT) DaraLog("MobAttack", logMsg);
         }
         // Optional per-entity log fields if you have them:
         // mob->SetLastAction("attack");

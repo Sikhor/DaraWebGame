@@ -100,10 +100,10 @@ UIState::json UIState::MobToJson(const Combatant& c)
     out["mn"]  = j.value("mn", c.GetMana());
 
     // try multiple common keys, fallback to current HP
-    out["max"] = 100;
-    out["hpMax"] = 100;
-    out["enMax"] = 100;
-    out["mnMax"] = 100;
+    out["max"] = c.GetMaxHP();
+    out["hpMax"] = c.GetMaxHP();
+    out["enMax"] = c.GetMaxEnergy();
+    out["mnMax"] = c.GetMaxMana();
     out["avatarId"] = c.GetAvatarId();
     return out;
 }

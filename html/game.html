@@ -213,11 +213,10 @@
     border: 1px solid rgba(255,255,255,0.08);
     overflow: hidden;
 
-    background:
-      radial-gradient(600px 420px at 50% 10%, rgba(120,180,255,0.20) 0%, rgba(0,0,0,0) 60%),
-      linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.58) 70%, rgba(0,0,0,0.85) 100%),
-      radial-gradient(1200px 700px at 50% 100%, rgba(30,60,110,0.22) 0%, rgba(0,0,0,0) 55%),
-      linear-gradient(180deg, #08101c 0%, #04060c 100%);
+    background-image: url("https://gameinfo.daraempire.com/wp-content/uploads/2024/12/Battle-at-Delco-Towers-2.png");
+    background-size: cover;        /* ⬅️ key line */
+    background-position: center;   /* center the image */
+    background-repeat: no-repeat;  /* don’t tile */
   }
 
   /* tunnel light cone */
@@ -278,7 +277,7 @@
     position:absolute;
     inset:0;
     display:grid;
-    grid-template-rows: 1fr 1fr 1fr; /* back, mid, front */
+    grid-template-rows: 0.2fr 0.5fr 1.5fr; /* back, mid, front */
     padding: 6px 10px 10px;
     pointer-events:none;
   }
@@ -292,9 +291,10 @@
   }
 
   /* row tuning */
-  .depthRow.back  { transform: translateY(-4px); opacity:0.65; filter: blur(1.2px); }
-  .depthRow.mid   { transform: translateY( 2px); opacity:0.85; filter: blur(0.4px); }
+  .depthRow.back  { transform: translateY(-4px); opacity:0.65; filter: blur(0.4px); }
+  .depthRow.mid   { transform: translateY( 2px); opacity:0.85; filter: blur(0.2px); }
   .depthRow.front { transform: translateY( 8px); opacity:1.00; filter: blur(0px); }
+
 
   /* Mob card */
   .mobCardWrap{
@@ -728,7 +728,12 @@
     .chat-input{ min-width: 160px; }
 
     /* tighter scene */
-    .depthLayers{ padding: 6px 10px 10px; }
+    .depthLayers{
+      display: grid;
+      padding: 2px 2px 10px;
+      grid-template-rows: 0.2fr 0.5fr 1.5fr; /* back, mid, front */
+  }
+
     .depthRow{ gap: 6px; }
     .fog{ height: 32%; }
     .fog.f2{ height: 40%; }
@@ -737,6 +742,10 @@
     .depthRow.back  { transform: translateY(-6px); }
     .depthRow.mid   { transform: translateY(  4px); }
     .depthRow.front { transform: translateY( 12px); }
+    .mobCard.dead .deathIcon img{
+      width: 26px;
+      height: 26px;
+    }
   }
 
   @media (min-width: 901px){
@@ -824,7 +833,10 @@
     .action-btn img{ width: 24px; height: 24px; }
 
     /* tighter scene */
-    .depthLayers{ padding: 1px 3px 15px; }
+    .depthLayers{
+      display: grid;
+      grid-template-rows: 0.2fr 0.5fr 1.5fr; /* back, mid, front */
+    }
     .depthRow{ gap: 6px; }
     .fog{ height: 30%; }
     .fog.f2{ height: 36%; }
@@ -884,6 +896,14 @@
   color: rgba(255,255,255,0.62);
 }
 
+#btnGameOverLogout{
+  background: linear-gradient(180deg, rgba(120,20,20,0.9), rgba(60,10,10,0.9));
+  border-color: rgba(255,80,80,0.5);
+}
+#btnGameOverLogout:hover{
+  filter: brightness(1.15);
+}
+
 /* lock the UI feel while overlay is up */
 body.locked .action-btn,
 body.locked .chat-input,
@@ -891,6 +911,130 @@ body.locked .target-input{
   pointer-events: none;
   filter: grayscale(0.4);
   opacity: 0.85;
+}
+
+/* ===== DAMAGE FEEDBACK ===== */
+#hitFlash{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99997;
+  opacity: 0;
+
+  /* MUCH softer: darker vignette instead of red blast */
+  background:
+    radial-gradient(
+      70% 55% at 50% 40%,
+      rgba(180,60,60,0.12),
+      rgba(0,0,0,0) 65%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(120,30,30,0.06),
+      rgba(0,0,0,0)
+    );
+
+  transition: opacity 140ms ease;
+}
+
+#hitFlash.on{
+  opacity: 1;
+  animation: hitPulseSoft 220ms ease-out;
+}
+
+@keyframes hitPulseSoft{
+  0%   { opacity: 0; }
+  35%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+
+/* small camera shake */
+body.hitShake .app{
+  animation: shake 260ms ease-out;
+}
+@keyframes shake{
+  0%   { transform: translate3d(0,0,0); }
+  15%  { transform: translate3d(-3px, 1px,0); }
+  30%  { transform: translate3d( 3px,-2px,0); }
+  45%  { transform: translate3d(-2px,-1px,0); }
+  60%  { transform: translate3d( 2px, 2px,0); }
+  100% { transform: translate3d(0,0,0); }
+}
+
+/* highlight the damaged party row */
+.pRow.damaged{
+  box-shadow: 0 0 0 2px rgba(255,80,80,0.55);
+  background: rgba(255,60,60,0.10);
+  transition: box-shadow 180ms ease, background 180ms ease;
+}
+
+/* ===== MOB DEATH FX ===== */
+/* ===== MOB DEATH OVERLAY (image, not replacement) ===== */
+.mobCard.dead{
+  filter: grayscale(0.9) brightness(0.8);
+}
+
+.mobCard.dead .deathIcon{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.mobCard.dead .deathIcon img{
+  width: 34px;
+  height: 34px;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
+  animation: deathBlink 650ms ease-in-out 3;
+}
+
+@keyframes deathBlink{
+  0%,100% { opacity: 0.35; transform: scale(0.95); }
+  50%     { opacity: 1.00; transform: scale(1.08); }
+}
+
+/* optional: a “loot toast” */
+#lootToastHost{
+  position: fixed;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  z-index: 99996;
+  pointer-events: none;
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.lootToast{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 16px 44px rgba(0,0,0,0.55);
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  opacity: 0;
+  transform: translateY(-6px);
+  animation: toastInOut 1600ms ease forwards;
+}
+
+@keyframes toastInOut{
+  0%   { opacity:0; transform: translateY(-10px); }
+  10%  { opacity:1; transform: translateY(0px); }
+  80%  { opacity:1; transform: translateY(0px); }
+  100% { opacity:0; transform: translateY(-10px); }
+}
+
+
+/* Logout button should be available when gameover appears*/
+body.locked #gameOverOverlay button{
+  pointer-events: auto;
 }
 </style>
 </head>
@@ -926,7 +1070,10 @@ body.locked .target-input{
     <div class="panel encounterPanel">
       <div class="panelHeader">
         <span>Encounter</span>
-        <span class="sub">Depth / Threat</span>
+        <div>
+          <button class="btnTop" id="btnFlash" title="Flash">Flash: OFF</button>
+          <button class="btnTop" id="btnShake" title="Shake">Shake: OFF</button>
+        </div>
       </div>
       <div class="lanes" id="lanes"></div>
     </div>
@@ -962,7 +1109,16 @@ body.locked .target-input{
 
 </div>
 
+<div id="hitFlash"></div>
+<div id="lootToastHost"></div>
 <script>
+  /* =========================
+     Globals
+     ========================= */
+  let ENABLE_SHAKE = false;  // default on (you can set false)
+  let ENABLE_HIT_FLASH = false; // default OFF (migraine-safe)
+
+
   /* =========================
      AUTH + STORAGE
      ========================= */
@@ -988,6 +1144,33 @@ body.locked .target-input{
       window.location.href = LOGIN_PAGE;
     }
   }
+
+  // Dead popup and loot
+  // Keep dead mobs visible briefly (even if server removes them)
+  const deadFx = new Map(); // id -> { untilMs, lastMob }
+  const DEAD_STAY_MS = 2200;
+
+  // load preference flash
+  ENABLE_HIT_FLASH = (localStorage.getItem("enableHitFlash") ?? "0") === "1";
+
+
+  // load preference SHAKE
+  ENABLE_SHAKE = (localStorage.getItem("enableShake") ?? "1") === "1";
+
+  function updateShakeBtn(){
+    const b = document.getElementById("btnShake");
+    if (!b) return;
+    b.textContent = "Shake: " + (ENABLE_SHAKE ? "ON" : "OFF");
+  }
+
+  document.getElementById("btnShake")?.addEventListener("click", () => {
+    ENABLE_SHAKE = !ENABLE_SHAKE;
+    localStorage.setItem("enableShake", ENABLE_SHAKE ? "1" : "0");
+    updateShakeBtn();
+  });
+
+  updateShakeBtn();
+  // END Shake Option
 
   async function doLogout() {
     const token = getToken();
@@ -1055,11 +1238,12 @@ body.locked .target-input{
       fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
       mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
       heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
-      flee: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+      revive: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
       evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
       talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
       usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
-      move: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+      shoot: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+      dead: "https://gameinfo.daraempire.com/wp-content/uploads/Dead.png",
     }
   };
   const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
@@ -1068,15 +1252,18 @@ body.locked .target-input{
     attack:   new Audio(SOUND_BASE+"Attack.wav"),
     fireball: new Audio(SOUND_BASE+"Fireball.wav"),
     heal:     new Audio(SOUND_BASE+"Heal.wav"),
-    defend:   new Audio(SOUND_BASE+"Defend.wav"),
+    defend:   new Audio(SOUND_BASE+"Defense.wav"),
     mezmerize:new Audio(SOUND_BASE+"Mez.wav"),
-    flee:     new Audio(SOUND_BASE+"Flee.wav"),
+    revive:   new Audio(SOUND_BASE+"Revive.wav"),
     evac:     new Audio(SOUND_BASE+"Evac.wav"),
     talk:     new Audio(SOUND_BASE+"Talk.wav"),
     usepotion:new Audio(SOUND_BASE+"Potion.wav"),
-    move:     new Audio(SOUND_BASE+"Move.wav"),
+    shoot:    new Audio(SOUND_BASE+"LaserGun1.wav"),
     mobdeath: new Audio(SOUND_BASE+"MobDeath.wav"),
-    gameover: new Audio(SOUND_BASE+"explosion"),
+    gameover: new Audio(SOUND_BASE+"GameOverSciFi.wav"),
+    hit1: new Audio(SOUND_BASE+"PlayerHit1.wav"),
+    hit2: new Audio(SOUND_BASE+"PlayerHit2.wav"),
+    hit3: new Audio(SOUND_BASE+"PlayerHit3.wav"),
   };
 
   function playSound(key){
@@ -1089,16 +1276,28 @@ body.locked .target-input{
     }catch(e){}
   }
 
+  let lastHitSoundAt = 0;
+
+  function playRandomHitSound(){
+    const now = performance.now();
+    if (now - lastHitSoundAt < 180) return; // ms debounce
+    lastHitSoundAt = now;
+
+    const hits = ["hit1", "hit2", "hit3"];
+    const key = hits[Math.floor(Math.random() * hits.length)];
+    playSound(key);
+  }
+
   const ACTIONS = [
     { id: "attack",     label: "Attack",   cd: 2  },
     { id: "defend",     label: "Defend",   cd: 3  },
     { id: "fireball",   label: "Fireball", cd: 5  },
     { id: "heal",       label: "Heal",     cd: 6  },
     { id: "mezmerize",  label: "Mez",      cd: 8  },
-    { id: "move",       label: "Move",     cd: 1  },
+    { id: "shoot",      label: "Shoot",     cd: 1  },
     { id: "usepotion",  label: "Potion",   cd: 10 },
     { id: "talk",       label: "Talk",     cd: 1  },
-    { id: "flee",       label: "Flee",     cd: 12 },
+    { id: "revive",     label: "Revive",   cd: 12 },
     { id: "evac",       label: "Evac",     cd: 20 },
   ];
 
@@ -1273,6 +1472,7 @@ body.locked .target-input{
   }
 
   /* ===== Encounter: Depth Scene (UPDATED with selection marker) ===== */
+  
   function renderEncounter(){
     const lanesEl = document.getElementById("lanes");
     lanesEl.innerHTML = "";
@@ -1292,7 +1492,20 @@ body.locked .target-input{
     const rowMid   = document.createElement("div"); rowMid.className   = "depthRow mid";
     const rowFront = document.createElement("div"); rowFront.className = "depthRow front";
 
-    const mobs = (uiState.mobs || []).filter(m => Number(m.hp) > 0);
+    // Dead mobs should be shown a while with toast
+    const now = Date.now();
+
+    // alive mobs
+    const alive = (uiState.mobs || []).filter(m => Number(m.hp) > 0);
+
+    // cached corpses still visible
+    const corpses = [];
+    for (const [id, fx] of deadFx){
+      if (fx.untilMs > now && fx.lastMob) corpses.push(fx.lastMob);
+    }
+
+    // combine alive + corpses
+    const mobs = [...alive, ...corpses];
 
     const hpRatio = (m) => {
       const max = Number(m.max || m.hpMax || 1);
@@ -1317,7 +1530,10 @@ body.locked .target-input{
       wrap.style.setProperty("--ty", `${y}px`);
 
       const card = document.createElement("div");
+      const isDead = Number(m.hp) <= 0;
+
       card.className = "mobCard " + (isThreat(m) ? "threat" : "");
+      if (isDead) card.classList.add("dead");
       card.classList.add(["t1","t2","t3","t4"][idx % 4]);
 
       if (uiState.selectedMobId === m.id){
@@ -1329,14 +1545,20 @@ body.locked .target-input{
 
       card.innerHTML = `
         <div class="mob">
-          <div class="targetTag">TARGET</div>
+          <div class="targetTag">${escapeHtml(m.id)}</div>
 
           <img class="mobImg"
-               src="${escapeHtml(imgUrl)}"
-               alt="${escapeHtml(m.id)}"
-               loading="lazy"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+              src="${escapeHtml(imgUrl)}"
+              alt="${escapeHtml(m.id)}"
+              loading="lazy"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
           <div class="avatar" style="display:none">${escapeHtml(m.id).slice(0,3)}</div>
+
+          ${isDead ? `
+            <div class="deathIcon">
+              <img src="${MEDIA.images.dead}" alt="dead" />
+            </div>
+          ` : ""}
 
           <div class="hpBar">
             <div class="hpFill" style="width:${hpPct}%"></div>
@@ -1345,6 +1567,7 @@ body.locked .target-input{
       `;
 
       wrap.onclick = () => {
+        if (isDead) return; // corpse not selectable
         uiState.selectedMobId = m.id;
         uiState.selectedPartyId = null;
         actionTargetEl.value = m.id;
@@ -1380,7 +1603,7 @@ body.locked .target-input{
 
     lanesEl.appendChild(scene);
   }
-
+  
   function renderParty(){
     const partyEl = document.getElementById("party");
     partyEl.innerHTML = "";
@@ -1388,6 +1611,11 @@ body.locked .target-input{
     (uiState.party || []).forEach(p => {
       const row = document.createElement("div");
       row.className = "pRow";
+
+      // add a transient "damaged" class if this player was hit recently
+      if (uiState._damagedIds && uiState._damagedIds.has(p.id)){
+        row.classList.add("damaged");
+      }
 
       if (uiState.selectedPartyId === p.id) {
         row.classList.add("selected");
@@ -1461,31 +1689,68 @@ body.locked .target-input{
     return map;
   }
 
-  function detectMobDeaths(prev, next){
-    const prevMap = extractMobsMap(prev);
-    const nextMap = extractMobsMap(next);
+  // Toast and Mobdeath detection
+  function showLootToast(text){
+  const host = document.getElementById("lootToastHost");
+  if (!host) return;
 
-    for(const [id, nextMob] of nextMap){
-      const prevMob = prevMap.get(id);
-      const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
-      const isDead   = Number(nextMob.hp) <= 0;
+  const el = document.createElement("div");
+  el.className = "lootToast";
+  el.textContent = text;
 
-      if (wasAlive && isDead && !playedDeaths.has(id)){
-        playedDeaths.add(id);
-        playSound("mobdeath");
-      }
-    }
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
 
-    for(const [id, prevMob] of prevMap){
-      const existsNow = nextMap.has(id);
-      const wasAlive = Number(prevMob.hp) > 0;
+function detectMobDeaths(prev, next){
+  const prevMap = extractMobsMap(prev);
+  const nextMap = extractMobsMap(next);
 
-      if (wasAlive && !existsNow && !playedDeaths.has(id)){
-        playedDeaths.add(id);
-        playSound("mobdeath");
-      }
+  const now = Date.now();
+
+  // Case A: mob still exists but hp dropped to 0
+  for(const [id, nextMob] of nextMap){
+    const prevMob = prevMap.get(id);
+    const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
+    const isDead   = Number(nextMob.hp) <= 0;
+
+    if (wasAlive && isDead && !playedDeaths.has(id)){
+      playedDeaths.add(id);
+
+      // sound
+      playSound("mobdeath");
+
+      // cache corpse
+      deadFx.set(id, { untilMs: now + DEAD_STAY_MS, lastMob: { ...nextMob, hp: 0 } });
+
+      // small reward feedback (placeholder)
+      const gold = 1 + Math.floor(Math.random() * 4);
+      showLootToast(`+${gold} Loot from ${id}`);
     }
   }
+
+  // Case B: mob got removed from server list (disappears)
+  for(const [id, prevMob] of prevMap){
+    const existsNow = nextMap.has(id);
+    const wasAlive = Number(prevMob.hp) > 0;
+
+    if (wasAlive && !existsNow && !playedDeaths.has(id)){
+      playedDeaths.add(id);
+
+      playSound("mobdeath");
+      deadFx.set(id, { untilMs: now + DEAD_STAY_MS, lastMob: { ...prevMob, hp: 0 } });
+
+      const gold = 1 + Math.floor(Math.random() * 4);
+      showLootToast(`+${gold} Loot from ${id}`);
+    }
+  }
+
+  // cleanup old fx
+  for (const [id, fx] of deadFx){
+    if (now > fx.untilMs) deadFx.delete(id);
+  }
+}
+
 
   function renderAll(){
     renderBadges();
@@ -1511,18 +1776,49 @@ body.locked .target-input{
 
       const s = await res.json();
 
+      // --- DAMAGE FEEDBACK (CURRENT PLAYER ONLY) ---
+      const damages = detectPartyDamage(lastState || uiState, s);
+      if (damages.length > 0){
+        const me = getPlayerName(); // logged-in player name
+        const myHit = damages.find(d => d.id === me);
+
+        if (myHit){
+          // scale flash intensity by damage amount
+          const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
+          triggerHitFeedback(intensity);
+          playRandomHitSound();
+
+          // optional: briefly highlight your own party row
+          s._damagedIds = new Set([me]);
+          setTimeout(() => {
+            if (uiState && uiState._damagedIds){
+              uiState._damagedIds = null;
+              renderParty();
+            }
+          }, 450);
+        }
+      }
+      // end damage feedback
+
+
+
       detectMobDeaths(lastState || uiState, s);
 
       const keepSelectedMobId   = uiState.selectedMobId;
       const keepSelectedPartyId = uiState.selectedPartyId;
 
       uiState = s;
+
       // If server provides phase/gameover fields
+      const wasGameOver = String(lastState?.phase || "") === "gameover";
+      const isGameOver  = String(s.phase || "") === "gameover";
+      
       if (String(s.phase || "") === "gameover") {
-        showGameOverOverlay(s.gameOverReason, s.restartInMs);
-        playSound("gameover");
+          showGameOverOverlay(s.gameOverReason, s.restartInMs);
+
+          if (!wasGameOver) playSound("gameover");
       } else {
-        hideGameOverOverlay();
+          hideGameOverOverlay();
       }
 
 
@@ -1635,6 +1931,78 @@ function hideGameOverOverlay(){
   document.body.classList.remove("locked");
 }
 
+/* =========================
+     HitFlash
+     ========================= */
+let lastHitFlashAt = 0;
+
+function triggerHitFeedback(intensity01 = 0.7){
+    if (!ENABLE_HIT_FLASH) return;
+
+    const now = performance.now();
+    if (now - lastHitFlashAt < 500) return; // prevent double blink
+    lastHitFlashAt = now;
+
+    const flash = document.getElementById("hitFlash");
+    if (!flash) return;
+
+    flash.classList.remove("on");
+    void flash.offsetHeight; // restart animation
+    flash.style.opacity = String(Math.max(0.2, Math.min(0.6, intensity01)));
+    flash.classList.add("on");
+
+    if (ENABLE_SHAKE){
+      document.body.classList.add("hitShake");
+      setTimeout(() => document.body.classList.remove("hitShake"), 260);
+    }
+ }
+
+ function updateFlashBtn(){
+  const b = document.getElementById("btnFlash");
+  if (!b) return;
+  b.textContent = "Flash: " + (ENABLE_HIT_FLASH ? "ON" : "OFF");
+}
+
+document.getElementById("btnFlash")?.addEventListener("click", () => {
+  ENABLE_HIT_FLASH = !ENABLE_HIT_FLASH;
+  localStorage.setItem("enableHitFlash", ENABLE_HIT_FLASH ? "1" : "0");
+  updateFlashBtn();
+});
+
+updateFlashBtn();
+ // end hitflash section
+
+function extractPartyMap(state){
+  const map = new Map();
+  (state?.party || []).forEach(p => map.set(p.id, p));
+  return map;
+}
+
+// returns array of {id, dmg, newHp, oldHp}
+function detectPartyDamage(prev, next){
+  const prevMap = extractPartyMap(prev);
+  const out = [];
+
+  for (const p of (next?.party || [])){
+    const id = p.id;
+    const prevP = prevMap.get(id);
+    if (!prevP) continue;
+
+    const oldHp = Number(prevP.hp ?? 0);
+    const newHp = Number(p.hp ?? 0);
+
+    if (newHp < oldHp){
+      out.push({ id, dmg: oldHp - newHp, newHp, oldHp });
+    }
+  }
+  return out;
+}
+
+// Bind overlay button AFTER the DOM exists
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("btnGameOverLogout")?.addEventListener("click", doLogout);
+});
+
 </script>
 
 
@@ -1647,8 +2015,13 @@ function hideGameOverOverlay(){
     <div class="overlayTimer">
       Restarting in <span id="gameOverSeconds">3</span>s…
     </div>
+    <div style="margin-top:16px; display:flex; justify-content:center; gap:12px;">
+      <button id="btnGameOverLogout" class="btnTop">
+        Logout
+      </button>
+    </div>
 
-    <div class="overlayHint">Tip: choose a different target or try “Defend” early.</div>
+    <div class="overlayHint">Get more help!!!</div>
   </div>
 </div>
 </body>

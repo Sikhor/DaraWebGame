@@ -126,6 +126,7 @@ private:
     // Turn pipeline
     void ResolvePlayers(const std::vector<PlayerAction>& actions,
                         std::vector<std::string>& outTurnLog);
+    void RegenPlayers();
 
     json BuildAiRequestSnapshotLocked(uint64_t turnId) const;
 

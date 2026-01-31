@@ -1,5 +1,6 @@
 #include "combatant.h"
 
+
 float GetRandomFloat(float min, float max)
 {
     static std::random_device rd;
@@ -92,13 +93,25 @@ int Combatant::GetEnergy() const
 
 void Combatant::RegenTurn()
 {
-    HP += GetRandomFloat(0.f, 3.f);
-    Mana += GetRandomFloat(0.f, 3.f);
-    Energy += GetRandomFloat(0.f, 3.f);
+    HP += GetRandomFloat(1.f, 4.f);
+    Mana += GetRandomFloat(1.f, 4.f);
+    Energy += GetRandomFloat(1.f, 4.f);
 
-    if (HP > MaxHP) HP = MaxHP;
-    if (Mana > MaxMana) Mana = MaxMana;
-    if (Energy > MaxEnergy) Energy = MaxEnergy;
+    DefenseModifier-=1.f;
+    DamageModifier-=1.f;
+    MezzCounter-=1;
+    CheckStats();
+}
+
+void Combatant::CheckStats()
+{
+    HP= std::clamp(HP, 0.f, MAXHP);
+    Mana= std::clamp(Mana, 0.f, MAXMANA);
+    Energy= std::clamp(Energy, 0.f, MAXENERGY);
+    BaseDefense= std::clamp(BaseDefense, 0.f, 1000.f);
+    BaseDamage= std::clamp(BaseDamage, 0.f, 1000.f);
+    MezzCounter= std::clamp(MezzCounter, 0, MEZZTURNS);
+
 }
 
 std::string Combatant::GetName() const
@@ -106,29 +119,130 @@ std::string Combatant::GetName() const
     return Name;
 }
 
-float Combatant::AttackMelee(const std::string& target)
+void Combatant::MobAttack(CombatantPtr target)
 {
-    (void)target; // remove if you use it later
+    if(!IsAlive())return;
+    if(MezzCounter>0)return;
 
-    float dmg = 0.f;
+    float dmg= 0.f;
+
+    dmg = GetRandomDamage();
+    dmg-= target->GetCurrentDefense();
+    target->ApplyDamage(dmg);
+}
+
+
+float Combatant::AttackMelee(CombatantPtr target)
+{
+    float dmg= 0.f;
+    if(!IsAlive())return dmg;
+    if(target->GetLane()<2)
+    {
+        //std::cout << "TOOOO FAR" << std::endl;
+        return dmg;
+    }
+
     if (Energy > MELEECOST) {
+        dmg = GetRandomDamage();
         ApplyRandomCost(Energy, MELEECOST, DEVIATION);
-        dmg = GetRandomFloat(DAMAGEMIN, DAMAGEMAX);
+        dmg-= target->GetCurrentDefense();
+        target->ApplyDamage(dmg);
     }
     return dmg;
 }
 
-float Combatant::AttackSpell(const std::string& target)
+float Combatant::AttackFireball(CombatantPtr target)
 {
-    (void)target;
+    float dmg= 0.f;
 
-    float dmg = 0.f;
+    if(!IsAlive())return dmg;
+    if (Mana > SPELLCOST) {
+        dmg = GetRandomDamage();
+        ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
+        dmg-= target->GetCurrentDefense();
+        target->ApplyDamage(dmg);
+    }
+    return dmg;
+}
+
+float Combatant::AttackShoot(CombatantPtr target)
+{
+    float dmg= 0.f;
+
+    if(target->GetLane()>=2)
+    {
+        //std::cout << "TOOOO NEAR" << std::endl;
+        return dmg;
+    }
+
+    if(!IsAlive())return dmg;
+    if (Energy > SPELLCOST) {
+        dmg = GetRandomDamage();
+        ApplyRandomCost(Energy, SPELLCOST, DEVIATION);
+        dmg-= target->GetCurrentDefense();
+        target->ApplyDamage(dmg);
+    }
+    return dmg;
+}
+
+
+float Combatant::AttackMezz(CombatantPtr target)
+{
+    if(!IsAlive())return 0.f;
     if (Mana > SPELLCOST) {
         ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
-        dmg = GetRandomFloat(DAMAGEMIN, DAMAGEMAX);
+        target->ReceiveMezz();
     }
-    return dmg;
+    return static_cast<float>(MEZZTURNS);
 }
+
+void Combatant::ReceiveMezz()
+{
+    MezzCounter= MEZZTURNS;
+}
+
+void Combatant::Heal(CombatantPtr target)
+{
+    if(!IsAlive())return;
+    float healamount = 0.f;
+    if (Mana > SPELLCOST) {
+        healamount = GetRandomDamage();
+        ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
+        target->ApplyHeal(healamount);
+    }
+
+}
+
+void Combatant::ReviveTarget(CombatantPtr target)
+{
+    if(!IsAlive())return;
+    if (Mana > SPELLCOST) {
+        ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
+        target->Revive();
+    }
+}
+
+void Combatant::BuffDefense()
+{
+    if(!IsAlive())return;
+    float spellcost= SPELLCOST*3;
+
+    if (Mana > spellcost) {
+        ApplyRandomCost(Mana, spellcost, DEVIATION);
+        DefenseModifier+= 4*DefenseModifier;
+    }
+}
+void Combatant::UsePotion()
+{
+    if(!IsAlive())return;
+    if(PotionAmount<1)return;
+    PotionAmount--;
+    ApplyHeal(BaseDamage*50.f);
+    Energy= MaxEnergy;
+    Mana= MaxMana;
+    DefenseModifier+= 2*BaseDefense;
+}
+
 
 void Combatant::ApplyDamage(float dmg)
 {
@@ -138,6 +252,15 @@ void Combatant::ApplyDamage(float dmg)
         AvatarId= DARA_DEAD_AVATAR_PLAYER;
     }
 }
+
+void Combatant::ApplyHeal(float amount)
+{
+    if(IsAlive()){
+        HP += amount;
+        CheckStats();
+    }
+}
+
 
 float Combatant::GetHPPct() const
 {
@@ -185,7 +308,7 @@ void Combatant::SetLane(int lane, int slot)
 bool Combatant::ShouldMove()
 {
     CurrentField+=Speed;
-    return CurrentField>(Lane+1) && Lane<MAXLANES;
+    return CurrentField>(Lane+1) && Lane<MAXLANES && MezzCounter<1;
 }
 
 bool Combatant::ShouldAttack()
@@ -215,35 +338,6 @@ bool Combatant::ShouldAttack()
 
 }
 
-float Combatant::Attack(float DefenseOfTarget)
-{
-    float NormalDmg= 5.f;
-    switch (Difficulty)
-    {
-        case ECombatantDifficulty::Normal:
-            return NormalDmg;
-
-        case ECombatantDifficulty::Boss:
-            return NormalDmg+5.f;
-
-        case ECombatantDifficulty::GroupMob:
-            return NormalDmg+6.f;
-
-        case ECombatantDifficulty::GroupBoss:
-            return NormalDmg+10.f;
-
-        case ECombatantDifficulty::RaidMob:
-            return NormalDmg+11.f;
-
-        case ECombatantDifficulty::RaidBoss:
-            return NormalDmg+15.f;
-
-        default:
-            return 1.f;
-    }
-}
-
-
 
 void Combatant::InitFromMobTemplate(
     const std::string& mobClass,
@@ -270,4 +364,115 @@ void Combatant::InitFromMobTemplate(
 
     BaseDamage = baseDamage;
     BaseDefense = baseDefense;
+}
+
+std::string Combatant::GetAttackType()
+{
+    switch (AttackType)
+    {
+        case ECombatantAttackType::Ranged:  return "Ranged";
+        case ECombatantAttackType::Melee:   return "Melee";
+        case ECombatantAttackType::Combi:   return "Combi";
+        case ECombatantAttackType::Healer:  return "Healer";
+        default:                            return "Unknown";
+    }
+}
+
+float Combatant::GetRandomDamage()
+{
+    float dmg= GetRandomFloat((BaseDamage+DamageModifier)*0.8f, (BaseDamage+DamageModifier)*1.2f);
+    return std::clamp(dmg, 1.f,(BaseDamage+DamageModifier)*1.2f);
+}
+
+void Combatant::Debug()
+{
+    std::ostringstream oss;
+
+    oss
+      << "Combatant{"
+      << "Id=" << Id
+      << ", Name=" << Name
+      << ", Type=" << ToString(Type)
+      << ", Difficulty=" << ToString(Difficulty)
+      << ", AttackType=" << ToString(AttackType)
+
+      << ", Lane=" << Lane
+      << ", Slot=" << Slot
+      << ", Active=" << (Active ? "true" : "false")
+
+      << ", AvatarId=" << AvatarId
+      << ", MobClass=" << MobClass
+
+      << ", HP=" << HP << "/" << MaxHP << " (" << HPPercentage << "%)"
+      << ", Energy=" << Energy << "/" << MaxEnergy << " (" << EnergyPercentage << "%)"
+      << ", Mana=" << Mana << "/" << MaxMana << " (" << ManaPercentage << "%)"
+
+      << ", BaseDamage=" << BaseDamage
+      << ", DamageMod=" << DamageModifier
+      << ", CurrentDamage=" << (BaseDamage + DamageModifier)
+
+      << ", BaseDefense=" << BaseDefense
+      << ", DefenseMod=" << DefenseModifier
+      << ", CurrentDefense=" << (BaseDefense + DefenseModifier)
+
+      << ", Speed=" << Speed
+      << ", CurrentField=" << CurrentField
+
+      << ", SpellManaMin=" << SpellManaMin
+      << ", MeleeManaMin=" << MeleeManaMin
+      << ", PotionAmount=" << PotionAmount
+      << ", MezzCounter=" << MezzCounter
+
+      << ", Conditions=" << ConditionsToString(Conditions)
+      << "}";
+
+    // use your logger if you want:
+    // DaraLog("COMBATANT", oss.str());
+    std::cout << oss.str() << "\n";
+}
+
+void Combatant::DebugShort()
+{
+    std::ostringstream oss;
+
+    oss
+      << "[MOBSTATS]"
+      << "  Name=" << Name
+      << ", Type=" << ToString(Type)
+      << ", Difficulty=" << ToString(Difficulty)
+      << ", AttackType=" << ToString(AttackType)
+
+      << ", Lane=" << Lane
+      << ", Slot=" << Slot
+      << ", Active=" << (Active ? "true" : "false")
+
+      << ", AvatarId=" << AvatarId
+      << ", MobClass=" << MobClass
+
+      << ", HP=" << HP << "/" << MaxHP << " (" << HPPercentage << "%)"
+      << ", Energy=" << Energy << "/" << MaxEnergy << " (" << EnergyPercentage << "%)"
+      << ", Mana=" << Mana << "/" << MaxMana << " (" << ManaPercentage << "%)"
+
+      << ", BaseDamage=" << BaseDamage
+      << ", DamageMod=" << DamageModifier
+      << ", CurrentDamage=" << (BaseDamage + DamageModifier)
+
+      << ", BaseDefense=" << BaseDefense
+      << ", DefenseMod=" << DefenseModifier
+      << ", CurrentDefense=" << (BaseDefense + DefenseModifier)
+
+      << ", Speed=" << Speed
+      << ", CurrentField=" << CurrentField
+
+      << ", SpellManaMin=" << SpellManaMin
+      << ", MeleeManaMin=" << MeleeManaMin
+      << ", PotionAmount=" << PotionAmount
+      << ", MezzCounter=" << MezzCounter
+
+      << ", Conditions=" << ConditionsToString(Conditions)
+      << "}";
+
+    // use your logger if you want:
+    // DaraLog("COMBATANT", oss.str());
+    std::cout << oss.str() << "\n";
 }

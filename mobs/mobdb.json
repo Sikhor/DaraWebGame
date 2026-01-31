@@ -128,10 +128,10 @@
       "mobClass": "Banoreth",
       "difficulty": "Boss",
       "attackType": "Combi",
-      "maxHP": 300,
+      "maxHP": 100,
       "maxEnergy": 150,
       "maxMana": 200,
-      "baseDamage": 18,
+      "baseDamage": 10,
       "baseDefense": 5
     },
     {
@@ -140,10 +140,10 @@
       "mobClass": "Kornrex",
       "difficulty": "Boss",
       "attackType": "Combi",
-      "maxHP": 300,
+      "maxHP": 100,
       "maxEnergy": 150,
       "maxMana": 200,
-      "baseDamage": 18,
+      "baseDamage": 10,
       "baseDefense": 5
     }
   ]
