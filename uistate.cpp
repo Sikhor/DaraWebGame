@@ -91,8 +91,19 @@ UIState::json UIState::MobToJson(const Combatant& c)
     // If you add getters, replace these two lines with:
     // out["lane"] = c.GetLane();
     // out["slot"] = c.GetSlot();
-    out["lane"] = j.value("lane", c.GetLane());
-    out["slot"] = j.value("slot", c.GetSlot());
+    // out["lane"] = j.value("lane", c.GetLane());
+    // out["slot"] = j.value("slot", c.GetSlot());
+
+    // center-of-cell mapping
+    float x = (c.GetSlot() + 0.5f) / MAXSLOTS;
+    float y = (c.GetLane() + 0.5f) / MAXLANES;
+
+    // optional safety clamp
+    x = std::clamp(x, 0.0f, 1.0f);
+    y = std::clamp(y, 0.0f, 1.0f);
+
+    out["x"] = x;
+    out["y"] = y;
 
     // HP/max: your JS expects {hp, max}
     out["hp"]  = j.value("hp", c.GetHP());

@@ -29,11 +29,11 @@
 
     --partyMaxHMobile: 32vh;
 
-    /* ===== Encounter responsiveness (NEW) ===== */
+    /* Encounter responsiveness */
     --sceneMinH: 420px;     /* desktop default */
     --mobCardSize: 96px;    /* desktop default */
     --mobImgSize: 64px;     /* desktop default */
-    
+
     /* rolling text infoMsg */
     --infoSpeed: 80; /* pixels per second (default). Configurable. */
   }
@@ -45,7 +45,7 @@
     background: radial-gradient(1200px 600px at 50% 20%, #121a2a 0%, #05070b 55%);
     color: var(--text);
     font-family: Arial, sans-serif;
-    overflow: hidden; /* no page scroll */
+    overflow: hidden;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
@@ -53,7 +53,7 @@
   .app{
     height: 100%;
     display: grid;
-    grid-template-rows: var(--topbarH) 1fr auto; /* <<< WICHTIG */
+    grid-template-rows: var(--topbarH) 1fr auto;
     gap: var(--gap);
     padding: 10px;
     box-sizing: border-box;
@@ -108,7 +108,7 @@
 
   .main{
     display: grid;
-    grid-template-columns: 1fr 300px; /* encounter | party */
+    grid-template-columns: 1fr 300px;
     gap: var(--gap);
     min-height: 0;
   }
@@ -137,77 +137,13 @@
     color: var(--muted);
   }
 
-  /* ---------- ENCOUNTER (legacy grid styles left intact) ---------- */
-  .lanes{
-    padding: 8px;
-    overflow: hidden; /* no scrolling here */
-    min-height: 0;
-    height: 100%;
-  }
-
-  /* legacy lane/slot styles kept (not used by scene, but safe) */
-  .lane{
-    margin-bottom: 8px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.06);
-  }
-  .lane.long { background: var(--laneLong); }
-  .lane.mid  { background: var(--laneMid); }
-  .lane.melee{ background: var(--laneMelee); }
-
-  .laneTitle{
-    padding: 6px 10px;
-    font-size: 12px;
-    opacity: 0.9;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    display:flex;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .laneTitle span:last-child{
-    color: var(--muted);
-    font-weight: 700;
-  }
-
-  .laneGrid{
-    display: grid;
-    grid-template-columns: repeat(var(--slots, 5), var(--slotSize));
-    gap: 8px;
-    padding: 8px;
-    justify-content: start;
-  }
-
-  .slot{
-    width: var(--slotSize);
-    height: var(--slotSize);
-    border-radius: 10px;
-    background: rgba(0,0,0,0.30);
-    border: 1px solid rgba(255,255,255,0.14);
-    position: relative;
-    cursor: pointer;
-    overflow: hidden;
-  }
-  .slot.empty::after{
-    content:"";
-    position:absolute;
-    inset: 8px;
-    border: 1px dashed rgba(255,255,255,0.18);
-    border-radius: 8px;
-    opacity: 0.75;
-  }
-  .slot.attackable{ box-shadow: 0 0 0 2px rgba(255,80,80,0.32); }
-  .slot.selected{ box-shadow: 0 0 0 2px rgba(120,200,255,0.55); }
+  /* ---------- ENCOUNTER host ---------- */
+  .encounterPanel{ min-height: 0; }
+  .encounterPanel .lanes{ padding: 10px; overflow:hidden; min-height:0; height:100%; }
 
   /* =========================
-     ENCOUNTER SCENE (Depth + Background)  [UPDATED]
+     BATTLEFIELD SCENE (replaces lanes)
      ========================= */
-  .encounterPanel{ min-height: 0; }
-
-  .encounterPanel .lanes{
-    padding: 10px;
-  }
-
   .scene{
     position: relative;
     height: 100%;
@@ -217,9 +153,9 @@
     overflow: hidden;
 
     background-image: url("https://gameinfo.daraempire.com/wp-content/uploads/2024/12/Battle-at-Delco-Towers-2.png");
-    background-size: cover;        /* ⬅️ key line */
-    background-position: center;   /* center the image */
-    background-repeat: no-repeat;  /* don’t tile */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   /* tunnel light cone */
@@ -256,6 +192,7 @@
     opacity:0.92;
     pointer-events:none;
     animation: fogDrift1 12s linear infinite;
+    z-index: 3;
   }
   .fog.f2{
     height:52%;
@@ -275,107 +212,25 @@
     100% { transform: translate3d( 60px, 0, 0) scale(1.08); }
   }
 
-  /* Depth layers container */
-  .depthLayers{
+  /* Absolute positioning layer for mobs */
+  .battlefield{
     position:absolute;
     inset:0;
-    display:grid;
-    grid-template-rows: 0.2fr 0.5fr 1.5fr; /* back, mid, front */
-    padding: 6px 10px 10px;
-    pointer-events:none;
+    pointer-events:none; /* cards re-enable on wrappers */
+    z-index: 2;          /* under fog (3), over background */
   }
 
-  .depthRow{
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    gap: 8px;
-    position:relative;
-  }
-
-  /* row tuning */
-  .depthRow.back  { transform: translateY(-4px); opacity:0.65; filter: blur(0px); }
-  .depthRow.mid   { transform: translateY( 2px); opacity:0.85; filter: blur(0px); }
-  .depthRow.front { transform: translateY( 8px); opacity:1.00; filter: blur(0px); }
-
-  /* Info Marquee rolling text infomsg */
-  .infoMarquee{
-  position: relative;
-  height: 34px;                 /* same as input height */
-  flex: 1 1 auto;
-  min-width: 140px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.22);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  box-sizing: border-box;
-}
-
-/* gradient fade at edges (nice) */
-  .infoMarquee::before,
-  .infoMarquee::after{
-    content:"";
+  /* Mob wrapper that is positioned by x/y */
+  .mobAbs{
     position:absolute;
-    top:0; bottom:0;
-    width: 18px;
-    pointer-events:none;
-    z-index: 2;
-  }
-  .infoMarquee::before{
-    left:0;
-    background: linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
-  }
-  .infoMarquee::after{
-    right:0;
-    background: linear-gradient(270deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
-  }
-
-  .infoTrack{
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-
-  .infoInner{
-    display: inline-flex;
-    align-items: center;
-    gap: 28px;            /* spacing between duplicates */
-    will-change: transform;
-  }
-
-  .infoText{
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    color: rgba(255,255,255,0.86);
-  }
-
-  /* When scrolling is active, we animate the inner */
-  .infoMarquee.scrolling .infoInner{
-    animation: infoScroll linear infinite;
-    animation-duration: var(--infoDur, 10s);
-  }
-
-  @keyframes infoScroll{
-    from { transform: translate3d(0,0,0); }
-    to   { transform: translate3d(calc(-1 * var(--infoShift, 200px)),0,0); }
-  }
-
-  /* If user prefers reduced motion: no scrolling */
-  @media (prefers-reduced-motion: reduce){
-    .infoMarquee.scrolling .infoInner{ animation: none !important; }
-  }
-  /* Mob card */
-  .mobCardWrap{
+    left: 0;
+    top: 0;
+    transform: translate3d(0,0,0);
     pointer-events:auto;
     transform-origin: 50% 90%;
-    transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--s, 1));
   }
 
+  /* Mob card (same look) */
   .mobCard{
     width: var(--mobCardSize);
     height: var(--mobCardSize);
@@ -386,12 +241,22 @@
     position:relative;
     overflow:hidden;
     cursor:pointer;
+
+    --bobY: 6px;
+    --bobT: 3.6s;
+    animation: mobBob var(--bobT) ease-in-out infinite;
   }
 
-  /* scale per depth (applies on WRAP for perspective) */
-  .depthRow.back  .mobCardWrap{ --s: 0.45; }
-  .depthRow.mid   .mobCardWrap{ --s: 0.75; }
-  .depthRow.front .mobCardWrap{ --s: 1.08; }
+  /* “alive” bob */
+  .mobCard.t1{ animation-delay: -0.3s; }
+  .mobCard.t2{ animation-delay: -1.1s; }
+  .mobCard.t3{ animation-delay: -2.0s; }
+  .mobCard.t4{ animation-delay: -0.6s; }
+
+  @keyframes mobBob{
+    0%,100% { transform: translate3d(0,0,0) rotate(-0.15deg); }
+    50%     { transform: translate3d(0,var(--bobY),0) rotate(0.20deg); }
+  }
 
   /* threat glow */
   .mobCard.threat{
@@ -410,39 +275,7 @@
     50%     { opacity:1.00; filter: blur(0.2px); }
   }
 
-  /* “alive” animation (card bob).
-     IMPORTANT: we animate mobCard, not the wrap, so wrap keeps its offsets. */
-  .mobCard{
-    --bobY: 6px;
-    --bobT: 3.6s;
-    animation: mobBob var(--bobT) ease-in-out infinite;
-  }
-  .depthRow.back .mobCard{ --bobY: 4px; --bobT: 5.2s; }
-  .depthRow.mid  .mobCard{ --bobY: 6px; --bobT: 4.2s; }
-  .depthRow.front .mobCard{ --bobY: 7px; --bobT: 3.3s; }
-
-  .mobCard.t1{ animation-delay: -0.3s; }
-  .mobCard.t2{ animation-delay: -1.1s; }
-  .mobCard.t3{ animation-delay: -2.0s; }
-  .mobCard.t4{ animation-delay: -0.6s; }
-
-  @keyframes mobBob{
-    0%,100% { transform: translate3d(0,0,0) rotate(-0.15deg); }
-    50%     { transform: translate3d(0,var(--bobY),0) rotate(0.20deg); }
-  }
-
-  /* put your mob image centered nicely */
-  .mobCard .mob{
-    position:absolute;
-    inset:0;
-    display:grid;
-    place-items:center;
-  }
-
-  /* keep hp bar at bottom like before */
-  .mobCard .hpBar{ bottom:4px; }
-
-  /* ===== Selected mob marker (NEW) ===== */
+  /* Selected mob marker */
   .mobCard.selected{
     border-color: rgba(120,200,255,0.70) !important;
     box-shadow:
@@ -484,27 +317,12 @@
   }
   .mobCard.selected .targetTag{ display:block; }
 
-  /* reduced motion */
-  @media (prefers-reduced-motion: reduce){
-    .scene::before, .fog, .fog.f2, .mobCard{ animation:none !important; }
-  }
-
-  /* ===== Shared mob visuals ===== */
+  /* contents */
   .mob{
     position:absolute;
     inset:0;
     display:grid;
     place-items:center;
-  }
-  .avatar{
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(0,0,0,0.35));
-    display:grid;
-    place-items:center;
-    font-weight: 900;
-    font-size: 12px;
   }
   .hpBar{
     position:absolute;
@@ -521,7 +339,6 @@
     background: linear-gradient(90deg, #3cff9a, #ffd166, #ff4d4d);
   }
 
-  /* IMPORTANT: mobImg now follows variables for scene cards */
   .mobImg{
     width: var(--mobImgSize);
     height: var(--mobImgSize);
@@ -531,28 +348,109 @@
     box-shadow: 0 0 14px rgba(0,0,0,0.45);
   }
 
-  .avatarImg{
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    object-fit: cover;
-    border: 1px solid rgba(255,255,255,0.22);
-    box-shadow: 0 0 14px rgba(0,0,0,0.45);
+  .avatar{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(0,0,0,0.35));
+    display:grid;
+    place-items:center;
+    font-weight: 900;
+    font-size: 12px;
   }
 
-  /* ---------- PARTY (ONLY THIS SCROLLS) ---------- */
+  /* death overlay */
+  .mobCard.dead{
+    filter: grayscale(0.9) brightness(0.8);
+  }
+  .mobCard.dead .deathIcon{
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .mobCard.dead .deathIcon img{
+    width: 34px;
+    height: 34px;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
+    animation: deathBlink 650ms ease-in-out 3;
+  }
+  @keyframes deathBlink{
+    0%,100% { opacity: 0.35; transform: scale(0.95); }
+    50%     { opacity: 1.00; transform: scale(1.08); }
+  }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .scene::before, .fog, .fog.f2, .mobCard{ animation:none !important; }
+  }
+
+  /* ---------- Info Marquee ---------- */
+  .infoMarquee{
+    position: relative;
+    height: 34px;
+    flex: 1 1 auto;
+    min-width: 140px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.22);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+  .infoMarquee::before,
+  .infoMarquee::after{
+    content:"";
+    position:absolute;
+    top:0; bottom:0;
+    width: 18px;
+    pointer-events:none;
+    z-index: 2;
+  }
+  .infoMarquee::before{
+    left:0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
+  }
+  .infoMarquee::after{
+    right:0;
+    background: linear-gradient(270deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
+  }
+  .infoTrack{ width:100%; overflow:hidden; white-space:nowrap; }
+  .infoInner{ display:inline-flex; align-items:center; gap:28px; will-change: transform; }
+  .infoText{
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: rgba(255,255,255,0.86);
+  }
+  .infoMarquee.scrolling .infoInner{
+    animation: infoScroll linear infinite;
+    animation-duration: var(--infoDur, 10s);
+  }
+  @keyframes infoScroll{
+    from { transform: translate3d(0,0,0); }
+    to   { transform: translate3d(calc(-1 * var(--infoShift, 200px)),0,0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .infoMarquee.scrolling .infoInner{ animation: none !important; }
+  }
+
+  /* ---------- PARTY ---------- */
   .pRow.selected{
     box-shadow: 0 0 0 2px rgba(120,200,255,0.55);
     background: rgba(30,60,120,0.18);
   }
-
   .partyList{
     padding: 8px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
   }
-
   .pRow{
     display:grid;
     grid-template-columns: 32px 1fr;
@@ -563,13 +461,6 @@
     background: rgba(0,0,0,0.18);
     margin-bottom: 8px;
   }
-
-  .partyHeaderRight{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-
   .partyLogoutBtn{
     height: 26px;
     padding: 0 10px;
@@ -585,7 +476,6 @@
   @media (min-width: 1025px){
     .partyLogoutBtn{ display: none; }
   }
-
   .pAvatar{
     width: 32px;
     height: 32px;
@@ -596,14 +486,20 @@
     font-weight: 900;
     font-size: 12px;
   }
-
+  .avatarImg{
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 0 14px rgba(0,0,0,0.45);
+  }
   .pInfo{
     display:flex;
     flex-direction:column;
     gap: 6px;
     min-width: 0;
   }
-
   .pNameLine{
     display:flex;
     align-items:center;
@@ -624,13 +520,11 @@
     white-space: nowrap;
     font-weight: 700;
   }
-
   .pBars{
     display:flex;
     flex-direction:column;
     gap: 6px;
   }
-
   .pBarRow{
     display:grid;
     grid-template-columns: 26px 1fr 38px;
@@ -650,7 +544,14 @@
   .pBar.en > div{ background: linear-gradient(90deg, rgba(120,200,255,0.95), rgba(80,150,255,0.85)); }
   .pBar.mn > div{ background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(120,80,255,0.85)); }
 
-  /* ---------- BOTTOM HUD (10 ACTION BUTTONS + INPUTS) ---------- */
+  /* highlight damaged party row */
+  .pRow.damaged{
+    box-shadow: 0 0 0 2px rgba(255,80,80,0.55);
+    background: rgba(255,60,60,0.10);
+    transition: box-shadow 180ms ease, background 180ms ease;
+  }
+
+  /* ---------- BOTTOM HUD ---------- */
   .hud{
     border: 1px solid var(--border);
     background: var(--bg);
@@ -658,13 +559,11 @@
     padding: 8px;
     box-sizing: border-box;
   }
-
   .hudBar{
     display: flex;
     align-items: center;
     gap: 10px;
   }
-
   .target-input{
     width: 120px;
     height: 34px;
@@ -676,7 +575,6 @@
     font-size: 13px;
     flex: 0 0 auto;
   }
-
   .chat-input{
     flex: 1;
     height: 34px;
@@ -687,7 +585,6 @@
     padding: 0 14px;
     font-size: 14px;
   }
-
   .chat-input::placeholder{ opacity: 0.65; }
   .chat-input:focus{
     border-color: rgba(120,170,255,0.55);
@@ -709,24 +606,20 @@
     border: 1px solid var(--border);
     background: rgba(0,0,0,0.25);
     position: relative;
-
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
     overflow: hidden;
     user-select: none;
     cursor: pointer;
   }
-
   .action-btn img{
     width: 28px;
     height: 28px;
     object-fit: contain;
     pointer-events: none;
   }
-
   .action-btn .tip{
     position: absolute;
     bottom: 1px;
@@ -740,7 +633,6 @@
     text-overflow: ellipsis;
     pointer-events: none;
   }
-
   .action-btn:hover{ filter: brightness(1.15); }
   .action-btn:active{ transform: translateY(1px); }
 
@@ -759,13 +651,11 @@
     font-size: 14px;
     text-shadow: 0 0 6px rgba(0,0,0,0.9);
   }
-
   .action-btn.cooldown{
     filter: grayscale(0.6);
     opacity: 0.9;
   }
   .action-btn.cooldown .cd-overlay{ display:flex; }
-
   .cd-fill{
     position: absolute;
     inset: 0;
@@ -775,18 +665,15 @@
     pointer-events: none;
   }
 
-  /* ---------- MOBILE: stack encounter above party ---------- */
+  /* ---------- MOBILE ---------- */
   @media (max-width: 900px){
     :root{
       --gap: 8px;
       --slotSize: 52px;
-
-      /* NEW: mobile scene tuning */
       --sceneMinH: 240px;
       --mobCardSize: 58px;
       --mobImgSize: 36px;
     }
-
     .app{ padding: 8px; }
     .main{
       grid-template-columns: 1fr;
@@ -796,34 +683,12 @@
       max-height: var(--partyMaxHMobile);
       min-height: 0;
     }
-    
     .hudBar{ flex-wrap: wrap; }
     .chat-input{ min-width: 160px; }
-
-    /* tighter scene */
-    .depthLayers{
-      display: grid;
-      padding: 2px 2px 10px;
-      grid-template-rows: 0.2fr 0.5fr 1.5fr; /* back, mid, front */
-  }
-
-    .depthRow{ gap: 6px; }
-    .fog{ height: 32%; }
-    .fog.f2{ height: 40%; }
-
-    /* ensure all 3 lanes fit visually */
-    .depthRow.back  { transform: translateY(-6px); }
-    .depthRow.mid   { transform: translateY(  4px); }
-    .depthRow.front { transform: translateY( 12px); }
-    .mobCard.dead .deathIcon img{
-      width: 26px;
-      height: 26px;
-    }
   }
 
   @media (min-width: 901px){
     :root{
-      /* NEW: PC scene tuning */
       --sceneMinH: 520px;
       --mobCardSize: 128px;
       --mobImgSize: 96px;
@@ -837,6 +702,7 @@
     .action-btn img{ width: 24px; height: 24px; }
   }
 
+  /* Rotate hint */
   #rotateHint{
     position: fixed;
     inset: 0;
@@ -850,265 +716,157 @@
     font-weight: 800;
     letter-spacing: 0.5px;
   }
-
   @media (orientation: portrait){
     #rotateHint{ display: flex; }
   }
 
-  /* ===== ONE Landscape Mobile Block (merge all here) ===== */
+  /* ===== Landscape mobile block ===== */
   @media (orientation: landscape) and (max-width: 1024px){
     :root{
       --gap: 6px;
       --slotSize: 40px;
-
-      /* NEW: keep scene compact in landscape on mobile/tablet */
       --sceneMinH: 220px;
       --mobCardSize: 58px;
       --mobImgSize: 32px;
     }
-
     .topbar{ display: none; }
-
-    .app{
-      grid-template-rows: 1fr auto; /* main | hud */
-    }
-
+    .app{ grid-template-rows: 1fr auto; }
     .main{
       grid-template-columns: 400px 200px;
       grid-template-rows: 1fr;
       gap: 6px;
     }
-
     .partyPanel{ max-height: none; }
-
-    .panelHeader{
-      padding: 6px 10px;
-      font-size: 13px;
-    }
+    .panelHeader{ padding: 6px 10px; font-size: 13px; }
     .panelHeader .sub{ font-size: 11px; }
-
     .lanes{ padding: 6px; }
-
-    .lane{ margin-bottom: 6px; border-radius: 9px; position: relative; padding-top: 18px; }
-    .laneTitle{ display: none; }
-    .lane{ padding-top: 0; }
-    .laneGrid{ padding: 6px; gap: 6px; }
-
-    .avatar{ width: 26px; height: 26px; font-size: 9px; }
-    .hpBar{ left: 10%; right: 10%; bottom: 4px; height: 4px; }
-
     .hudBar{ flex-wrap: nowrap; }
     .chat-input{ min-width: 0; height: 32px; font-size: 13px; }
     .target-input{ width: 95px; height: 32px; font-size: 12px; }
-
     .actions{ grid-auto-columns: 40px; gap: 6px; }
     .action-btn{ width: 40px; height: 40px; }
     .action-btn img{ width: 24px; height: 24px; }
-
-    /* tighter scene */
-    .depthLayers{
-      display: grid;
-      grid-template-rows: 0.2fr 0.5fr 1.5fr; /* back, mid, front */
-    }
-    .depthRow{ gap: 6px; }
-    .fog{ height: 30%; }
-    .fog.f2{ height: 36%; }
-
-    .depthRow.back  { transform: translateY(-6px); }
-    .depthRow.mid   { transform: translateY(  3px); }
-    .depthRow.front { transform: translateY( 10px); }
   }
 
   /* ===== GAME OVER OVERLAY ===== */
-.overlay{
-  position: fixed;
-  inset: 0;
-  z-index: 99998; /* under rotateHint (99999), above everything else */
-  display: grid;
-  place-items: center;
-  background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(6px);
-}
+  .overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    display: grid;
+    place-items: center;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(6px);
+  }
+  .overlay.hidden{ display:none; }
+  .overlayCard{
+    width: min(520px, 92vw);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: linear-gradient(180deg, rgba(25,10,12,0.86) 0%, rgba(0,0,0,0.55) 100%);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.65);
+    padding: 18px 18px 16px;
+    text-align: center;
+  }
+  .overlayTitle{
+    font-weight: 900;
+    letter-spacing: 1px;
+    font-size: 34px;
+    text-transform: uppercase;
+    text-shadow: 0 0 22px rgba(255,70,70,0.25);
+  }
+  .overlayReason{
+    margin-top: 6px;
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+  }
+  .overlayTimer{
+    margin-top: 14px;
+    font-weight: 900;
+    font-size: 16px;
+    color: rgba(255,255,255,0.92);
+  }
+  .overlayHint{
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.62);
+  }
+  #btnGameOverLogout{
+    background: linear-gradient(180deg, rgba(120,20,20,0.9), rgba(60,10,10,0.9));
+    border-color: rgba(255,80,80,0.5);
+  }
+  #btnGameOverLogout:hover{ filter: brightness(1.15); }
+  body.locked .action-btn,
+  body.locked .chat-input,
+  body.locked .target-input{
+    pointer-events: none;
+    filter: grayscale(0.4);
+    opacity: 0.85;
+  }
+  body.locked #gameOverOverlay button{ pointer-events: auto; }
 
-.overlay.hidden{ display:none; }
+  /* ===== DAMAGE FEEDBACK ===== */
+  #hitFlash{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99997;
+    opacity: 0;
+    background:
+      radial-gradient(70% 55% at 50% 40%, rgba(180,60,60,0.12), rgba(0,0,0,0) 65%),
+      linear-gradient(180deg, rgba(120,30,30,0.06), rgba(0,0,0,0));
+    transition: opacity 140ms ease;
+  }
+  #hitFlash.on{
+    opacity: 1;
+    animation: hitPulseSoft 220ms ease-out;
+  }
+  @keyframes hitPulseSoft{
+    0%   { opacity: 0; }
+    35%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  body.hitShake .app{ animation: shake 260ms ease-out; }
+  @keyframes shake{
+    0%   { transform: translate3d(0,0,0); }
+    15%  { transform: translate3d(-3px, 1px,0); }
+    30%  { transform: translate3d( 3px,-2px,0); }
+    45%  { transform: translate3d(-2px,-1px,0); }
+    60%  { transform: translate3d( 2px, 2px,0); }
+    100% { transform: translate3d(0,0,0); }
+  }
 
-.overlayCard{
-  width: min(520px, 92vw);
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: linear-gradient(180deg, rgba(25,10,12,0.86) 0%, rgba(0,0,0,0.55) 100%);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.65);
-  padding: 18px 18px 16px;
-  text-align: center;
-}
-
-.overlayTitle{
-  font-weight: 900;
-  letter-spacing: 1px;
-  font-size: 34px;
-  text-transform: uppercase;
-  text-shadow: 0 0 22px rgba(255,70,70,0.25);
-}
-
-.overlayReason{
-  margin-top: 6px;
-  color: rgba(255,255,255,0.85);
-  font-size: 14px;
-}
-
-.overlayTimer{
-  margin-top: 14px;
-  font-weight: 900;
-  font-size: 16px;
-  color: rgba(255,255,255,0.92);
-}
-
-.overlayHint{
-  margin-top: 10px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.62);
-}
-
-#btnGameOverLogout{
-  background: linear-gradient(180deg, rgba(120,20,20,0.9), rgba(60,10,10,0.9));
-  border-color: rgba(255,80,80,0.5);
-}
-#btnGameOverLogout:hover{
-  filter: brightness(1.15);
-}
-
-/* lock the UI feel while overlay is up */
-body.locked .action-btn,
-body.locked .chat-input,
-body.locked .target-input{
-  pointer-events: none;
-  filter: grayscale(0.4);
-  opacity: 0.85;
-}
-
-/* ===== DAMAGE FEEDBACK ===== */
-#hitFlash{
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 99997;
-  opacity: 0;
-
-  /* MUCH softer: darker vignette instead of red blast */
-  background:
-    radial-gradient(
-      70% 55% at 50% 40%,
-      rgba(180,60,60,0.12),
-      rgba(0,0,0,0) 65%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(120,30,30,0.06),
-      rgba(0,0,0,0)
-    );
-
-  transition: opacity 140ms ease;
-}
-
-#hitFlash.on{
-  opacity: 1;
-  animation: hitPulseSoft 220ms ease-out;
-}
-
-@keyframes hitPulseSoft{
-  0%   { opacity: 0; }
-  35%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-
-/* small camera shake */
-body.hitShake .app{
-  animation: shake 260ms ease-out;
-}
-@keyframes shake{
-  0%   { transform: translate3d(0,0,0); }
-  15%  { transform: translate3d(-3px, 1px,0); }
-  30%  { transform: translate3d( 3px,-2px,0); }
-  45%  { transform: translate3d(-2px,-1px,0); }
-  60%  { transform: translate3d( 2px, 2px,0); }
-  100% { transform: translate3d(0,0,0); }
-}
-
-/* highlight the damaged party row */
-.pRow.damaged{
-  box-shadow: 0 0 0 2px rgba(255,80,80,0.55);
-  background: rgba(255,60,60,0.10);
-  transition: box-shadow 180ms ease, background 180ms ease;
-}
-
-/* ===== MOB DEATH FX ===== */
-/* ===== MOB DEATH OVERLAY (image, not replacement) ===== */
-.mobCard.dead{
-  filter: grayscale(0.9) brightness(0.8);
-}
-
-.mobCard.dead .deathIcon{
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.mobCard.dead .deathIcon img{
-  width: 34px;
-  height: 34px;
-  opacity: 0.95;
-  filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
-  animation: deathBlink 650ms ease-in-out 3;
-}
-
-@keyframes deathBlink{
-  0%,100% { opacity: 0.35; transform: scale(0.95); }
-  50%     { opacity: 1.00; transform: scale(1.08); }
-}
-
-/* optional: a “loot toast” */
-#lootToastHost{
-  position: fixed;
-  left: 50%;
-  top: 14%;
-  transform: translateX(-50%);
-  z-index: 99996;
-  pointer-events: none;
-  display:flex;
-  flex-direction:column;
-  gap: 8px;
-}
-
-.lootToast{
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 16px 44px rgba(0,0,0,0.55);
-  font-weight: 900;
-  letter-spacing: 0.3px;
-  opacity: 0;
-  transform: translateY(-6px);
-  animation: toastInOut 1600ms ease forwards;
-}
-
-@keyframes toastInOut{
-  0%   { opacity:0; transform: translateY(-10px); }
-  10%  { opacity:1; transform: translateY(0px); }
-  80%  { opacity:1; transform: translateY(0px); }
-  100% { opacity:0; transform: translateY(-10px); }
-}
-
-
-/* Logout button should be available when gameover appears*/
-body.locked #gameOverOverlay button{
-  pointer-events: auto;
-}
+  /* loot toast */
+  #lootToastHost{
+    position: fixed;
+    left: 50%;
+    top: 14%;
+    transform: translateX(-50%);
+    z-index: 99996;
+    pointer-events: none;
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+  }
+  .lootToast{
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 16px 44px rgba(0,0,0,0.55);
+    font-weight: 900;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    transform: translateY(-6px);
+    animation: toastInOut 1600ms ease forwards;
+  }
+  @keyframes toastInOut{
+    0%   { opacity:0; transform: translateY(-10px); }
+    10%  { opacity:1; transform: translateY(0px); }
+    80%  { opacity:1; transform: translateY(0px); }
+    100% { opacity:0; transform: translateY(-10px); }
+  }
 </style>
 </head>
 
@@ -1144,24 +902,24 @@ body.locked #gameOverOverlay button{
       <div class="panelHeader">
         <span>Encounter</span>
         <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
-            <input id="actionTarget"
-                  class="target-input"
-                  placeholder="Target" />
+          <input id="actionTarget" class="target-input" placeholder="Target" />
 
-            <!-- Rolling info message -->
-            <div id="infoMarquee" class="infoMarquee" title="">
-              <div class="infoTrack">
-                <div class="infoInner" id="infoInner">
-                  <span class="infoText" id="infoTextA"></span>
-                </div>
+          <!-- Rolling info message -->
+          <div id="infoMarquee" class="infoMarquee" title="">
+            <div class="infoTrack">
+              <div class="infoInner" id="infoInner">
+                <span class="infoText" id="infoTextA"></span>
               </div>
             </div>
           </div>
-          <div>
+        </div>
+        <div>
           <button class="btnTop" id="btnFlash" title="Flash">Flash: OFF</button>
           <button class="btnTop" id="btnShake" title="Shake">Shake: OFF</button>
         </div>
       </div>
+
+      <!-- IMPORTANT: lanes container stays, but contains battlefield scene now -->
       <div class="lanes" id="lanes"></div>
     </div>
 
@@ -1170,23 +928,18 @@ body.locked #gameOverOverlay button{
       <div class="panelHeader">
         <span>Party</span>
         <span class="sub" id="partyCount">Players: 0</span>
-        <button class="partyLogoutBtn" id="btnLogoutParty" type="button" title="Logout">
-            Logout
-        </button>
+        <button class="partyLogoutBtn" id="btnLogoutParty" type="button" title="Logout">Logout</button>
       </div>
       <div class="partyList" id="party"></div>
     </div>
 
   </div>
 
-  <!-- BOTTOM HUD (10 buttons + inputs) -->
+  <!-- BOTTOM HUD -->
   <div class="hud">
     <div class="hudBar">
       <div class="actions" id="actions"></div>
-
-      <input id="actionMsg"
-             class="chat-input"
-             placeholder="Action / Message…" />
+      <input id="actionMsg" class="chat-input" placeholder="Action / Message…" />
     </div>
   </div>
 
@@ -1194,53 +947,41 @@ body.locked #gameOverOverlay button{
 
 <div id="hitFlash"></div>
 <div id="lootToastHost"></div>
+
 <script>
   /* =========================
      Globals
      ========================= */
-  let ENABLE_SHAKE = false;  // default on (you can set false)
-  let ENABLE_HIT_FLASH = false; // default OFF (migraine-safe)
+  let ENABLE_SHAKE = false;
+  let ENABLE_HIT_FLASH = false;
+  let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80");
 
-  let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80"); // default
-
-
+  const mobDom = new Map(); // id -> { wrap, card, img, hpFill }
 
   /* =========================
      AUTH + STORAGE
      ========================= */
-  const LOGIN_PAGE = "index.html"; // keep index.html as login page
+  const LOGIN_PAGE = "index.html";
 
-  function getToken() {
-    return localStorage.getItem("sessionToken") || "";
-  }
-
-  function getPlayerName() {
-    return localStorage.getItem("playerName") || "";
-  }
+  function getToken() { return localStorage.getItem("sessionToken") || ""; }
+  function getPlayerName() { return localStorage.getItem("playerName") || ""; }
+  function getGameId(){ return localStorage.getItem("gameId") || "0"; }
 
   function authHeaders(extra = {}) {
     const t = getToken();
     if (!t) return extra;
     return { ...extra, "Authorization": "Bearer " + t };
   }
-
   function requireAuthOrRedirect() {
     const t = getToken();
-    if (!t) {
-      window.location.href = LOGIN_PAGE;
-    }
+    if (!t) window.location.href = LOGIN_PAGE;
   }
 
-  // Dead popup and loot
-  // Keep dead mobs visible briefly (even if server removes them)
+  // Dead FX cache
   const deadFx = new Map(); // id -> { untilMs, lastMob }
   const DEAD_STAY_MS = 2200;
 
-  // load preference flash
   ENABLE_HIT_FLASH = (localStorage.getItem("enableHitFlash") ?? "0") === "1";
-
-
-  // load preference SHAKE
   ENABLE_SHAKE = (localStorage.getItem("enableShake") ?? "1") === "1";
 
   function updateShakeBtn(){
@@ -1248,15 +989,12 @@ body.locked #gameOverOverlay button{
     if (!b) return;
     b.textContent = "Shake: " + (ENABLE_SHAKE ? "ON" : "OFF");
   }
-
   document.getElementById("btnShake")?.addEventListener("click", () => {
     ENABLE_SHAKE = !ENABLE_SHAKE;
     localStorage.setItem("enableShake", ENABLE_SHAKE ? "1" : "0");
     updateShakeBtn();
   });
-
   updateShakeBtn();
-  // END Shake Option
 
   async function doLogout() {
     const token = getToken();
@@ -1276,17 +1014,17 @@ body.locked #gameOverOverlay button{
       window.location.href = LOGIN_PAGE;
       return;
     }
-    try {
-        const res = await fetch(LOGOUT_URL, {
-          method: "POST",
-          headers: authHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ gameId: String(getGameId()) })
-        });
 
-        if (!res.ok) {
-          const txt = await res.text().catch(() => "");
-          console.warn("Logout not OK:", res.status, txt);
-        }
+    try {
+      const res = await fetch(LOGOUT_URL, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ gameId: String(getGameId()) })
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        console.warn("Logout not OK:", res.status, txt);
+      }
     } catch (e) {
       console.warn("Logout request failed (network):", e);
     } finally {
@@ -1296,12 +1034,9 @@ body.locked #gameOverOverlay button{
   }
 
   document.getElementById("btnLogout").addEventListener("click", doLogout);
-  const btnLogoutParty = document.getElementById("btnLogoutParty");
-  if (btnLogoutParty) btnLogoutParty.addEventListener("click", doLogout);
+  document.getElementById("btnLogoutParty")?.addEventListener("click", doLogout);
 
   requireAuthOrRedirect();
-
-  const lastStateUpdateHash= "";
 
   /* =========================
      API ENDPOINTS
@@ -1332,8 +1067,8 @@ body.locked #gameOverOverlay button{
       dead: "https://gameinfo.daraempire.com/wp-content/uploads/Dead.png",
     }
   };
-  const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
 
+  const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
   const ACTION_SOUNDS = {
     attack:   new Audio(SOUND_BASE+"Attack.wav"),
     fireball: new Audio(SOUND_BASE+"Fireball.wav"),
@@ -1363,15 +1098,12 @@ body.locked #gameOverOverlay button{
   }
 
   let lastHitSoundAt = 0;
-
   function playRandomHitSound(){
     const now = performance.now();
-    if (now - lastHitSoundAt < 180) return; // ms debounce
+    if (now - lastHitSoundAt < 180) return;
     lastHitSoundAt = now;
-
     const hits = ["hit1", "hit2", "hit3"];
-    const key = hits[Math.floor(Math.random() * hits.length)];
-    playSound(key);
+    playSound(hits[Math.floor(Math.random() * hits.length)]);
   }
 
   const ACTIONS = [
@@ -1380,7 +1112,7 @@ body.locked #gameOverOverlay button{
     { id: "fireball",   label: "Fireball", cd: 5  },
     { id: "heal",       label: "Heal",     cd: 6  },
     { id: "mezmerize",  label: "Mez",      cd: 8  },
-    { id: "shoot",      label: "Shoot",     cd: 1  },
+    { id: "shoot",      label: "Shoot",    cd: 1  },
     { id: "usepotion",  label: "Potion",   cd: 10 },
     { id: "talk",       label: "Talk",     cd: 1  },
     { id: "revive",     label: "Revive",   cd: 12 },
@@ -1395,7 +1127,7 @@ body.locked #gameOverOverlay button{
   function getActionMsg(){ return (actionMsgEl.value || "").trim(); }
 
   /* Cooldown state */
-  const cooldownUntil = new Map(); // actionId -> timestamp(ms)
+  const cooldownUntil = new Map();
   function nowMs(){ return Date.now(); }
   function startCooldown(actionId, seconds){
     cooldownUntil.set(actionId, nowMs() + seconds * 1000);
@@ -1417,7 +1149,6 @@ body.locked #gameOverOverlay button{
     }
 
     btn.classList.add("cooldown");
-
     const sec = Math.ceil(remainingMs / 1000);
     if (timeEl) timeEl.textContent = String(sec);
 
@@ -1428,7 +1159,6 @@ body.locked #gameOverOverlay button{
 
   function buildButtons(){
     actionsEl.innerHTML = "";
-
     for(const a of ACTIONS){
       const btn = document.createElement("button");
       btn.className = "action-btn";
@@ -1458,15 +1188,12 @@ body.locked #gameOverOverlay button{
       btn.addEventListener("click", async () => {
         const actionId = a.id;
         const cdSec = a.cd;
-
         if (getRemaining(actionId) > 0) return;
+
         playSound(actionId);
 
         const userName = getPlayerName();
-        if (!userName) {
-          console.warn("No playerName in localStorage yet");
-          return;
-        }
+        if (!userName) return;
 
         startCooldown(actionId, cdSec);
         tickCooldowns();
@@ -1515,29 +1242,24 @@ body.locked #gameOverOverlay button{
   });
 
   /* =========================
-     GAME STATE (Encounter + Party)
+     GAME STATE
      ========================= */
-
   function clamp01(x){ return Math.max(0, Math.min(1, x)); }
   function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; }
 
+  // IMPORTANT: mobs now use {id:string, x:0..1, y:0..1, hp, max}
   let uiState = {
     turn: 1,
     slots: 5,
-    lanes: [
-      { name: "LONG RANGE",  cls: "long",  range: "8–10m" },
-      { name: "MID RANGE",   cls: "mid",   range: "4–7m"  },
-      { name: "MELEE RANGE", cls: "melee", range: "0–3m"  },
-    ],
     mobs: [
-      { id: "MSAgent-Christie", lane:0, slot:1, hp:3, max:6 },
-      { id: "Kinora", lane:1, slot:0, hp:3, max:6 },
-      { id: "Insect", lane:1, slot:2, hp:14, max:14 },
-      { id: "Spider", lane:2, slot:1, hp:15, max:30 },
-      { id: "Kornrex", lane:2, slot:3, hp:25, max:40 },
+      { id: "MSAgent-Christie", x:0.18, y:0.72, hp:3,  max:6  },
+      { id: "Kinora",           x:0.35, y:0.52, hp:3,  max:6  },
+      { id: "Insect",           x:0.58, y:0.48, hp:14, max:14 },
+      { id: "Spider",           x:0.72, y:0.78, hp:15, max:30 },
+      { id: "Kornrex",          x:0.86, y:0.82, hp:25, max:40 },
     ],
     party: [
-      { id:"Dara",   hp:7,  hpMax:15, en:40, enMax:40, mn:40, mnMax:40, active:true, avatarId: "MSAgent-Christie" },
+      { id:"Dara",   hp:7,  hpMax:15, en:40, enMax:40, mn:40, mnMax:40, active:true,  avatarId: "MSAgent-Christie" },
       { id:"Korlan", hp:16, hpMax:20, en:45, enMax:45, mn:45, mnMax:45, active:false, avatarId: "MSAgent-Turnario" },
       { id:"Viper",  hp:11, hpMax:12, en:35, enMax:35, mn:55, mnMax:55, active:false, avatarId: "MSAgent-Soldorn" },
       { id:"Terik",  hp:8,  hpMax:10, en:55, enMax:55, mn:50, mnMax:50, active:false, avatarId: "MSAgent-Tira" },
@@ -1546,10 +1268,6 @@ body.locked #gameOverOverlay button{
     selectedPartyId: null
   };
 
-  function getGameId(){
-    return localStorage.getItem("gameId") || "0";
-  }
-
   function renderBadges(){
     document.getElementById("playerBadge").textContent = "Player: " + (getPlayerName() || "(not set)");
     document.getElementById("gameBadge").textContent = "Game: " + getGameId();
@@ -1557,8 +1275,9 @@ body.locked #gameOverOverlay button{
     document.getElementById("partyCount").textContent = "Players: " + (uiState.party?.length ?? 0);
   }
 
-  /* ===== Encounter: Depth Scene (UPDATED with selection marker) ===== */
-  
+  /* =========================
+     BATTLEFIELD RENDER (x,y)
+     ========================= */
   function renderEncounter(){
     const lanesEl = document.getElementById("lanes");
     lanesEl.innerHTML = "";
@@ -1566,31 +1285,23 @@ body.locked #gameOverOverlay button{
     const scene = document.createElement("div");
     scene.className = "scene";
 
+    const battlefield = document.createElement("div");
+    battlefield.className = "battlefield";
+
     const fog1 = document.createElement("div");
     fog1.className = "fog";
     const fog2 = document.createElement("div");
     fog2.className = "fog f2";
 
-    const layers = document.createElement("div");
-    layers.className = "depthLayers";
-
-    const rowBack  = document.createElement("div"); rowBack.className  = "depthRow back";
-    const rowMid   = document.createElement("div"); rowMid.className   = "depthRow mid";
-    const rowFront = document.createElement("div"); rowFront.className = "depthRow front";
-
-    // Dead mobs should be shown a while with toast
+    // Show dead mobs briefly
     const now = Date.now();
-
-    // alive mobs
     const alive = (uiState.mobs || []).filter(m => Number(m.hp) > 0);
 
-    // cached corpses still visible
     const corpses = [];
     for (const [id, fx] of deadFx){
       if (fx.untilMs > now && fx.lastMob) corpses.push(fx.lastMob);
     }
 
-    // combine alive + corpses
     const mobs = [...alive, ...corpses];
 
     const hpRatio = (m) => {
@@ -1601,19 +1312,36 @@ body.locked #gameOverOverlay button{
 
     const isThreat = (m) => {
       const r = hpRatio(m);
-      const inMelee = (m.lane === 2);
       const selected = (uiState.selectedMobId === m.id);
-      return selected || inMelee || r >= 0.75;
+      return selected || r >= 0.75;
     };
+
+    // Converts normalized coords to pixels inside scene
+    function placeMobAbs(wrap, x01, y01){
+      const rect = scene.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+
+      // keep inside bounds with padding
+      const pad = 10;
+      const x = pad + clamp01(x01) * (w - pad*2);
+      const y = pad + clamp01(y01) * (h - pad*2);
+
+      // center card horizontally, anchor near bottom vertically
+      wrap.style.left = `${x}px`;
+      wrap.style.top  = `${y}px`;
+    }
+
+    // Depth scaling based on y (far=small, near=big)
+    function depthScale(y01){
+      // y01: 0 top/far -> 1 bottom/near
+      // tune: far 0.55, near 1.10
+      return 0.55 + clamp01(y01) * 0.55;
+    }
 
     function makeMobCard(m, idx){
       const wrap = document.createElement("div");
-      wrap.className = "mobCardWrap";
-
-      const x = ((m.slot ?? idx) - 2) * 18 + (idx % 2 ? 10 : -8);
-      const y = (m.lane === 0 ? -10 : (m.lane === 1 ? -6 : -12));
-      wrap.style.setProperty("--tx", `${x}px`);
-      wrap.style.setProperty("--ty", `${y}px`);
+      wrap.className = "mobAbs";
 
       const card = document.createElement("div");
       const isDead = Number(m.hp) <= 0;
@@ -1625,6 +1353,10 @@ body.locked #gameOverOverlay button{
       if (uiState.selectedMobId === m.id){
         card.classList.add("selected");
       }
+
+      // scale by depth
+      const s = depthScale(Number(m.y ?? 0.5));
+      wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
 
       const hpPct = hpRatio(m) * 100;
       const imgUrl = mobImageUrl(m.avatarId || m.id);
@@ -1653,7 +1385,7 @@ body.locked #gameOverOverlay button{
       `;
 
       wrap.onclick = () => {
-        if (isDead) return; // corpse not selectable
+        if (isDead) return;
         uiState.selectedMobId = m.id;
         uiState.selectedPartyId = null;
         actionTargetEl.value = m.id;
@@ -1661,35 +1393,54 @@ body.locked #gameOverOverlay button{
       };
 
       wrap.appendChild(card);
+
+      // store coords for reposition on resize
+      wrap.dataset.x = String(m.x ?? 0.5);
+      wrap.dataset.y = String(m.y ?? 0.5);
+
       return wrap;
     }
 
-    const byThreatThenHP = (a,b) => {
-      const ta = isThreat(a) ? 1 : 0;
-      const tb = isThreat(b) ? 1 : 0;
-      if (tb !== ta) return tb - ta;
-      return hpRatio(b) - hpRatio(a);
-    };
+    // build mob nodes (sorted a bit so near mobs overlay far mobs)
+    mobs.sort((a,b) => Number(a.y ?? 0.5) - Number(b.y ?? 0.5));
 
-    const backMobs  = mobs.filter(m => m.lane === 0).sort(byThreatThenHP);
-    const midMobs   = mobs.filter(m => m.lane === 1).sort(byThreatThenHP);
-    const frontMobs = mobs.filter(m => m.lane === 2).sort(byThreatThenHP);
+    mobs.forEach((m,i) => battlefield.appendChild(makeMobCard(m,i)));
 
-    backMobs.forEach((m,i)  => rowBack.appendChild(makeMobCard(m,i)));
-    midMobs.forEach((m,i)   => rowMid.appendChild(makeMobCard(m,i)));
-    frontMobs.forEach((m,i) => rowFront.appendChild(makeMobCard(m,i)));
-
-    layers.appendChild(rowBack);
-    layers.appendChild(rowMid);
-    layers.appendChild(rowFront);
-
-    scene.appendChild(layers);
+    scene.appendChild(battlefield);
     scene.appendChild(fog1);
     scene.appendChild(fog2);
 
     lanesEl.appendChild(scene);
+
+    // after scene is in DOM, position everything
+    positionAllMobs(scene);
   }
-  
+
+  function positionAllMobs(sceneEl){
+    const battlefield = sceneEl.querySelector(".battlefield");
+    if (!battlefield) return;
+
+    const rect = sceneEl.getBoundingClientRect();
+    const w = Math.max(1, rect.width);
+    const h = Math.max(1, rect.height);
+
+    const pad = 10;
+
+    battlefield.querySelectorAll(".mobAbs").forEach(wrap => {
+      const x01 = Number(wrap.dataset.x ?? 0.5);
+      const y01 = Number(wrap.dataset.y ?? 0.5);
+
+      const x = pad + clamp01(x01) * (w - pad*2);
+      const y = pad + clamp01(y01) * (h - pad*2);
+
+      wrap.style.left = `${x}px`;
+      wrap.style.top  = `${y}px`;
+
+      // zIndex by y => closer in front
+      wrap.style.zIndex = String(Math.floor(clamp01(y01) * 1000));
+    });
+  }
+
   function renderParty(){
     const partyEl = document.getElementById("party");
     partyEl.innerHTML = "";
@@ -1698,19 +1449,14 @@ body.locked #gameOverOverlay button{
       const row = document.createElement("div");
       row.className = "pRow";
 
-      // add a transient "damaged" class if this player was hit recently
       if (uiState._damagedIds && uiState._damagedIds.has(p.id)){
         row.classList.add("damaged");
       }
-
-      if (uiState.selectedPartyId === p.id) {
-        row.classList.add("selected");
-      }
+      if (uiState.selectedPartyId === p.id) row.classList.add("selected");
 
       const hpP = pct(p.hp, p.hpMax);
       const enP = pct(p.en, p.enMax);
       const mnP = pct(p.mn, p.mnMax);
-
       const imgUrl = playerImageUrl(p.avatarId);
 
       row.innerHTML = `
@@ -1744,10 +1490,8 @@ body.locked #gameOverOverlay button{
         if (!name) return;
 
         actionTargetEl.value = name;
-
         uiState.selectedPartyId = p.id;
         uiState.selectedMobId = null;
-
         renderAll();
       };
 
@@ -1766,6 +1510,15 @@ body.locked #gameOverOverlay button{
     `;
   }
 
+  function renderAll(){
+    renderBadges();
+    renderEncounter();
+    renderParty();
+  }
+
+  /* =========================
+     State polling
+     ========================= */
   let lastState = null;
   const playedDeaths = new Set();
 
@@ -1775,26 +1528,21 @@ body.locked #gameOverOverlay button{
     return map;
   }
 
-  // Toast and Mobdeath detection
   function showLootToast(text){
-  const host = document.getElementById("lootToastHost");
-  if (!host) return;
+    const host = document.getElementById("lootToastHost");
+    if (!host) return;
+    const el = document.createElement("div");
+    el.className = "lootToast";
+    el.textContent = text;
+    host.appendChild(el);
+    setTimeout(() => el.remove(), 1800);
+  }
 
-  const el = document.createElement("div");
-  el.className = "lootToast";
-  el.textContent = text;
-
-  host.appendChild(el);
-  setTimeout(() => el.remove(), 1800);
-}
-
-  // Mob death
   function detectMobDeaths(prev, next){
     const prevMap = extractMobsMap(prev);
     const nextMap = extractMobsMap(next);
     const now = Date.now();
 
-    // 1) If a mob is alive again, allow death FX again for same id
     for (const [id, m] of nextMap) {
       if (Number(m.hp) > 0) {
         playedDeaths.delete(id);
@@ -1805,88 +1553,48 @@ body.locked #gameOverOverlay button{
     const triggerDeathFx = (id, mobSnapshot) => {
       if (playedDeaths.has(id)) return;
       playedDeaths.add(id);
-
       playSound("mobdeath");
-
-      // show corpse for a bit
-      deadFx.set(id, {
-        untilMs: now + DEAD_STAY_MS,
-        lastMob: { ...mobSnapshot, hp: 0 }
-      });
-
-      const gold = 1 + Math.floor(Math.random() * 4);
-      // showLootToast(`+${gold} Loot from ${id}`);
+      deadFx.set(id, { untilMs: now + DEAD_STAY_MS, lastMob: { ...mobSnapshot, hp: 0 } });
       showLootToast(`${id} is killed!`);
     };
 
-    // Case A: mob still exists but hp dropped to 0
     for (const [id, nextMob] of nextMap){
       const prevMob = prevMap.get(id);
-
       const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
       const isDead   = Number(nextMob.hp) <= 0;
-
-      if (wasAlive && isDead){
-        triggerDeathFx(id, nextMob);
-      }
+      if (wasAlive && isDead) triggerDeathFx(id, nextMob);
     }
 
-    // Case B: mob got removed from server list (disappears)
     for (const [id, prevMob] of prevMap){
       const existsNow = nextMap.has(id);
       const wasAlive  = Number(prevMob.hp) > 0;
-
-      if (wasAlive && !existsNow){
-        triggerDeathFx(id, prevMob);
-      }
+      if (wasAlive && !existsNow) triggerDeathFx(id, prevMob);
     }
 
-    // cleanup old corpse FX and also prevent playedDeaths from growing forever
     for (const [id, fx] of deadFx){
       if (now > fx.untilMs) deadFx.delete(id);
     }
   }
 
-
-  function renderAll(){
-    renderBadges();
-    renderEncounter();
-    renderParty();
-  }
-
   async function updateState(){
     try{
-      const res = await fetch(STATE_URL, {
-        headers: authHeaders(),
-        cache: "no-store"
-      });
+      const res = await fetch(STATE_URL, { headers: authHeaders(), cache: "no-store" });
 
-      if (res.status === 401) {
-        doLogout();
-        return;
-      }
-
-      if(!res.ok){
-        return;
-      }
+      if (res.status === 401) { doLogout(); return; }
+      if(!res.ok) return;
 
       const s = await res.json();
-      //console.log("mobs:", (s.mobs||[]).map(m => `${m.id}:${m.hp}`).join(" | "));
       updateInfoMarquee(s.infoMsg);
 
-      // --- DAMAGE FEEDBACK (CURRENT PLAYER ONLY) ---
+      // damage feedback
       const damages = detectPartyDamage(lastState || uiState, s);
       if (damages.length > 0){
-        const me = getPlayerName(); // logged-in player name
+        const me = getPlayerName();
         const myHit = damages.find(d => d.id === me);
-
         if (myHit){
-          // scale flash intensity by damage amount
           const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
           triggerHitFeedback(intensity);
           playRandomHitSound();
-
-          // optional: briefly highlight your own party row
           s._damagedIds = new Set([me]);
           setTimeout(() => {
             if (uiState && uiState._damagedIds){
@@ -1896,9 +1604,6 @@ body.locked #gameOverOverlay button{
           }, 450);
         }
       }
-      // end damage feedback
-
-
 
       detectMobDeaths(lastState || uiState, s);
 
@@ -1907,35 +1612,31 @@ body.locked #gameOverOverlay button{
 
       uiState = s;
 
-      // If server provides phase/gameover fields
       const wasGameOver = String(lastState?.phase || "") === "gameover";
       const isGameOver  = String(s.phase || "") === "gameover";
-      
-      if (String(s.phase || "") === "gameover") {
-          showGameOverOverlay(s.gameOverReason, s.restartInMs);
-
-          if (!wasGameOver) playSound("gameover");
+      if (isGameOver) {
+        showGameOverOverlay(s.gameOverReason, s.restartInMs);
+        if (!wasGameOver) playSound("gameover");
       } else {
-          hideGameOverOverlay();
+        hideGameOverOverlay();
       }
-
 
       if (s.selectedMobId == null)   uiState.selectedMobId   = keepSelectedMobId;
       if (s.selectedPartyId == null) uiState.selectedPartyId = keepSelectedPartyId;
 
       lastState = s;
       renderAll();
-    } catch(e){
-      // ignore network errors for now
-    }
+    } catch(e){}
   }
 
+  /* =========================
+     Helpers
+     ========================= */
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[c]));
   }
-
   function mobImageUrl(mobId){
     if (!mobId) return "";
     const safe = mobId.replace(/[^a-zA-Z0-9_-]/g, "");
@@ -1948,138 +1649,94 @@ body.locked #gameOverOverlay button{
   }
 
   /* =========================
-   KEYBOARD SHORTCUTS (PC)
-   ========================= */
-
-  // Detect "desktop-ish" devices (fine pointer = mouse)
+     Keyboard shortcuts (PC)
+     ========================= */
   const isDesktopInput = window.matchMedia("(pointer: fine)").matches;
 
   document.addEventListener("keydown", (e) => {
     if (!isDesktopInput) return;
-
-    // Don't trigger while typing
     const tag = document.activeElement?.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
-
-    // Only digits 0–9
     if (!/^[0-9]$/.test(e.key)) return;
 
-    // Map key -> action index
-    const key = e.key;
-    const index = key === "0" ? 9 : (Number(key) - 1);
-
+    const index = e.key === "0" ? 9 : (Number(e.key) - 1);
     if (index < 0 || index >= ACTIONS.length) return;
 
     const actionId = ACTIONS[index].id;
-
-    const btn = document.querySelector(
-      `.action-btn[data-action="${actionId}"]`
-    );
-
+    const btn = document.querySelector(`.action-btn[data-action="${actionId}"]`);
     if (!btn) return;
 
-    // Prevent browser shortcuts (e.g. page search on some layouts)
     e.preventDefault();
-
-    // Respect cooldowns (same behavior as clicking)
     if (btn.classList.contains("cooldown")) return;
-
-    // Fire the action
     btn.click();
   });
 
   /* =========================
-     BOOT
+     Info marquee
      ========================= */
-  buildButtons();
-  setInterval(tickCooldowns, 100);
-  tickCooldowns();
-
-  renderAll();
-  
-  setInterval(updateState, 555);
-  updateState();
-
-  /* ===== INFO MSG / MARQUEE ===== */
   document.documentElement.style.setProperty("--infoSpeed", String(INFO_SPEED_PX_PER_SEC));
-
   let lastInfoMsg = "";
-
-  function setInfoSpeed(pxPerSec){
-    const v = Math.max(20, Math.min(300, Number(pxPerSec) || 80));
-    INFO_SPEED_PX_PER_SEC = v;
-    localStorage.setItem("infoSpeedPxPerSec", String(v));
-    document.documentElement.style.setProperty("--infoSpeed", String(v));
-
-    // re-evaluate current text
-    updateInfoMarquee(lastInfoMsg);
-  }
 
   function updateInfoMarquee(msg){
     const marquee = document.getElementById("infoMarquee");
     const a = document.getElementById("infoTextA");
-    const b = document.getElementById("infoTextB"); // may not exist if you removed it
     if (!marquee || !a) return;
 
     const text = String(msg || "").trim();
     const shown = text || "—";
 
     a.textContent = shown;
-    if (b) b.textContent = "";   // or shown, doesn't matter if hidden/unused
-
     marquee.title = text;
 
-    // ensure no scrolling ever
     marquee.classList.remove("scrolling");
     marquee.style.removeProperty("--infoShift");
     marquee.style.removeProperty("--infoDur");
+    lastInfoMsg = text;
   }
 
   /* =========================
      Game Over
      ========================= */
-function showGameOverOverlay(reason, restartInMs){
-  const overlay = document.getElementById("gameOverOverlay");
-  const reasonEl = document.getElementById("gameOverReason");
-  const secEl = document.getElementById("gameOverSeconds");
+  function showGameOverOverlay(reason, restartInMs){
+    const overlay = document.getElementById("gameOverOverlay");
+    const reasonEl = document.getElementById("gameOverReason");
+    const secEl = document.getElementById("gameOverSeconds");
+    if (!overlay) return;
 
-  if (!overlay) return;
+    reasonEl.textContent = reason || "You lost";
+    const sec = Math.max(0, Math.ceil((Number(restartInMs) || 0) / 1000));
+    secEl.textContent = String(sec);
 
-  reasonEl.textContent = reason || "You lost";
-  const sec = Math.max(0, Math.ceil((Number(restartInMs) || 0) / 1000));
-  secEl.textContent = String(sec);
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.classList.add("locked");
+  }
 
-  overlay.classList.remove("hidden");
-  overlay.setAttribute("aria-hidden", "false");
-  document.body.classList.add("locked");
-}
+  function hideGameOverOverlay(){
+    const overlay = document.getElementById("gameOverOverlay");
+    if (!overlay) return;
+    overlay.classList.add("hidden");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("locked");
+  }
 
-function hideGameOverOverlay(){
-  const overlay = document.getElementById("gameOverOverlay");
-  if (!overlay) return;
-
-  overlay.classList.add("hidden");
-  overlay.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("locked");
-}
-
-/* =========================
+  /* =========================
      HitFlash
      ========================= */
-let lastHitFlashAt = 0;
+  let lastHitFlashAt = 0;
 
-function triggerHitFeedback(intensity01 = 0.7){
+  function triggerHitFeedback(intensity01 = 0.7){
     if (!ENABLE_HIT_FLASH) return;
 
     const now = performance.now();
-    if (now - lastHitFlashAt < 500) return; // prevent double blink
+    if (now - lastHitFlashAt < 500) return;
     lastHitFlashAt = now;
 
     const flash = document.getElementById("hitFlash");
     if (!flash) return;
 
     flash.classList.remove("on");
-    void flash.offsetHeight; // restart animation
+    void flash.offsetHeight;
     flash.style.opacity = String(Math.max(0.2, Math.min(0.6, intensity01)));
     flash.classList.add("on");
 
@@ -2087,56 +1744,67 @@ function triggerHitFeedback(intensity01 = 0.7){
       document.body.classList.add("hitShake");
       setTimeout(() => document.body.classList.remove("hitShake"), 260);
     }
- }
-
- function updateFlashBtn(){
-  const b = document.getElementById("btnFlash");
-  if (!b) return;
-  b.textContent = "Flash: " + (ENABLE_HIT_FLASH ? "ON" : "OFF");
-}
-
-document.getElementById("btnFlash")?.addEventListener("click", () => {
-  ENABLE_HIT_FLASH = !ENABLE_HIT_FLASH;
-  localStorage.setItem("enableHitFlash", ENABLE_HIT_FLASH ? "1" : "0");
-  updateFlashBtn();
-});
-
-updateFlashBtn();
- // end hitflash section
-
-function extractPartyMap(state){
-  const map = new Map();
-  (state?.party || []).forEach(p => map.set(p.id, p));
-  return map;
-}
-
-// returns array of {id, dmg, newHp, oldHp}
-function detectPartyDamage(prev, next){
-  const prevMap = extractPartyMap(prev);
-  const out = [];
-
-  for (const p of (next?.party || [])){
-    const id = p.id;
-    const prevP = prevMap.get(id);
-    if (!prevP) continue;
-
-    const oldHp = Number(prevP.hp ?? 0);
-    const newHp = Number(p.hp ?? 0);
-
-    if (newHp < oldHp){
-      out.push({ id, dmg: oldHp - newHp, newHp, oldHp });
-    }
   }
-  return out;
-}
 
-// Bind overlay button AFTER the DOM exists
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("btnGameOverLogout")?.addEventListener("click", doLogout);
-});
+  function updateFlashBtn(){
+    const b = document.getElementById("btnFlash");
+    if (!b) return;
+    b.textContent = "Flash: " + (ENABLE_HIT_FLASH ? "ON" : "OFF");
+  }
+
+  document.getElementById("btnFlash")?.addEventListener("click", () => {
+    ENABLE_HIT_FLASH = !ENABLE_HIT_FLASH;
+    localStorage.setItem("enableHitFlash", ENABLE_HIT_FLASH ? "1" : "0");
+    updateFlashBtn();
+  });
+  updateFlashBtn();
+
+  /* party damage detector */
+  function extractPartyMap(state){
+    const map = new Map();
+    (state?.party || []).forEach(p => map.set(p.id, p));
+    return map;
+  }
+  function detectPartyDamage(prev, next){
+    const prevMap = extractPartyMap(prev);
+    const out = [];
+    for (const p of (next?.party || [])){
+      const id = p.id;
+      const prevP = prevMap.get(id);
+      if (!prevP) continue;
+      const oldHp = Number(prevP.hp ?? 0);
+      const newHp = Number(p.hp ?? 0);
+      if (newHp < oldHp){
+        out.push({ id, dmg: oldHp - newHp, newHp, oldHp });
+      }
+    }
+    return out;
+  }
+
+  /* =========================
+     Boot
+     ========================= */
+  buildButtons();
+  setInterval(tickCooldowns, 100);
+  tickCooldowns();
+
+  renderAll();
+
+  // Re-position mobs on resize (coords are normalized)
+  window.addEventListener("resize", () => {
+    const scene = document.querySelector(".scene");
+    if (scene) positionAllMobs(scene);
+  });
+
+  setInterval(updateState, 2555);
+  updateState();
+
+  // overlay logout
+  window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("btnGameOverLogout")?.addEventListener("click", doLogout);
+  });
 
 </script>
-
 
 <!-- GAME OVER OVERLAY -->
 <div id="gameOverOverlay" class="overlay hidden" aria-hidden="true">
@@ -2148,13 +1816,12 @@ window.addEventListener("DOMContentLoaded", () => {
       Restarting in <span id="gameOverSeconds">3</span>s…
     </div>
     <div style="margin-top:16px; display:flex; justify-content:center; gap:12px;">
-      <button id="btnGameOverLogout" class="btnTop">
-        Logout
-      </button>
+      <button id="btnGameOverLogout" class="btnTop">Logout</button>
     </div>
 
     <div class="overlayHint">Get more help!!!</div>
   </div>
 </div>
+
 </body>
 </html>
