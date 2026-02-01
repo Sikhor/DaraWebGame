@@ -97,7 +97,7 @@ UIState::json UIState::MobToJson(const Combatant& c)
 
     // center-of-cell mapping
     float x = (c.GetSlot() + 0.5f) / MAXSLOTS;
-    float y = (c.GetLane() + 0.5f) / MAXLANES;
+    float y = std::clamp((c.GetLane() + 0.5f) / MAXLANES, 0.1f,0.9f);
 
     // optional safety clamp
     x = std::clamp(x, 0.0f, 1.0f);

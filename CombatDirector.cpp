@@ -212,6 +212,33 @@ void CombatDirector::RemovePlayer(const std::string& playerName)
     Players.erase(playerName);
     PendingActions.erase(playerName);
     BufferedActions.erase(playerName);
+    if (Players.empty())
+    {
+        DaraLog("GAMESTATE", "All players logged out → resetting to Wave 1");
+
+        // Clear combat state
+        Mobs.clear();
+        PendingActions.clear();
+        BufferedActions.clear();
+        Log.clear();
+
+        // Reset wave + progression
+        Wave = 1;
+        MobToSpawnInWave = 0;
+        WaveWaitTurns = 0;
+
+        // Reset turn state
+        CurrentTurnId = 0;
+        Resolving = false;
+
+        // Reset phase
+        Phase = EGamePhase::Running;
+        GameOverReason.clear();
+
+        // Optional: clear info message
+        InfoMsg.clear();
+    }
+
     Cv.notify_all();
 }
 EGamePhase CombatDirector::GetPhase()
@@ -583,7 +610,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
                 if(a.actionId=="attack")dmg= player->AttackMelee(target);
                 if(a.actionId=="fireball")dmg= player->AttackFireball(target);
                 if(a.actionId=="shoot")dmg= player->AttackShoot(target);
-                if(a.actionId=="mezz")dmg= player->AttackMezz(target);
+                if(a.actionId=="mezmerize")dmg= player->AttackMezz(target);
                 logMsg= "Success "+std::to_string(dmg);                
             }else{
                 logMsg="Could not find player or target";

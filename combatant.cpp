@@ -124,7 +124,6 @@ void Combatant::MobAttack(CombatantPtr target)
 {
     if(!IsAlive())return;
     if(MezzCounter>0)return;
-
     float dmg= 0.f;
 
     dmg = GetRandomDamage();

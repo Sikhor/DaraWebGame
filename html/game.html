@@ -387,6 +387,8 @@
   }
 
   /* ---------- Info (non-moving, like your last state) ---------- */
+  /* TEMP: hide info marquee */
+  #infoMarquee{ display:none !important; }
   .infoMarquee{
     position: relative;
     height: 34px;
@@ -1359,7 +1361,8 @@ function buildButtons(){
       startCooldown(actionId, cdSec);
       tickCooldowns();
 
-      const actionTarget = getActionTarget();
+      const actionTargetInput = getActionTarget();
+      const actionTarget = resolveTargetIdFromInput(actionTargetInput);
       const actionMsg = getActionMsg() || actionId;
 
       try {
@@ -1576,13 +1579,16 @@ function createMobDom(mobId, idx){
   };
 
   wrap.onclick = () => {
-    // note: actual alive/dead check happens in updater (we still allow click, but it won't set target if dead)
     uiState.selectedMobId = mobId;
     uiState.selectedPartyId = null;
-    document.getElementById("actionTarget").value = mobId;
-    // update classes only (no rebuild)
+
+    const m = (uiState.mobs || []).find(x => String(x.id) === String(mobId));
+    document.getElementById("actionTarget").value =
+      m?.displayName || m?.avatarId || mobId;
+
     updateEncounterMobs();
   };
+
 
   const entry = { wrap, card, img, hpFill, targetTag, avatarFallback };
   mobDom.set(mobId, entry);
@@ -2298,6 +2304,24 @@ function checkPlayerStatToasts(player) {
 
     // unknown → no max
     return null;
+  }
+
+  function resolveTargetIdFromInput(input){
+    const name = String(input || "").trim();
+    if (!name) return "";
+
+    // 1) exact id match
+    const byId = (uiState.mobs || []).find(m => m.id === name);
+    if (byId) return byId.id;
+
+    // 2) match by displayName (first alive match)
+    const byName = (uiState.mobs || []).find(
+      m => m.displayName === name && Number(m.hp) > 0
+    );
+    if (byName) return byName.id;
+
+    // 3) fallback: return as-is
+    return name;
   }
 
 
