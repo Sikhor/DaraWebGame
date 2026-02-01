@@ -105,6 +105,9 @@ UIState::json UIState::MobToJson(const Combatant& c)
     out["enMax"] = c.GetMaxEnergy();
     out["mnMax"] = c.GetMaxMana();
     out["avatarId"] = c.GetAvatarId();
+    out["Difficulty"]= GetStringOr(j, "difficulty", c.GetDifficulty());
+    out["AttackType"]= GetStringOr(j, "attacktype", c.GetAttackType());
+
     return out;
 }
 

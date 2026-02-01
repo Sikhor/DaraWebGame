@@ -33,6 +33,9 @@
     --sceneMinH: 420px;     /* desktop default */
     --mobCardSize: 96px;    /* desktop default */
     --mobImgSize: 64px;     /* desktop default */
+    
+    /* rolling text infoMsg */
+    --infoSpeed: 80; /* pixels per second (default). Configurable. */
   }
 
   html, body { height: 100%; }
@@ -291,11 +294,81 @@
   }
 
   /* row tuning */
-  .depthRow.back  { transform: translateY(-4px); opacity:0.65; filter: blur(0.4px); }
-  .depthRow.mid   { transform: translateY( 2px); opacity:0.85; filter: blur(0.2px); }
+  .depthRow.back  { transform: translateY(-4px); opacity:0.65; filter: blur(0px); }
+  .depthRow.mid   { transform: translateY( 2px); opacity:0.85; filter: blur(0px); }
   .depthRow.front { transform: translateY( 8px); opacity:1.00; filter: blur(0px); }
 
+  /* Info Marquee rolling text infomsg */
+  .infoMarquee{
+  position: relative;
+  height: 34px;                 /* same as input height */
+  flex: 1 1 auto;
+  min-width: 140px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.22);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
 
+/* gradient fade at edges (nice) */
+  .infoMarquee::before,
+  .infoMarquee::after{
+    content:"";
+    position:absolute;
+    top:0; bottom:0;
+    width: 18px;
+    pointer-events:none;
+    z-index: 2;
+  }
+  .infoMarquee::before{
+    left:0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
+  }
+  .infoMarquee::after{
+    right:0;
+    background: linear-gradient(270deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
+  }
+
+  .infoTrack{
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .infoInner{
+    display: inline-flex;
+    align-items: center;
+    gap: 28px;            /* spacing between duplicates */
+    will-change: transform;
+  }
+
+  .infoText{
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: rgba(255,255,255,0.86);
+  }
+
+  /* When scrolling is active, we animate the inner */
+  .infoMarquee.scrolling .infoInner{
+    animation: infoScroll linear infinite;
+    animation-duration: var(--infoDur, 10s);
+  }
+
+  @keyframes infoScroll{
+    from { transform: translate3d(0,0,0); }
+    to   { transform: translate3d(calc(-1 * var(--infoShift, 200px)),0,0); }
+  }
+
+  /* If user prefers reduced motion: no scrolling */
+  @media (prefers-reduced-motion: reduce){
+    .infoMarquee.scrolling .infoInner{ animation: none !important; }
+  }
   /* Mob card */
   .mobCardWrap{
     pointer-events:auto;
@@ -1070,7 +1143,21 @@ body.locked #gameOverOverlay button{
     <div class="panel encounterPanel">
       <div class="panelHeader">
         <span>Encounter</span>
-        <div>
+        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+            <input id="actionTarget"
+                  class="target-input"
+                  placeholder="Target" />
+
+            <!-- Rolling info message -->
+            <div id="infoMarquee" class="infoMarquee" title="">
+              <div class="infoTrack">
+                <div class="infoInner" id="infoInner">
+                  <span class="infoText" id="infoTextA"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
           <button class="btnTop" id="btnFlash" title="Flash">Flash: OFF</button>
           <button class="btnTop" id="btnShake" title="Shake">Shake: OFF</button>
         </div>
@@ -1097,10 +1184,6 @@ body.locked #gameOverOverlay button{
     <div class="hudBar">
       <div class="actions" id="actions"></div>
 
-      <input id="actionTarget"
-             class="target-input"
-             placeholder="Target" />
-
       <input id="actionMsg"
              class="chat-input"
              placeholder="Action / Message…" />
@@ -1117,6 +1200,9 @@ body.locked #gameOverOverlay button{
      ========================= */
   let ENABLE_SHAKE = false;  // default on (you can set false)
   let ENABLE_HIT_FLASH = false; // default OFF (migraine-safe)
+
+  let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80"); // default
+
 
 
   /* =========================
@@ -1702,54 +1788,64 @@ body.locked #gameOverOverlay button{
   setTimeout(() => el.remove(), 1800);
 }
 
-function detectMobDeaths(prev, next){
-  const prevMap = extractMobsMap(prev);
-  const nextMap = extractMobsMap(next);
+  // Mob death
+  function detectMobDeaths(prev, next){
+    const prevMap = extractMobsMap(prev);
+    const nextMap = extractMobsMap(next);
+    const now = Date.now();
 
-  const now = Date.now();
-
-  // Case A: mob still exists but hp dropped to 0
-  for(const [id, nextMob] of nextMap){
-    const prevMob = prevMap.get(id);
-    const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
-    const isDead   = Number(nextMob.hp) <= 0;
-
-    if (wasAlive && isDead && !playedDeaths.has(id)){
-      playedDeaths.add(id);
-
-      // sound
-      playSound("mobdeath");
-
-      // cache corpse
-      deadFx.set(id, { untilMs: now + DEAD_STAY_MS, lastMob: { ...nextMob, hp: 0 } });
-
-      // small reward feedback (placeholder)
-      const gold = 1 + Math.floor(Math.random() * 4);
-      showLootToast(`+${gold} Loot from ${id}`);
+    // 1) If a mob is alive again, allow death FX again for same id
+    for (const [id, m] of nextMap) {
+      if (Number(m.hp) > 0) {
+        playedDeaths.delete(id);
+        deadFx.delete(id);
+      }
     }
-  }
 
-  // Case B: mob got removed from server list (disappears)
-  for(const [id, prevMob] of prevMap){
-    const existsNow = nextMap.has(id);
-    const wasAlive = Number(prevMob.hp) > 0;
-
-    if (wasAlive && !existsNow && !playedDeaths.has(id)){
+    const triggerDeathFx = (id, mobSnapshot) => {
+      if (playedDeaths.has(id)) return;
       playedDeaths.add(id);
 
       playSound("mobdeath");
-      deadFx.set(id, { untilMs: now + DEAD_STAY_MS, lastMob: { ...prevMob, hp: 0 } });
+
+      // show corpse for a bit
+      deadFx.set(id, {
+        untilMs: now + DEAD_STAY_MS,
+        lastMob: { ...mobSnapshot, hp: 0 }
+      });
 
       const gold = 1 + Math.floor(Math.random() * 4);
-      showLootToast(`+${gold} Loot from ${id}`);
+      // showLootToast(`+${gold} Loot from ${id}`);
+      showLootToast(`${id} is killed!`);
+    };
+
+    // Case A: mob still exists but hp dropped to 0
+    for (const [id, nextMob] of nextMap){
+      const prevMob = prevMap.get(id);
+
+      const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
+      const isDead   = Number(nextMob.hp) <= 0;
+
+      if (wasAlive && isDead){
+        triggerDeathFx(id, nextMob);
+      }
+    }
+
+    // Case B: mob got removed from server list (disappears)
+    for (const [id, prevMob] of prevMap){
+      const existsNow = nextMap.has(id);
+      const wasAlive  = Number(prevMob.hp) > 0;
+
+      if (wasAlive && !existsNow){
+        triggerDeathFx(id, prevMob);
+      }
+    }
+
+    // cleanup old corpse FX and also prevent playedDeaths from growing forever
+    for (const [id, fx] of deadFx){
+      if (now > fx.untilMs) deadFx.delete(id);
     }
   }
-
-  // cleanup old fx
-  for (const [id, fx] of deadFx){
-    if (now > fx.untilMs) deadFx.delete(id);
-  }
-}
 
 
   function renderAll(){
@@ -1775,6 +1871,8 @@ function detectMobDeaths(prev, next){
       }
 
       const s = await res.json();
+      //console.log("mobs:", (s.mobs||[]).map(m => `${m.id}:${m.hp}`).join(" | "));
+      updateInfoMarquee(s.infoMsg);
 
       // --- DAMAGE FEEDBACK (CURRENT PLAYER ONLY) ---
       const damages = detectPartyDamage(lastState || uiState, s);
@@ -1898,10 +1996,44 @@ function detectMobDeaths(prev, next){
   tickCooldowns();
 
   renderAll();
-
-  setInterval(updateState, 2500);
+  
+  setInterval(updateState, 555);
   updateState();
 
+  /* ===== INFO MSG / MARQUEE ===== */
+  document.documentElement.style.setProperty("--infoSpeed", String(INFO_SPEED_PX_PER_SEC));
+
+  let lastInfoMsg = "";
+
+  function setInfoSpeed(pxPerSec){
+    const v = Math.max(20, Math.min(300, Number(pxPerSec) || 80));
+    INFO_SPEED_PX_PER_SEC = v;
+    localStorage.setItem("infoSpeedPxPerSec", String(v));
+    document.documentElement.style.setProperty("--infoSpeed", String(v));
+
+    // re-evaluate current text
+    updateInfoMarquee(lastInfoMsg);
+  }
+
+  function updateInfoMarquee(msg){
+    const marquee = document.getElementById("infoMarquee");
+    const a = document.getElementById("infoTextA");
+    const b = document.getElementById("infoTextB"); // may not exist if you removed it
+    if (!marquee || !a) return;
+
+    const text = String(msg || "").trim();
+    const shown = text || "—";
+
+    a.textContent = shown;
+    if (b) b.textContent = "";   // or shown, doesn't matter if hidden/unused
+
+    marquee.title = text;
+
+    // ensure no scrolling ever
+    marquee.classList.remove("scrolling");
+    marquee.style.removeProperty("--infoShift");
+    marquee.style.removeProperty("--infoDur");
+  }
 
   /* =========================
      Game Over

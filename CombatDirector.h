@@ -110,6 +110,8 @@ public:
     // Optional: get current turn id (for clients / debug)
     uint64_t GetCurrentTurnId() const;
 
+    void BuildSpawnInfoMsg(std::string mobname, std::string  difficulty, std::string attackType);
+
     EGamePhase GetPhase();
     bool CheckGameOverLocked(std::string& outReason);
     void ResetGameLocked();
@@ -150,6 +152,7 @@ private:
 
 private:
     const std::string GameId;
+    std::string InfoMsg;
     // Game over handling
     EGamePhase Phase = EGamePhase::Running;
     std::string GameOverReason;

@@ -706,6 +706,10 @@ void CombatDirector::GetFilledSlotArray()
     //std::cout << "OpenSlots: "<< OpenSlotAmount << " FilledSlotAmount: "<< SpawnedMobsAmount<< std::endl;
 
 }
+void CombatDirector::BuildSpawnInfoMsg(std::string mobName, std::string  difficulty, std::string attackType)
+{
+    InfoMsg= mobName+ " spawned. Danger Level: "+difficulty+" Attck Type:"+attackType;
+}
 void CombatDirector::SpawnMob(const std::string& mobId, int lane, int slot)
 {
     if (mobId.empty()) return;
@@ -718,6 +722,7 @@ void CombatDirector::SpawnMob(const std::string& mobId, int lane, int slot)
     // Create instance from template
     auto mob = g_mobTemplates.CreateMobInstancePtr(mobId, lane, slot);
     //mob->DebugShort();
+    BuildSpawnInfoMsg(mob->GetName(), mob->GetDifficulty(), mob->GetAttackType());
 
     Mobs.emplace(mobId, std::move(mob));
 }
@@ -895,6 +900,7 @@ json CombatDirector::GetUIStateSnapshotJsonLocked() const
     uiJson["turnId"] = CurrentTurnId;                       // optional, but handy
     uiJson["phase"]  = isGameOver ? "gameover" : "running"; // what the UI checks
     uiJson["gameOverReason"] = GameOverReason;
+    uiJson["infoMsg"]= InfoMsg;
 
     if (isGameOver)
     {

@@ -366,7 +366,7 @@ void Combatant::InitFromMobTemplate(
     BaseDefense = baseDefense;
 }
 
-std::string Combatant::GetAttackType()
+std::string Combatant::GetAttackType() const
 {
     switch (AttackType)
     {

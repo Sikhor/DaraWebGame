@@ -64,6 +64,70 @@ enum class ECondition
     Incapacitated
 };
 
+// --- enum to string helpers ---
+static constexpr std::string_view ToString(ECombatantType t)
+{
+    switch (t) {
+        case ECombatantType::Player: return "Player";
+        case ECombatantType::Mob:    return "Mob";
+        case ECombatantType::NPC:    return "NPC";
+        default:                     return "Unknown";
+    }
+}
+
+static constexpr std::string_view ToString(ECombatantDifficulty d)
+{
+    switch (d) {
+        case ECombatantDifficulty::Normal:    return "Normal";
+        case ECombatantDifficulty::Boss:      return "Boss";
+        case ECombatantDifficulty::GroupMob:  return "GroupMob";
+        case ECombatantDifficulty::GroupBoss: return "GroupBoss";
+        case ECombatantDifficulty::RaidMob:   return "RaidMob";
+        case ECombatantDifficulty::RaidBoss:  return "RaidBoss";
+        default:                               return "Unknown";
+    }
+}
+
+static constexpr std::string_view ToString(ECombatantAttackType a)
+{
+    switch (a) {
+        case ECombatantAttackType::Ranged: return "Ranged";
+        case ECombatantAttackType::Melee:  return "Melee";
+        case ECombatantAttackType::Combi:  return "Combi";
+        case ECombatantAttackType::Healer: return "Healer";
+        default:                           return "Unknown";
+    }
+}
+
+static constexpr std::string_view ToString(ECondition c)
+{
+    switch (c) {
+        case ECondition::None:          return "None";
+        case ECondition::Wounded:       return "Wounded";
+        case ECondition::Burning:       return "Burning";
+        case ECondition::Poisoned:      return "Poisoned";
+        case ECondition::Mezzed:        return "Mezzed";
+        case ECondition::Defending:     return "Defending";
+        case ECondition::Fleeing:       return "Fleeing";
+        case ECondition::Incapacitated: return "Incapacitated";
+        default:                        return "Unknown";
+    }
+}
+
+static inline std::string ConditionsToString(const std::vector<ECondition>& conds)
+{
+    if (conds.empty()) return "[]";
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < conds.size(); ++i) {
+        if (i) oss << ",";
+        oss << ToString(conds[i]);
+    }
+    oss << "]";
+    return oss.str();
+}
+
+
 struct Lane
 {
     std::string name;     // "LONG RANGE"
@@ -152,7 +216,8 @@ public:
     float GetCurrentDefense() const{return BaseDefense+DefenseModifier;}
     float GetCurrentDamage() const{return BaseDamage+DamageModifier;}
 
-    std::string GetAttackType();
+    std::string GetAttackType()const;
+    std::string GetDifficulty()const{return std::string(ToString(Difficulty));}
 
     void SetLane(int lane, int slot);
     int GetLane() const { return Lane; }
@@ -190,68 +255,6 @@ public:
     json ToJson() const;
 };
 
-// --- enum to string helpers ---
-static constexpr std::string_view ToString(ECombatantType t)
-{
-    switch (t) {
-        case ECombatantType::Player: return "Player";
-        case ECombatantType::Mob:    return "Mob";
-        case ECombatantType::NPC:    return "NPC";
-        default:                     return "Unknown";
-    }
-}
-
-static constexpr std::string_view ToString(ECombatantDifficulty d)
-{
-    switch (d) {
-        case ECombatantDifficulty::Normal:    return "Normal";
-        case ECombatantDifficulty::Boss:      return "Boss";
-        case ECombatantDifficulty::GroupMob:  return "GroupMob";
-        case ECombatantDifficulty::GroupBoss: return "GroupBoss";
-        case ECombatantDifficulty::RaidMob:   return "RaidMob";
-        case ECombatantDifficulty::RaidBoss:  return "RaidBoss";
-        default:                               return "Unknown";
-    }
-}
-
-static constexpr std::string_view ToString(ECombatantAttackType a)
-{
-    switch (a) {
-        case ECombatantAttackType::Ranged: return "Ranged";
-        case ECombatantAttackType::Melee:  return "Melee";
-        case ECombatantAttackType::Combi:  return "Combi";
-        case ECombatantAttackType::Healer: return "Healer";
-        default:                           return "Unknown";
-    }
-}
-
-static constexpr std::string_view ToString(ECondition c)
-{
-    switch (c) {
-        case ECondition::None:          return "None";
-        case ECondition::Wounded:       return "Wounded";
-        case ECondition::Burning:       return "Burning";
-        case ECondition::Poisoned:      return "Poisoned";
-        case ECondition::Mezzed:        return "Mezzed";
-        case ECondition::Defending:     return "Defending";
-        case ECondition::Fleeing:       return "Fleeing";
-        case ECondition::Incapacitated: return "Incapacitated";
-        default:                        return "Unknown";
-    }
-}
-
-static inline std::string ConditionsToString(const std::vector<ECondition>& conds)
-{
-    if (conds.empty()) return "[]";
-    std::ostringstream oss;
-    oss << "[";
-    for (size_t i = 0; i < conds.size(); ++i) {
-        if (i) oss << ",";
-        oss << ToString(conds[i]);
-    }
-    oss << "]";
-    return oss.str();
-}
 
 
 
