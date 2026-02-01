@@ -17,27 +17,19 @@
 
 enum class EGamePhase
 {
+    WaveCompleted,
     Running,
     GameOverPause
 };
-
-inline void DaraLog(const std::string area, const std::string& msg)
+// Example reward payload (expand as you like)
+struct MobRewards
 {
-    using namespace std::chrono;
+    int xpMin = 1, xpMax = 5;
+    int creditsMin = 1, creditsMax = 10;
+    float lootChance = 0.15f; // 15%
+    // You can add loot tables etc.
+};
 
-    const auto now = system_clock::now();
-    const std::time_t tt = system_clock::to_time_t(now);
-
-    std::tm tm{};
-#ifdef _WIN32
-    localtime_s(&tm, &tt);
-#else
-    localtime_r(&tt, &tm);
-#endif
-
-    std::cout << std::put_time(&tm, "%Y-%m-%d %H:%M:%S")
-              << " ["<<area << "] " << msg << std::endl;
-}
 
 
 class CombatDirector
@@ -112,11 +104,28 @@ public:
 
     void BuildSpawnInfoMsg(std::string mobname, std::string  difficulty, std::string attackType);
 
+    // loot
+    std::vector<std::shared_ptr<Combatant>> SnapshotPlayersLocked() const;
+    void MaybeGiveLoot(std::mt19937& rng, Combatant& player, const std::string& mobName);
+    MobRewards GetMobRewards(const Combatant& mob) const;
+    void RewardPlayersForMobDeath(
+        const std::vector<std::shared_ptr<Combatant>>& players,
+        const Combatant& mob,
+        const std::string& mobName);
+    // end loot
+
     EGamePhase GetPhase();
     bool CheckGameOverLocked(std::string& outReason);
     void ResetGameLocked();
 
 private:
+    int Wave=1;
+    int WaveMobsLeft=10;
+    int MobToSpawnInWave= 5;
+    int WaveWaitTurns=5;
+
+    void NewWave();
+
     // Thread loop
     void ResolverLoop();
 

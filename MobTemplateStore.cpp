@@ -29,6 +29,7 @@ bool MobTemplateStore::LoadFromFile(const std::string& path, std::string* err)
             t.mobClass    = m.at("mobClass").get<std::string>();
             t.attackType  = ParseAttackType(m.at("attackType").get<std::string>());
             t.difficulty  = ParseDifficulty(m.at("difficulty").get<std::string>());
+            t.wave        = m.at("wave").get<int>();
             t.maxHP       = m.at("maxHP").get<int>();
             t.maxEnergy   = m.at("maxEnergy").get<int>();
             t.maxMana     = m.at("maxMana").get<int>();
@@ -86,6 +87,53 @@ std::string MobTemplateStore::PickRandomMobId()
     std::uniform_int_distribution<size_t> dist(0, Keys.size() - 1);
     return Keys[dist(rng)];
 }
+
+std::string MobTemplateStore::PickRandomMobIdForWave(int wave)
+{
+    std::vector<std::string> waveKeys;
+
+    for (const auto& key : Keys)
+    {
+        auto it = Templates.find(key);
+        if (it == Templates.end())
+            continue;
+
+        if (it->second.wave == wave && it->second.difficulty==ECombatantDifficulty::Normal)
+        {
+            waveKeys.push_back(key);
+        }
+    }
+
+    if (waveKeys.empty())
+        return {};
+
+    std::uniform_int_distribution<size_t> dist(0, waveKeys.size() - 1);
+    return waveKeys[dist(rng)];
+}
+
+std::string MobTemplateStore::PickRandomBossForWave(int wave)
+{
+    std::vector<std::string> matches;
+
+    for (const auto& key : Keys)
+    {
+        auto it = Templates.find(key);
+        if (it == Templates.end())
+            continue;
+
+        if (it->second.wave == wave && it->second.difficulty == ECombatantDifficulty::Boss)
+        {
+            matches.push_back(key);
+        }
+    }
+
+    if (matches.empty())
+        return {};
+
+    std::uniform_int_distribution<size_t> dist(0, matches.size() - 1);
+    return matches[dist(rng)];
+}
+
 
 ECombatantAttackType MobTemplateStore::ParseAttackType(const std::string& s)
 {

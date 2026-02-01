@@ -85,7 +85,8 @@ UIState::json UIState::MobToJson(const Combatant& c)
     const json j = c.ToJson();
 
     json out;
-    out["id"] = GetStringOr(j, "name", c.GetName());
+    out["id"] = GetStringOr(j, "name", c.GetInstanceId());
+    out["displayName"] = GetStringOr(j, "displayname", c.GetName());
 
     // Lane/slot: from ToJson() if present, else fallback 0.
     // If you add getters, replace these two lines with:
@@ -137,6 +138,11 @@ UIState::json UIState::PartyMemberToJson(const Combatant& c)
 
     out["mn"]    = j.value("mana", c.GetMana());
     out["mnMax"] = j.value("maxMana", j.value("mnMax", c.GetMaxMana()));
+
+    out["potions"]= j.value("potions", c.GetPotionAmount());
+    out["level"]= j.value("level", c.GetLevel());
+    out["xp"]= j.value("xp", c.GetXP());
+    out["credits"]= j.value("credits", c.GetCredits());
 
     // Optional "active" flag (current player highlight etc.)
     out["active"] = j.value("active", c.GetActive());

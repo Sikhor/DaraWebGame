@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#05070b" />
+  <title>Dara – Help</title>
+
+  <style>
+    :root{
+      --border:#2a3340;
+      --bg:rgba(10,14,20,.9);
+      --text:#e6e6e6;
+      --muted:#9aa6b2;
+    }
+    body{
+      margin:0;
+      background:#05070b;
+      color:var(--text);
+      font-family:Arial,sans-serif;
+      padding:env(safe-area-inset-top) env(safe-area-inset-right)
+              env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    .wrap{
+      max-width:960px;
+      margin:0 auto;
+      padding:16px 14px 28px;
+    }
+    .topbar{
+      display:flex;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .pill{
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(12,16,30,.7);
+      color:var(--text);
+      text-decoration:none;
+      cursor:pointer;
+    }
+    .title{
+      font-size:22px;
+      margin:10px 0 6px;
+    }
+    .sub{
+      color:var(--muted);
+      margin-bottom:16px;
+    }
+    input[type="search"]{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.35);
+      color:var(--text);
+      margin-bottom:14px;
+    }
+    .spell{
+      display:flex;
+      gap:12px;
+      border:1px solid rgba(80,100,160,.18);
+      background:rgba(0,0,0,.25);
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:10px;
+    }
+    .spell img{
+      width:48px;
+      height:48px;
+      border-radius:8px;
+      background:#000;
+      border:1px solid rgba(120,140,200,.25);
+      flex-shrink:0;
+    }
+    .spell h3{
+      margin:0;
+      font-size:15px;
+      letter-spacing:.3px;
+    }
+    .cost{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:4px;
+    }
+    .desc{
+      line-height:1.35;
+      font-size:14px;
+    }
+    .tags{
+      margin-top:6px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .tag{
+      font-size:12px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(120,160,220,.25);
+      background:rgba(20,30,60,.25);
+      color:#c6f0ff;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="pill" href="index.html">← Login</a>
+    <a class="pill" href="game.html">↩ Game</a>
+  </div>
+
+  <div class="title">Dara – Spells & Actions</div>
+  <div class="sub">Reference for abilities, costs, and effects.</div>
+
+  <input id="q" type="search" placeholder="Search spells…" />
+
+  <div id="list"></div>
+
+</div>
+
+<script>
+/* ---------- MEDIA ---------- */
+const MEDIA = {
+  images: {
+    attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+    defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+    fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+    mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+    heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+    revive: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+    evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+    talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+    usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+    shoot: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+    dead: "https://gameinfo.daraempire.com/wp-content/uploads/Dead.png"
+  }
+};
+
+/* ---------- SPELL DATA ---------- */
+const SPELLS = [
+  { id:"attack", name:"Attack", cost:"Energy 10", desc:"Basic melee attack dealing reliable damage.", tags:["melee","damage"] },
+  { id:"defend", name:"Defend", cost:"Energy 10", desc:"Raises defenses and reduces incoming damage.", tags:["defense","buff"] },
+  { id:"fireball", name:"Fireball", cost:"Mana 10", desc:"Ranged fire spell. May apply Burning.", tags:["fire","ranged","damage"] },
+  { id:"mezmerize", name:"Mezmerize", cost:"Mana 10", desc:"Attempts to disable a target temporarily.", tags:["cc","control"] },
+  { id:"heal", name:"Heal", cost:"Mana 10", desc:"Restores HP to a friendly target.", tags:["heal","support"] },
+  { id:"revive", name:"Revive", cost:"Energy 10", desc:"Revives a fallen ally with low HP.", tags:["support"] },
+  { id:"evac", name:"Evac", cost:"Cost 0", desc:"Emergency extraction from combat.", tags:["escape"] },
+  { id:"talk", name:"Talk", cost:"Cost 0", desc:"Non-combat interaction.", tags:["social"] },
+  { id:"usepotion", name:"Use Potion", cost:"Cost 0", desc:"Consumes one potion to restore resources.", tags:["consumable"] },
+  { id:"shoot", name:"Shoot", cost:"Energy 10", desc:"Ranged physical attack.", tags:["ranged","damage"] }
+];
+
+const list = document.getElementById("list");
+const q = document.getElementById("q");
+
+function render(filter=""){
+  list.innerHTML="";
+  const f = filter.toLowerCase();
+  SPELLS.forEach(s=>{
+    const blob = (s.id+s.name+s.desc+s.cost+(s.tags||[]).join(" ")).toLowerCase();
+    if(f && !blob.includes(f)) return;
+
+    const el = document.createElement("div");
+    el.className="spell";
+    el.innerHTML = `
+      <img src="${MEDIA.images[s.id] || MEDIA.images.dead}" alt="${s.name}">
+      <div>
+        <h3>${s.name}</h3>
+        <div class="cost">${s.cost}</div>
+        <div class="desc">${s.desc}</div>
+        <div class="tags">
+          ${(s.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}
+        </div>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+q.addEventListener("input", ()=>render(q.value));
+render();
+</script>
+</body>
+</html>

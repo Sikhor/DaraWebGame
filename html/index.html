@@ -324,9 +324,14 @@
       <button id="btnResetLogin" class="reset-login-btn" type="button">
         Use other account
       </button>
+      <button class="reset-login-btn" type="button" onclick="openHelp()">
+        Help
+      </button>
     </div>
-  </div>
 
+
+</div>
+  
 
   <script>
     // ---------- GOOGLE BUTTON RENDER ----------
@@ -371,6 +376,11 @@
       }
     });
 
+    // Helper functions
+    function openHelp(){
+      window.open("help.html", "_blank", "noopener");
+    }
+    // end helper functions
 
     // ---------- SHOW GAME UI ----------
     function goToGame() {

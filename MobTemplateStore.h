@@ -21,6 +21,8 @@ public:
     // random picking
     bool Empty() const { return Keys.empty(); }
     std::string PickRandomMobId();
+    std::string PickRandomMobIdForWave(int wave);
+    std::string PickRandomBossForWave(int wave);
 
 private:
     struct MobTemplate {
@@ -29,6 +31,7 @@ private:
         std::string mobClass;
         ECombatantAttackType attackType;
         ECombatantDifficulty difficulty;
+        int wave;
         int maxHP;
         int maxEnergy;
         int maxMana;

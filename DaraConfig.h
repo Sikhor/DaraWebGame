@@ -28,5 +28,22 @@ inline constexpr std::string_view DARA_DEAD_AVATAR_PLAYER = "Death";
 inline constexpr std::string_view DARA_DEAD_AVATAR_MOB= "Death";
 inline constexpr std::string_view DARA_MOB_STORE= "mobs/mobdb.json";
 
+inline void DaraLog(const std::string area, const std::string& msg)
+{
+    using namespace std::chrono;
 
-inline constexpr float DARA_MOB_SPEED= 0.1f;
+    const auto now = system_clock::now();
+    const std::time_t tt = system_clock::to_time_t(now);
+
+    std::tm tm{};
+#ifdef _WIN32
+    localtime_s(&tm, &tt);
+#else
+    localtime_r(&tt, &tm);
+#endif
+
+    std::cout << std::put_time(&tm, "%Y-%m-%d %H:%M:%S")
+              << " ["<<area << "] " << msg << std::endl;
+}
+
+

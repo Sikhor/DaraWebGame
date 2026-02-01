@@ -108,10 +108,11 @@ void Combatant::CheckStats()
     HP= std::clamp(HP, 0.f, MAXHP);
     Mana= std::clamp(Mana, 0.f, MAXMANA);
     Energy= std::clamp(Energy, 0.f, MAXENERGY);
-    BaseDefense= std::clamp(BaseDefense, 0.f, 1000.f);
-    BaseDamage= std::clamp(BaseDamage, 0.f, 1000.f);
+    BaseDefense= std::clamp(BaseDefense, 0.f, 100000.f);
+    BaseDamage= std::clamp(BaseDamage, 0.f, 100000.f);
     MezzCounter= std::clamp(MezzCounter, 0, MEZZTURNS);
-
+    DamageModifier= std::clamp(DamageModifier, 0.f, 1000000.f);
+    DefenseModifier= std::clamp(DefenseModifier, 0.f, 1000000.f);
 }
 
 std::string Combatant::GetName() const
@@ -136,7 +137,7 @@ float Combatant::AttackMelee(CombatantPtr target)
 {
     float dmg= 0.f;
     if(!IsAlive())return dmg;
-    if(target->GetLane()<2)
+    if(target->GetLane()<= MAXLANES-2)
     {
         //std::cout << "TOOOO FAR" << std::endl;
         return dmg;
@@ -145,6 +146,7 @@ float Combatant::AttackMelee(CombatantPtr target)
     if (Energy > MELEECOST) {
         dmg = GetRandomDamage();
         ApplyRandomCost(Energy, MELEECOST, DEVIATION);
+        DaraLog("COMBAT", "Player: "+GetName()+ " attacks melee with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
         dmg-= target->GetCurrentDefense();
         target->ApplyDamage(dmg);
     }
@@ -156,9 +158,15 @@ float Combatant::AttackFireball(CombatantPtr target)
     float dmg= 0.f;
 
     if(!IsAlive())return dmg;
+    if(target->GetLane()<= MAXLANES-5){
+        //std::cout << "TOOOO FAR" << std::endl;
+        //return 0.f;
+    }
+
     if (Mana > SPELLCOST) {
         dmg = GetRandomDamage();
         ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
+        DaraLog("COMBAT", "Player: "+GetName()+ " attacks fireball with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
         dmg-= target->GetCurrentDefense();
         target->ApplyDamage(dmg);
     }
@@ -172,13 +180,14 @@ float Combatant::AttackShoot(CombatantPtr target)
     if(target->GetLane()>=2)
     {
         //std::cout << "TOOOO NEAR" << std::endl;
-        return dmg;
+        //return dmg;
     }
 
     if(!IsAlive())return dmg;
     if (Energy > SPELLCOST) {
         dmg = GetRandomDamage();
         ApplyRandomCost(Energy, SPELLCOST, DEVIATION);
+        DaraLog("COMBAT", "Player: "+GetName()+ " attacks shoot with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
         dmg-= target->GetCurrentDefense();
         target->ApplyDamage(dmg);
     }
@@ -475,4 +484,23 @@ void Combatant::DebugShort()
     // use your logger if you want:
     // DaraLog("COMBATANT", oss.str());
     std::cout << oss.str() << "\n";
+}
+
+
+void Combatant::AddXP(int amount)
+{
+    XP+=amount;
+    if(XP>XPPERLEVEL){
+        XP=0;
+        LevelUp();
+    }
+}
+void Combatant::LevelUp()
+{
+    Level+=1;
+    BaseDamage+=2;
+    BaseDefense+=2;
+    MaxHP+=20;
+    MaxEnergy+=20;
+    MaxMana+=20;
 }

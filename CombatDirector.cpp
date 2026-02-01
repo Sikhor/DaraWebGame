@@ -7,6 +7,18 @@
 
 extern MobTemplateStore g_mobTemplates;
 
+static int RandInt(std::mt19937& rng, int a, int b)
+{
+    std::uniform_int_distribution<int> dist(a, b);
+    return dist(rng);
+}
+static float Rand01(std::mt19937& rng)
+{
+    std::uniform_real_distribution<float> dist(0.f, 1.f);
+    return dist(rng);
+}
+
+
 int RandSlot()
 {
     static thread_local std::mt19937 rng{ std::random_device{}() };
@@ -105,8 +117,8 @@ json CombatDirector::GetPlayerStateJson(const std::string& playerName) const
     out["energyPct"]  = p->GetEnergyPct();
     out["manaPct"]    = p->GetManaPct();
     out["level"]      = p->GetLevel();
-    out["experience"] = p->GetExperience();
-    out["gold"]       = p->GetGold();
+    out["xp"] = p->GetXP();
+    out["credits"]       = p->GetCredits();
     return out;
 }
 
@@ -330,7 +342,11 @@ CombatDirector::json CombatDirector::GetStateSnapshotJson(size_t lastLogLines) c
     out["mobs"] = SerializeMobsLocked();
 
     // Game Over handling
-    out["phase"] = (Phase == EGamePhase::Running) ? "running" : "gameover";
+    if (Phase==EGamePhase::WaveCompleted){
+        out["phase"] = "wavecompleted"    ;
+    }else{
+        out["phase"] = (Phase == EGamePhase::Running) ? "running" : "gameover";
+    }
     out["gameOverReason"] = GameOverReason;
 
     if (Phase == EGamePhase::GameOverPause)
@@ -551,7 +567,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
     std::string logMsg;
     for (const auto& a : actions)
     {
-        DaraLog("DEBUG", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
+        //DaraLog("DEBUG", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
         outTurnLog.push_back(a.playerName + " does: " + a.actionId + " (" + a.actionMsg + ")");
             std::string logMsg;
 
@@ -649,30 +665,146 @@ void CombatDirector::ApplyAiResults(const json& aiJson,
     }
 }
 
+
+// Snapshot players ONCE.
+std::vector<std::shared_ptr<Combatant>> CombatDirector::SnapshotPlayersLocked() const
+{
+    std::vector<std::shared_ptr<Combatant>> out;
+    out.reserve(Players.size());
+    for (auto const& [name, p] : Players)
+        if (p) out.push_back(p);
+    return out;
+}
+
+// Your “loot roll” placeholder
+void CombatDirector::MaybeGiveLoot(std::mt19937& rng, Combatant& player, const std::string& mobName)
+{
+    // Example: 1 random “token”
+    // Replace with your loot table logic
+    (void)mobName;
+    player.AddPotion(1);
+    // player.AddItem("SomeLootId", 1);
+}
+
+MobRewards CombatDirector::GetMobRewards(const Combatant& mob) const
+{
+    MobRewards r;
+    // Tune by difficulty/level/etc:
+    // if (mob.GetDifficulty() == Boss) { ... }
+    return r;
+}
+
+void CombatDirector::RewardPlayersForMobDeath(
+    const std::vector<std::shared_ptr<Combatant>>& players,
+    const Combatant& mob,
+    const std::string& mobName)
+{
+    // Thread-local RNG
+    static thread_local std::mt19937 rng{ std::random_device{}() };
+
+    const MobRewards r = GetMobRewards(mob);
+
+    for (auto const& pptr : players)
+    {
+        if (!pptr) continue;
+        Combatant& p = *pptr;
+
+        // If you have “online / logged in” markers, check them here.
+        // if (!p.IsOnline()) continue;
+
+        const int xp = RandInt(rng, r.xpMin, r.xpMax);
+        const int credits = RandInt(rng, r.creditsMin, r.creditsMax);
+
+        p.AddXP(xp);
+        p.AddCredits(credits);
+
+        if (Rand01(rng) < r.lootChance)
+            MaybeGiveLoot(rng, p, mobName);
+    }
+}
+
 void CombatDirector::ResolveDeadMobs()
 {
-    bool isDeleteAllMobs= false;
-    
-    if (Players.empty()) {
-        isDeleteAllMobs= true;
+    bool deleteAll = false;
+
+    if (Players.empty())
+    {
+        deleteAll = true;
         DaraLog("INFO", "Players map is empty");
     }
-      for (auto it = Mobs.begin(); it != Mobs.end(); )
-    {
-        const auto& mobName = it->first;
-        const auto& mob = it->second;
 
-        if(mob->GetAvatarId()=="Dead" || isDeleteAllMobs){
-            it = Mobs.erase(it);     // <- korrekt: erase gibt nächsten Iterator zurück
+    // 1) collect “just died” mobs
+    std::vector<std::pair<std::string, std::shared_ptr<Combatant>>> justDied;
+    justDied.reserve(8);
+
+    for (auto it = Mobs.begin(); it != Mobs.end(); )
+    {
+        const std::string mobName = it->first;
+        std::shared_ptr<Combatant> mob = it->second;
+
+        if (!mob)
+        {
+            it = Mobs.erase(it);
             continue;
         }
-        if (!mob || !mob->IsAlive())
+
+        // remove already-marked corpses or deleteAll
+        if (deleteAll || mob->GetAvatarId() == "Dead")
         {
-            mob->SetAvatarId("Dead");
+            it = Mobs.erase(it);
+            continue;
+        }
+
+        // newly dead this turn
+        if (!mob->IsAlive())
+        {
+            mob->SetAvatarId("Dead");     // mark it
+            justDied.emplace_back(mobName, mob);
             ++it;
             continue;
         }
+
         ++it;
+    }
+
+    // 2) reward only if something died this turn
+    if (!justDied.empty())
+    {
+        const auto playersSnap = SnapshotPlayersLocked();
+
+        for (auto const& [mobName, mob] : justDied)
+        {
+            if (!mob) continue;
+            RewardPlayersForMobDeath(playersSnap, *mob, mobName);
+        }
+    }
+
+    // 3) IMPORTANT: wave completion check must run EVERY turn
+    bool anyAlive = false;
+    for (auto const& [id, mob] : Mobs)
+    {
+        if (mob && mob->IsAlive()) { anyAlive = true; break; }
+    }
+
+    if (!anyAlive && MobToSpawnInWave <= 0)
+    {
+        NewWave(); // now it will be called each turn while waiting
+    }
+}
+
+
+void CombatDirector::NewWave()
+{
+    DaraLog("TURN", "Wave over ... waiting "+std::to_string(WaveWaitTurns));
+    if (WaveWaitTurns <= 0) WaveWaitTurns = 5;
+
+    Phase = EGamePhase::WaveCompleted;
+    WaveWaitTurns--;
+
+    if (WaveWaitTurns <= 0) {
+        Wave++;
+        Phase = EGamePhase::Running;
+        MobToSpawnInWave = Wave + static_cast<int>(GetRandomFloat(5.f,10.f));
     }
 }
 
@@ -710,35 +842,59 @@ void CombatDirector::BuildSpawnInfoMsg(std::string mobName, std::string  difficu
 {
     InfoMsg= mobName+ " spawned. Danger Level: "+difficulty+" Attck Type:"+attackType;
 }
-void CombatDirector::SpawnMob(const std::string& mobId, int lane, int slot)
+
+static std::string MakeMobInstanceId(const std::string& templateId)
 {
-    if (mobId.empty()) return;
+    std::string uuid = GenerateUUID();           // you already have this
+    return templateId + "-" + uuid.substr(0, 4); // short but unique enough for UI
+}
+
+void CombatDirector::SpawnMob(const std::string& templateId, int lane, int slot)
+{
+    if (templateId.empty()) return;
 
     // IMPORTANT: assume CacheMutex already held by caller (ResolveMobs)
-    auto it = Mobs.find(mobId);
-    if (it != Mobs.end())
-        return;
 
-    // Create instance from template
-    auto mob = g_mobTemplates.CreateMobInstancePtr(mobId, lane, slot);
-    //mob->DebugShort();
+    // Create instance from template (still using templateId to look up stats)
+    auto mob = g_mobTemplates.CreateMobInstancePtr(templateId, lane, slot);
+    if (!mob) return;
+
+    // Assign instance id to the mob itself (add field + setter if missing)
+    const std::string instanceId = MakeMobInstanceId(templateId);
+    mob->SetInstanceId(instanceId);        // you add this
+    mob->SetTemplateId(templateId);        // optional but very useful
+
     BuildSpawnInfoMsg(mob->GetName(), mob->GetDifficulty(), mob->GetAttackType());
 
-    Mobs.emplace(mobId, std::move(mob));
+    // Use instanceId as map key (no collision)
+    Mobs.emplace(instanceId, std::move(mob));
 }
 
 
 void CombatDirector::ResolveSpawnMobs()
 {
-    static int MobNumber=0;
+    if (Phase == EGamePhase::WaveCompleted) return;
+    if (Phase != EGamePhase::Running) return; // optional guard
+    
     int slot= RandSlot();
     
     GetFilledSlotArray();
-    DaraLog("TURN", "Turn: "+std::to_string(CurrentTurnId));
-    if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty()){
-        const std::string mobId = g_mobTemplates.PickRandomMobId();
-        if (mobId.empty()) throw std::runtime_error("No mob templates loaded");
-            SpawnMob(mobId, 0, slot);
+    DaraLog("TURN", "Wave: " + std::to_string(Wave)+ " Turn: "+std::to_string(CurrentTurnId));
+
+    if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
+        std::string mobId;
+        if (MobToSpawnInWave <= 1) {
+            mobId = g_mobTemplates.PickRandomBossForWave(Wave);
+        }else{
+            mobId = g_mobTemplates.PickRandomMobIdForWave(Wave);
+        }
+        MobToSpawnInWave--;
+        if (mobId.empty()) {
+            //throw std::runtime_error("No mob templates loaded");
+            mobId = g_mobTemplates.PickRandomMobId();
+            DaraLog("TURN", "End of possible mob waves... you should add more");
+        }
+        SpawnMob(mobId, 0, slot);
 
     }
 }
@@ -898,7 +1054,15 @@ json CombatDirector::GetUIStateSnapshotJsonLocked() const
     const bool isGameOver = (Phase == EGamePhase::GameOverPause);
 
     uiJson["turnId"] = CurrentTurnId;                       // optional, but handy
-    uiJson["phase"]  = isGameOver ? "gameover" : "running"; // what the UI checks
+    uiJson["wave"] = Wave;                       // shall be something for client
+    uiJson["waveMobsLeft"] = MobToSpawnInWave;                       // shall be something for client
+    // Game Over handling
+    if (Phase==EGamePhase::WaveCompleted){
+        uiJson["phase"] = "wavecompleted";
+    }else{
+        uiJson["phase"] = (Phase == EGamePhase::Running) ? "running" : "gameover";
+    }
+
     uiJson["gameOverReason"] = GameOverReason;
     uiJson["infoMsg"]= InfoMsg;
 

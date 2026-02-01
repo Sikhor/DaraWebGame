@@ -20,10 +20,6 @@
     --text: #e6e6e6;
     --muted: #9aa6b2;
 
-    --laneLong: rgba(60,120,255,0.18);
-    --laneMid:  rgba(255,160,60,0.18);
-    --laneMelee:rgba(255,60,60,0.18);
-
     --slotSize: 58px;
     --topbarH: 50px;
 
@@ -142,7 +138,7 @@
   .encounterPanel .lanes{ padding: 10px; overflow:hidden; min-height:0; height:100%; }
 
   /* =========================
-     BATTLEFIELD SCENE (replaces lanes)
+     BATTLEFIELD SCENE
      ========================= */
   .scene{
     position: relative;
@@ -216,16 +212,19 @@
   .battlefield{
     position:absolute;
     inset:0;
-    pointer-events:none; /* cards re-enable on wrappers */
-    z-index: 2;          /* under fog (3), over background */
+    pointer-events:none; /* wrappers re-enable */
+    z-index: 2;
   }
 
-  /* Mob wrapper that is positioned by x/y */
+  /* Mob wrapper positioned by x/y */
   .mobAbs{
     position:absolute;
     left: 0;
     top: 0;
-    transform: translate3d(0,0,0);
+
+    /* IMPORTANT: this makes movements smooth without recreating DOM */
+    transition: left 120ms linear, top 120ms linear, transform 120ms linear;
+
     pointer-events:auto;
     transform-origin: 50% 90%;
   }
@@ -246,8 +245,6 @@
     --bobT: 3.6s;
     animation: mobBob var(--bobT) ease-in-out infinite;
   }
-
-  /* “alive” bob */
   .mobCard.t1{ animation-delay: -0.3s; }
   .mobCard.t2{ animation-delay: -1.1s; }
   .mobCard.t3{ animation-delay: -2.0s; }
@@ -275,7 +272,7 @@
     50%     { opacity:1.00; filter: blur(0.2px); }
   }
 
-  /* Selected mob marker */
+  /* Selected marker */
   .mobCard.selected{
     border-color: rgba(120,200,255,0.70) !important;
     box-shadow:
@@ -300,6 +297,7 @@
     opacity: 0.95;
     pointer-events:none;
   }
+
   .mobCard .targetTag{
     position:absolute;
     top: 6px;
@@ -317,13 +315,13 @@
   }
   .mobCard.selected .targetTag{ display:block; }
 
-  /* contents */
   .mob{
     position:absolute;
     inset:0;
     display:grid;
     place-items:center;
   }
+
   .hpBar{
     position:absolute;
     left:10%;
@@ -385,10 +383,10 @@
 
   /* reduced motion */
   @media (prefers-reduced-motion: reduce){
-    .scene::before, .fog, .fog.f2, .mobCard{ animation:none !important; }
+    .scene::before, .fog, .fog.f2, .mobCard, .mobAbs{ animation:none !important; transition:none !important; }
   }
 
-  /* ---------- Info Marquee ---------- */
+  /* ---------- Info (non-moving, like your last state) ---------- */
   .infoMarquee{
     position: relative;
     height: 34px;
@@ -421,24 +419,14 @@
     background: linear-gradient(270deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
   }
   .infoTrack{ width:100%; overflow:hidden; white-space:nowrap; }
-  .infoInner{ display:inline-flex; align-items:center; gap:28px; will-change: transform; }
+  .infoInner{ display:inline-flex; align-items:center; gap:28px; }
   .infoText{
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.3px;
     color: rgba(255,255,255,0.86);
   }
-  .infoMarquee.scrolling .infoInner{
-    animation: infoScroll linear infinite;
-    animation-duration: var(--infoDur, 10s);
-  }
-  @keyframes infoScroll{
-    from { transform: translate3d(0,0,0); }
-    to   { transform: translate3d(calc(-1 * var(--infoShift, 200px)),0,0); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .infoMarquee.scrolling .infoInner{ animation: none !important; }
-  }
+  .infoMarquee.scrolling .infoInner{ animation: none !important; }
 
   /* ---------- PARTY ---------- */
   .pRow.selected{
@@ -544,12 +532,28 @@
   .pBar.en > div{ background: linear-gradient(90deg, rgba(120,200,255,0.95), rgba(80,150,255,0.85)); }
   .pBar.mn > div{ background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(120,80,255,0.85)); }
 
-  /* highlight damaged party row */
   .pRow.damaged{
     box-shadow: 0 0 0 2px rgba(255,80,80,0.55);
     background: rgba(255,60,60,0.10);
     transition: box-shadow 180ms ease, background 180ms ease;
   }
+
+  /* --- Level badge in party list --- */
+.lvlBadge{
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.90);
+  white-space: nowrap;
+}
+
+/* --- XP bar style (purple-ish) --- */
+.pBar.xp > div{
+  background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(255,210,120,0.90));
+}
 
   /* ---------- BOTTOM HUD ---------- */
   .hud{
@@ -636,6 +640,35 @@
   .action-btn:hover{ filter: brightness(1.15); }
   .action-btn:active{ transform: translateY(1px); }
 
+  .action-btn.disabled{
+    opacity: 0.45;
+    filter: grayscale(0.85);
+    pointer-events: none;
+  }
+
+  /* ===== ACTION BUTTON COUNTER ===== */
+  .action-btn .count{
+    position: absolute;
+    inset: 0;
+    display: none;                 /* hidden by default */
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 16px;
+    color: #fff;
+    text-shadow:
+      0 0 6px rgba(0,0,0,0.9),
+      0 0 12px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* slightly smaller on mobile */
+  @media (max-width: 900px){
+    .action-btn .count{ font-size: 14px; }
+  }
+
+
   /* Cooldown overlay */
   .cd-overlay{
     position: absolute;
@@ -669,7 +702,6 @@
   @media (max-width: 900px){
     :root{
       --gap: 8px;
-      --slotSize: 52px;
       --sceneMinH: 240px;
       --mobCardSize: 58px;
       --mobImgSize: 36px;
@@ -696,7 +728,6 @@
   }
 
   @media (max-width: 420px){
-    :root{ --slotSize: 48px; }
     .actions{ grid-template-columns: repeat(5, 40px); }
     .action-btn{ width: 40px; height: 40px; }
     .action-btn img{ width: 24px; height: 24px; }
@@ -724,7 +755,6 @@
   @media (orientation: landscape) and (max-width: 1024px){
     :root{
       --gap: 6px;
-      --slotSize: 40px;
       --sceneMinH: 220px;
       --mobCardSize: 58px;
       --mobImgSize: 32px;
@@ -804,6 +834,44 @@
     opacity: 0.85;
   }
   body.locked #gameOverOverlay button{ pointer-events: auto; }
+  /* ===== WAVE COMPLETED OVERLAY ===== */
+  #waveOverlay{
+    position: fixed;
+    inset: 0;
+    z-index: 99995;          /* below gameOver (99998) but above everything else */
+    display: grid;
+    place-items: center;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(2px);
+    pointer-events: none;    /* allow UI to still be used if you want */
+  }
+
+  #waveOverlay.hidden{ display:none; }
+
+  .waveCard{
+    width: min(560px, 92vw);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(0,0,0,0.55);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .waveTitle{
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    font-size: 20px;
+  }
+
+  .waveSub{
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.78);
+  }
+
+
+
 
   /* ===== DAMAGE FEEDBACK ===== */
   #hitFlash{
@@ -859,13 +927,35 @@
     letter-spacing: 0.3px;
     opacity: 0;
     transform: translateY(-6px);
-    animation: toastInOut 1600ms ease forwards;
+    animation: toastInOut 1800ms ease forwards;
   }
   @keyframes toastInOut{
     0%   { opacity:0; transform: translateY(-10px); }
     10%  { opacity:1; transform: translateY(0px); }
     80%  { opacity:1; transform: translateY(0px); }
     100% { opacity:0; transform: translateY(-10px); }
+  }
+
+  /* ===== TOAST VARIANTS ===== */
+  .lootToast.toastError{
+    border-color: rgba(255,80,80,0.45);
+    background: rgba(80,10,10,0.70);
+    box-shadow: 0 18px 48px rgba(0,0,0,0.55), 0 0 24px rgba(255,80,80,0.10);
+  }
+
+  .lootToast.toastWarn{
+    border-color: rgba(255,190,80,0.45);
+    background: rgba(80,50,10,0.65);
+  }
+
+  .lootToast.toastInfo{
+    border-color: rgba(120,200,255,0.35);
+    background: rgba(10,25,45,0.60);
+  }
+  .lootToast.toastSuccess{
+  border-color: rgba(80,255,140,0.40);
+  background: rgba(10,70,30,0.65);
+  box-shadow: 0 18px 48px rgba(0,0,0,0.55), 0 0 24px rgba(80,255,140,0.10);
   }
 </style>
 </head>
@@ -886,10 +976,12 @@
     <div class="title">
       <span>Marina Station: Last Stand</span>
       <span class="badge" id="playerBadge">Player: (loading…)</span>
+      <span class="badge" id="waveBadge">Wave: 1</span>
       <span class="badge" id="turnBadge">Turn: 1</span>
     </div>
     <div class="topbarRight">
       <span class="badge" id="gameBadge">Game: 0</span>
+      <button id="btnHelp" class="top-btn" type="button">Help</button>
       <button class="btnTop" id="btnLogout" title="Logout">Logout</button>
     </div>
   </div>
@@ -904,7 +996,7 @@
         <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
           <input id="actionTarget" class="target-input" placeholder="Target" />
 
-          <!-- Rolling info message -->
+          <!-- Rolling info message (currently static) -->
           <div id="infoMarquee" class="infoMarquee" title="">
             <div class="infoTrack">
               <div class="infoInner" id="infoInner">
@@ -919,7 +1011,7 @@
         </div>
       </div>
 
-      <!-- IMPORTANT: lanes container stays, but contains battlefield scene now -->
+      <!-- Container stays the same, but we render the battlefield scene into it -->
       <div class="lanes" id="lanes"></div>
     </div>
 
@@ -949,861 +1041,1319 @@
 <div id="lootToastHost"></div>
 
 <script>
-  /* =========================
-     Globals
-     ========================= */
-  let ENABLE_SHAKE = false;
-  let ENABLE_HIT_FLASH = false;
-  let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80");
+/* ======================================================================
+   GLOBALS (BEGIN)
+   ====================================================================== */
+let ENABLE_SHAKE = false;
+let ENABLE_HIT_FLASH = false;
+let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80");
 
-  const mobDom = new Map(); // id -> { wrap, card, img, hpFill }
+/* Keep dead mobs visible briefly (even if server removes them) */
+const deadFx = new Map(); // id -> { untilMs, lastMob }
+const DEAD_STAY_MS = 2200;
 
-  /* =========================
-     AUTH + STORAGE
-     ========================= */
-  const LOGIN_PAGE = "index.html";
+/* IMPORTANT: DOM cache => prevents flicker (no re-create each tick) */
+const mobDom = new Map(); // id -> { wrap, card, img, hpFill, targetTag, avatarFallback }
 
-  function getToken() { return localStorage.getItem("sessionToken") || ""; }
-  function getPlayerName() { return localStorage.getItem("playerName") || ""; }
-  function getGameId(){ return localStorage.getItem("gameId") || "0"; }
+/* ======================================================================
+   GLOBALS (END)
+   ====================================================================== */
 
-  function authHeaders(extra = {}) {
-    const t = getToken();
-    if (!t) return extra;
-    return { ...extra, "Authorization": "Bearer " + t };
-  }
-  function requireAuthOrRedirect() {
-    const t = getToken();
-    if (!t) window.location.href = LOGIN_PAGE;
-  }
 
-  // Dead FX cache
-  const deadFx = new Map(); // id -> { untilMs, lastMob }
-  const DEAD_STAY_MS = 2200;
+/* ======================================================================
+   AUTH + STORAGE (BEGIN)
+   ====================================================================== */
+const LOGIN_PAGE = "index.html";
 
-  ENABLE_HIT_FLASH = (localStorage.getItem("enableHitFlash") ?? "0") === "1";
-  ENABLE_SHAKE = (localStorage.getItem("enableShake") ?? "1") === "1";
+function getToken() { return localStorage.getItem("sessionToken") || ""; }           // (END getToken)
+function getPlayerName() { return localStorage.getItem("playerName") || ""; }       // (END getPlayerName)
+function getGameId(){ return localStorage.getItem("gameId") || "0"; }               // (END getGameId)
 
-  function updateShakeBtn(){
-    const b = document.getElementById("btnShake");
-    if (!b) return;
-    b.textContent = "Shake: " + (ENABLE_SHAKE ? "ON" : "OFF");
-  }
-  document.getElementById("btnShake")?.addEventListener("click", () => {
-    ENABLE_SHAKE = !ENABLE_SHAKE;
-    localStorage.setItem("enableShake", ENABLE_SHAKE ? "1" : "0");
-    updateShakeBtn();
-  });
+function authHeaders(extra = {}) {
+  const t = getToken();
+  if (!t) return extra;
+  return { ...extra, "Authorization": "Bearer " + t };
+} // (END authHeaders)
+
+function requireAuthOrRedirect() {
+  const t = getToken();
+  if (!t) window.location.href = LOGIN_PAGE;
+} // (END requireAuthOrRedirect)
+
+/* Load preferences */
+ENABLE_HIT_FLASH = (localStorage.getItem("enableHitFlash") ?? "0") === "1";
+ENABLE_SHAKE = (localStorage.getItem("enableShake") ?? "1") === "1";
+
+function updateShakeBtn(){
+  const b = document.getElementById("btnShake");
+  if (!b) return;
+  b.textContent = "Shake: " + (ENABLE_SHAKE ? "ON" : "OFF");
+} // (END updateShakeBtn)
+
+document.getElementById("btnShake")?.addEventListener("click", () => {
+  ENABLE_SHAKE = !ENABLE_SHAKE;
+  localStorage.setItem("enableShake", ENABLE_SHAKE ? "1" : "0");
   updateShakeBtn();
+});
+updateShakeBtn();
 
-  async function doLogout() {
-    const token = getToken();
-    try {
-      document.getElementById("btnLogout")?.setAttribute("disabled", "disabled");
-      document.getElementById("btnLogoutParty")?.setAttribute("disabled", "disabled");
-    } catch (e) {}
+async function doLogout() {
+  const token = getToken();
+  try {
+    document.getElementById("btnLogout")?.setAttribute("disabled", "disabled");
+    document.getElementById("btnLogoutParty")?.setAttribute("disabled", "disabled");
+  } catch (e) {}
 
-    const clearLocal = () => {
-      localStorage.removeItem("sessionToken");
-      localStorage.removeItem("playerName");
-      localStorage.removeItem("gameId");
-    };
-
-    if (!token) {
-      clearLocal();
-      window.location.href = LOGIN_PAGE;
-      return;
-    }
-
-    try {
-      const res = await fetch(LOGOUT_URL, {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ gameId: String(getGameId()) })
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        console.warn("Logout not OK:", res.status, txt);
-      }
-    } catch (e) {
-      console.warn("Logout request failed (network):", e);
-    } finally {
-      clearLocal();
-      window.location.href = LOGIN_PAGE;
-    }
-  }
-
-  document.getElementById("btnLogout").addEventListener("click", doLogout);
-  document.getElementById("btnLogoutParty")?.addEventListener("click", doLogout);
-
-  requireAuthOrRedirect();
-
-  /* =========================
-     API ENDPOINTS
-     ========================= */
-  const ACTION_URL = "/api/v001/darawebgame/action";
-  const STATE_URL  = "/api/v001/darawebgame/state";
-  const LOGOUT_URL = "/api/v001/darawebgame/auth/logout";
-
-  /* =========================
-     MEDIA ICONS + HUD ACTIONS
-     ========================= */
-  const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
-  const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
-  const IMG_EXT = ".png";
-
-  const MEDIA = {
-    images: {
-      attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
-      defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
-      fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
-      mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
-      heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
-      revive: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
-      evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
-      talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
-      usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
-      shoot: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
-      dead: "https://gameinfo.daraempire.com/wp-content/uploads/Dead.png",
-    }
+  const clearLocal = () => {
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("playerName");
+    localStorage.removeItem("gameId");
   };
 
-  const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
-  const ACTION_SOUNDS = {
-    attack:   new Audio(SOUND_BASE+"Attack.wav"),
-    fireball: new Audio(SOUND_BASE+"Fireball.wav"),
-    heal:     new Audio(SOUND_BASE+"Heal.wav"),
-    defend:   new Audio(SOUND_BASE+"Defense.wav"),
-    mezmerize:new Audio(SOUND_BASE+"Mez.wav"),
-    revive:   new Audio(SOUND_BASE+"Revive.wav"),
-    evac:     new Audio(SOUND_BASE+"Evac.wav"),
-    talk:     new Audio(SOUND_BASE+"Talk.wav"),
-    usepotion:new Audio(SOUND_BASE+"Potion.wav"),
-    shoot:    new Audio(SOUND_BASE+"LaserGun1.wav"),
-    mobdeath: new Audio(SOUND_BASE+"MobDeath.wav"),
-    gameover: new Audio(SOUND_BASE+"GameOverSciFi.wav"),
-    hit1: new Audio(SOUND_BASE+"PlayerHit1.wav"),
-    hit2: new Audio(SOUND_BASE+"PlayerHit2.wav"),
-    hit3: new Audio(SOUND_BASE+"PlayerHit3.wav"),
-  };
-
-  function playSound(key){
-    const snd = ACTION_SOUNDS[key];
-    if(!snd) return;
-    try{
-      snd.pause();
-      snd.currentTime = 0;
-      snd.play().catch(()=>{});
-    }catch(e){}
+  if (!token) {
+    clearLocal();
+    window.location.href = LOGIN_PAGE;
+    return;
   }
+  resetPlayerStatTracking();
+  try {
+    const res = await fetch(LOGOUT_URL, {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ gameId: String(getGameId()) })
+    });
 
-  let lastHitSoundAt = 0;
-  function playRandomHitSound(){
-    const now = performance.now();
-    if (now - lastHitSoundAt < 180) return;
-    lastHitSoundAt = now;
-    const hits = ["hit1", "hit2", "hit3"];
-    playSound(hits[Math.floor(Math.random() * hits.length)]);
-  }
-
-  const ACTIONS = [
-    { id: "attack",     label: "Attack",   cd: 2  },
-    { id: "defend",     label: "Defend",   cd: 3  },
-    { id: "fireball",   label: "Fireball", cd: 5  },
-    { id: "heal",       label: "Heal",     cd: 6  },
-    { id: "mezmerize",  label: "Mez",      cd: 8  },
-    { id: "shoot",      label: "Shoot",    cd: 1  },
-    { id: "usepotion",  label: "Potion",   cd: 10 },
-    { id: "talk",       label: "Talk",     cd: 1  },
-    { id: "revive",     label: "Revive",   cd: 12 },
-    { id: "evac",       label: "Evac",     cd: 20 },
-  ];
-
-  const actionsEl = document.getElementById("actions");
-  const actionTargetEl = document.getElementById("actionTarget");
-  const actionMsgEl = document.getElementById("actionMsg");
-
-  function getActionTarget(){ return (actionTargetEl.value || "").trim(); }
-  function getActionMsg(){ return (actionMsgEl.value || "").trim(); }
-
-  /* Cooldown state */
-  const cooldownUntil = new Map();
-  function nowMs(){ return Date.now(); }
-  function startCooldown(actionId, seconds){
-    cooldownUntil.set(actionId, nowMs() + seconds * 1000);
-  }
-  function getRemaining(actionId){
-    const until = cooldownUntil.get(actionId) || 0;
-    return Math.max(0, until - nowMs());
-  }
-
-  function setButtonCooldownUI(btn, remainingMs, totalMs){
-    const timeEl = btn.querySelector(".cd-time");
-    const fill = btn.querySelector(".cd-fill");
-
-    if (remainingMs <= 0) {
-      btn.classList.remove("cooldown");
-      if (timeEl) timeEl.textContent = "";
-      if (fill) fill.style.transform = "translateY(100%)";
-      return;
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.warn("Logout not OK:", res.status, txt);
     }
+  } catch (e) {
+    console.warn("Logout request failed (network):", e);
+  } finally {
+    clearLocal();
+    window.location.href = LOGIN_PAGE;
+  }
+} // (END doLogout)
 
-    btn.classList.add("cooldown");
-    const sec = Math.ceil(remainingMs / 1000);
-    if (timeEl) timeEl.textContent = String(sec);
+document.getElementById("btnLogout").addEventListener("click", doLogout);
+document.getElementById("btnLogoutParty")?.addEventListener("click", doLogout);
 
-    const pct = (remainingMs / totalMs) * 100;
-    const y = 100 - pct;
-    if (fill) fill.style.transform = `translateY(${y}%)`;
+requireAuthOrRedirect();
+/* ======================================================================
+   AUTH + STORAGE (END)
+   ====================================================================== */
+
+
+/* ======================================================================
+   API ENDPOINTS (BEGIN)
+   ====================================================================== */
+const ACTION_URL = "/api/v001/darawebgame/action";
+const STATE_URL  = "/api/v001/darawebgame/state";
+const LOGOUT_URL = "/api/v001/darawebgame/auth/logout";
+/* ======================================================================
+   API ENDPOINTS (END)
+   ====================================================================== */
+
+
+/* ======================================================================
+   MEDIA + ACTIONS (BEGIN)
+   ====================================================================== */
+const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
+const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
+const IMG_EXT = ".png";
+const ACTION_COSTS = {
+  attack:     { res: "en", cost: 10 },
+  defend:     { res: "en", cost: 10 },
+  fireball:   { res: "mn", cost: 10 },
+  heal:       { res: "mn", cost: 10 },
+  mezmerize:  { res: "mn", cost: 10 },
+  shoot:      { res: "en", cost: 10 },
+  usepotion:  { res: null, cost: 0  },
+  talk:       { res: null, cost: 0  },
+  revive:     { res: "mn", cost: 10 },   // or "en" if you want
+  evac:       { res: null, cost: 0  }
+};
+const MEDIA = {
+  images: {
+    attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
+    defend: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellShieldDefense-150x150.png",
+    fireball: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Fireball-150x150.png",
+    mezmerize: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellMezmerize-150x150.png",
+    heal: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PetComeToMe-150x150.png",
+    revive: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/SpellBuffConstitution-150x150.png",
+    evac: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/ModeratorEvac-150x150.png",
+    talk: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/RenameMe-150x150.png",
+    usepotion: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/PotionManaExpert-150x150.png",
+    shoot: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/Hitscan-150x150.png",
+    dead: "https://gameinfo.daraempire.com/wp-content/uploads/Dead.png",
+  }
+};
+
+const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
+const ACTION_SOUNDS = {
+  attack:   new Audio(SOUND_BASE+"Attack.wav"),
+  fireball: new Audio(SOUND_BASE+"Fireball.wav"),
+  heal:     new Audio(SOUND_BASE+"Heal.wav"),
+  defend:   new Audio(SOUND_BASE+"Defense.wav"),
+  mezmerize:new Audio(SOUND_BASE+"Mez.wav"),
+  revive:   new Audio(SOUND_BASE+"Revive.wav"),
+  evac:     new Audio(SOUND_BASE+"Evac.wav"),
+  talk:     new Audio(SOUND_BASE+"Talk.wav"),
+  usepotion:new Audio(SOUND_BASE+"Potion.wav"),
+  shoot:    new Audio(SOUND_BASE+"LaserGun1.wav"),
+  mobdeath: new Audio(SOUND_BASE+"MobDeath.wav"),
+  gameover: new Audio(SOUND_BASE+"GameOverSciFi.wav"),
+  hit1: new Audio(SOUND_BASE+"PlayerHit1.wav"),
+  hit2: new Audio(SOUND_BASE+"PlayerHit2.wav"),
+  hit3: new Audio(SOUND_BASE+"PlayerHit3.wav"),
+};
+
+function playSound(key){
+  const snd = ACTION_SOUNDS[key];
+  if(!snd) return;
+  try{
+    snd.pause();
+    snd.currentTime = 0;
+    snd.play().catch(()=>{});
+  }catch(e){}
+} // (END playSound)
+
+let lastHitSoundAt = 0;
+function playRandomHitSound(){
+  const now = performance.now();
+  if (now - lastHitSoundAt < 180) return;
+  lastHitSoundAt = now;
+  const hits = ["hit1", "hit2", "hit3"];
+  playSound(hits[Math.floor(Math.random() * hits.length)]);
+} // (END playRandomHitSound)
+
+const ACTIONS = [
+  { id: "shoot",      label: "Shoot",    cd: 1  },
+  { id: "fireball",   label: "Fireball", cd: 5  },
+  { id: "attack",     label: "Attack",   cd: 2  },
+  { id: "defend",     label: "Defend",   cd: 3  },
+  { id: "heal",       label: "Heal",     cd: 6  },
+  { id: "mezmerize",  label: "Mez",      cd: 8  },
+  { id: "usepotion",  label: "Potion",   cd: 10 },
+  { id: "talk",       label: "Talk",     cd: 1  },
+  { id: "revive",     label: "Revive",   cd: 12 },
+  { id: "evac",       label: "Evac",     cd: 20 },
+];
+
+const actionsEl = document.getElementById("actions");
+const actionTargetEl = document.getElementById("actionTarget");
+const actionMsgEl = document.getElementById("actionMsg");
+
+function getActionTarget(){ return (actionTargetEl.value || "").trim(); } // (END getActionTarget)
+function getActionMsg(){ return (actionMsgEl.value || "").trim(); }       // (END getActionMsg)
+
+/* Cooldown state */
+const cooldownUntil = new Map();
+function nowMs(){ return Date.now(); } // (END nowMs)
+
+function startCooldown(actionId, seconds){
+  cooldownUntil.set(actionId, nowMs() + seconds * 1000);
+} // (END startCooldown)
+
+function getRemaining(actionId){
+  const until = cooldownUntil.get(actionId) || 0;
+  return Math.max(0, until - nowMs());
+} // (END getRemaining)
+
+function setButtonCooldownUI(btn, remainingMs, totalMs){
+  const timeEl = btn.querySelector(".cd-time");
+  const fill = btn.querySelector(".cd-fill");
+
+  if (remainingMs <= 0) {
+    btn.classList.remove("cooldown");
+    if (timeEl) timeEl.textContent = "";
+    if (fill) fill.style.transform = "translateY(100%)";
+    return;
   }
 
-  function buildButtons(){
-    actionsEl.innerHTML = "";
-    for(const a of ACTIONS){
-      const btn = document.createElement("button");
-      btn.className = "action-btn";
-      btn.type = "button";
-      btn.dataset.action = a.id;
-      btn.dataset.cd = String(a.cd);
+  btn.classList.add("cooldown");
+  const sec = Math.ceil(remainingMs / 1000);
+  if (timeEl) timeEl.textContent = String(sec);
 
-      const img = document.createElement("img");
-      img.src = MEDIA.images[a.id] || "";
-      img.alt = a.id;
-      btn.appendChild(img);
+  const pct = (remainingMs / totalMs) * 100;
+  const y = 100 - pct;
+  if (fill) fill.style.transform = `translateY(${y}%)`;
+} // (END setButtonCooldownUI)
 
-      const fill = document.createElement("div");
-      fill.className = "cd-fill";
-      btn.appendChild(fill);
+function buildButtons(){
+  actionsEl.innerHTML = "";
 
-      const overlay = document.createElement("div");
-      overlay.className = "cd-overlay";
-      overlay.innerHTML = `<div class="cd-time"></div>`;
-      btn.appendChild(overlay);
+  for(const a of ACTIONS){
+    const btn = document.createElement("button");
+    btn.className = "action-btn";
+    btn.type = "button";
+    btn.dataset.action = a.id;
+    btn.dataset.cd = String(a.cd);
 
-      const tip = document.createElement("div");
-      tip.className = "tip";
-      tip.textContent = a.label;
-      btn.appendChild(tip);
+    // --- icon ---
+    const img = document.createElement("img");
+    img.src = MEDIA.images[a.id] || "";
+    img.alt = a.id;
+    btn.appendChild(img);
 
-      btn.addEventListener("click", async () => {
-        const actionId = a.id;
-        const cdSec = a.cd;
-        if (getRemaining(actionId) > 0) return;
+    // --- centered counter (potions, ammo, charges, etc.) ---
+    const count = document.createElement("div");
+    count.className = "count";
+    btn.appendChild(count);
 
-        playSound(actionId);
+    // --- cooldown fill ---
+    const fill = document.createElement("div");
+    fill.className = "cd-fill";
+    btn.appendChild(fill);
 
-        const userName = getPlayerName();
-        if (!userName) return;
+    // --- cooldown overlay (number) ---
+    const overlay = document.createElement("div");
+    overlay.className = "cd-overlay";
+    overlay.innerHTML = `<div class="cd-time"></div>`;
+    btn.appendChild(overlay);
 
-        startCooldown(actionId, cdSec);
-        tickCooldowns();
+    // --- label ---
+    const tip = document.createElement("div");
+    tip.className = "tip";
+    tip.textContent = a.label;
+    btn.appendChild(tip);
 
-        const actionTarget = getActionTarget();
-        const actionMsg = getActionMsg() || actionId;
+    btn.addEventListener("click", async () => {
+      const actionId = a.id;
+      const cdSec = a.cd;
 
-        try {
-          const res = await fetch(ACTION_URL, {
-            method: "POST",
-            headers: authHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify({
-              gameId: String(getGameId()),
-              userName,
-              actionId,
-              actionTarget,
-              actionMsg
-            })
-          });
+      // cooldown check
+      if (getRemaining(actionId) > 0) return;
 
-          if (res.status === 401) doLogout();
-        } catch (e) {
-          console.error("Action POST failed:", e);
+      // block potion use if none
+      if (actionId === "usepotion"){
+        const n = getPotionCount ? getPotionCount() : 0;
+        if (Number(n) <= 0){
+          if (typeof showToast === "function") showToast("No potions left", "error", 1500);
+          return;
         }
-      });
+      }
 
-      actionsEl.appendChild(btn);
-    }
+      // resource check (energy/mana) if you use ACTION_COSTS with {res,cost}
+      if (typeof canPayCost === "function"){
+        const pay = canPayCost(actionId);
+        if (pay && pay.ok === false){
+          const label = (typeof resLabel === "function") ? resLabel(pay.res) : (pay.res || "Resource");
+          if (typeof showToast === "function"){
+            showToast(`Not enough ${label} for ${actionId.toUpperCase()} (${pay.cur}/${pay.need})`, "error", 1700);
+          }
+          return;
+        }
+      }
+
+      // play sound
+      playSound(actionId);
+
+      const userName = getPlayerName();
+      if (!userName) {
+        console.warn("No playerName in localStorage yet");
+        return;
+      }
+
+      // start cooldown
+      startCooldown(actionId, cdSec);
+      tickCooldowns();
+
+      const actionTarget = getActionTarget();
+      const actionMsg = getActionMsg() || actionId;
+
+      try {
+        const res = await fetch(ACTION_URL, {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            gameId: String(getGameId()),
+            userName,
+            actionId,
+            actionTarget,
+            actionMsg
+          })
+        });
+
+        if (res.status === 401) doLogout();
+
+        // optional: if server returns error json/text, show as toast
+        if (!res.ok && typeof showToast === "function"){
+          const txt = await res.text().catch(() => "");
+          const msg = txt ? txt.slice(0, 140) : `Action failed (${res.status})`;
+          showToast(msg, "error", 1800);
+        }
+      } catch (e) {
+        console.error("Action POST failed:", e);
+        if (typeof showToast === "function") showToast("Network error: action not sent", "error", 1800);
+      }
+    });
+
+    actionsEl.appendChild(btn);
   }
+} // (END buildButtons)
+
 
   function tickCooldowns(){
     document.querySelectorAll(".action-btn").forEach(btn => {
       const actionId = btn.dataset.action;
+
+      // existing cooldown logic
       const totalMs = Number(btn.dataset.cd) * 1000;
       const remainingMs = getRemaining(actionId);
       setButtonCooldownUI(btn, remainingMs, totalMs);
+
+      // ===== COUNTERS =====
+      const countEl = btn.querySelector(".count");
+      if (!countEl) return;
+
+      if (actionId === "usepotion"){
+        const n = getPotionCount();
+
+        if (n > 0){
+          countEl.textContent = String(n);
+          countEl.style.display = "flex";
+        } else {
+          countEl.style.display = "none";
+        }
+      } else {
+        countEl.style.display = "none";
+      }
     });
+  } // (END tickCooldowns)
+
+actionMsgEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const talkBtn = document.querySelector('.action-btn[data-action="talk"]');
+    if (talkBtn) talkBtn.click();
   }
+});
+/* ======================================================================
+   MEDIA + ACTIONS (END)
+   ====================================================================== */
 
-  actionMsgEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const talkBtn = document.querySelector('.action-btn[data-action="talk"]');
-      if (talkBtn) talkBtn.click();
-    }
-  });
 
-  /* =========================
-     GAME STATE
-     ========================= */
-  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
-  function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; }
+/* ======================================================================
+   UI STATE + BASIC HELPERS (BEGIN)
+   ====================================================================== */
+function clamp01(x){ return Math.max(0, Math.min(1, x)); } // (END clamp01)
+function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; } // (END pct)
 
-  // IMPORTANT: mobs now use {id:string, x:0..1, y:0..1, hp, max}
-  let uiState = {
-    turn: 1,
-    slots: 5,
-    mobs: [
-      { id: "MSAgent-Christie", x:0.18, y:0.72, hp:3,  max:6  },
-      { id: "Kinora",           x:0.35, y:0.52, hp:3,  max:6  },
-      { id: "Insect",           x:0.58, y:0.48, hp:14, max:14 },
-      { id: "Spider",           x:0.72, y:0.78, hp:15, max:30 },
-      { id: "Kornrex",          x:0.86, y:0.82, hp:25, max:40 },
-    ],
-    party: [
-      { id:"Dara",   hp:7,  hpMax:15, en:40, enMax:40, mn:40, mnMax:40, active:true,  avatarId: "MSAgent-Christie" },
-      { id:"Korlan", hp:16, hpMax:20, en:45, enMax:45, mn:45, mnMax:45, active:false, avatarId: "MSAgent-Turnario" },
-      { id:"Viper",  hp:11, hpMax:12, en:35, enMax:35, mn:55, mnMax:55, active:false, avatarId: "MSAgent-Soldorn" },
-      { id:"Terik",  hp:8,  hpMax:10, en:55, enMax:55, mn:50, mnMax:50, active:false, avatarId: "MSAgent-Tira" },
-    ],
-    selectedMobId: null,
-    selectedPartyId: null
+/* Demo state (server will override via /state) */
+let uiState = {
+  turn: 1,
+  mobs: [
+    { id: "MSAgent-Christie", x:0.18, y:0.72, hp:3,  max:6  },
+    { id: "Kinora",           x:0.35, y:0.52, hp:3,  max:6  },
+    { id: "Insect",           x:0.58, y:0.48, hp:14, max:14 },
+    { id: "Spider",           x:0.72, y:0.78, hp:15, max:30 },
+    { id: "Kornrex",          x:0.86, y:0.82, hp:25, max:40 },
+  ],
+  party: [
+    { id:"Dara",   hp:7,  hpMax:15, en:40, enMax:40, mn:40, mnMax:40, active:true,  avatarId: "MSAgent-Christie" },
+    { id:"Korlan", hp:16, hpMax:20, en:45, enMax:45, mn:45, mnMax:45, active:false, avatarId: "MSAgent-Turnario" },
+    { id:"Viper",  hp:11, hpMax:12, en:35, enMax:35, mn:55, mnMax:55, active:false, avatarId: "MSAgent-Soldorn" },
+    { id:"Terik",  hp:8,  hpMax:10, en:55, enMax:55, mn:50, mnMax:50, active:false, avatarId: "MSAgent-Tira" },
+  ],
+  selectedMobId: null,
+  selectedPartyId: null
+};
+
+function renderBadges(){
+  document.getElementById("playerBadge").textContent = "Player: " + (getPlayerName() || "(not set)");
+  document.getElementById("gameBadge").textContent = "Game: " + getGameId();
+  document.getElementById("turnBadge").textContent = "Turn: " + (uiState.turn ?? 1);
+  document.getElementById("waveBadge").textContent =
+  "Wave: " + (uiState.wave ?? 0) + " | Left: " + (uiState.waveMobsLeft ?? 0);
+  document.getElementById("partyCount").textContent = "Players: " + (uiState.party?.length ?? 0);
+} // (END renderBadges)
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+} // (END escapeHtml)
+
+function mobImageUrl(mobId){
+  if (!mobId) return "";
+  const safe = mobId.replace(/[^a-zA-Z0-9_-]/g, "");
+  return IMG_BASE + safe + IMG_EXT;
+} // (END mobImageUrl)
+
+function playerImageUrl(avatarId){
+  if (!avatarId) return "";
+  const safe = avatarId.replace(/[^a-zA-Z0-9_-]/g, "");
+  return AVATAR_IMG_BASE + safe + IMG_EXT;
+} // (END playerImageUrl)
+/* ======================================================================
+   UI STATE + BASIC HELPERS (END)
+   ====================================================================== */
+
+
+/* ======================================================================
+   ENCOUNTER (NO FLICKER) - PERSISTENT DOM (BEGIN)
+   ====================================================================== */
+
+/* Create the scene ONCE and reuse it forever */
+function ensureScene(){
+  const lanesEl = document.getElementById("lanes");
+  let scene = lanesEl.querySelector(".scene");
+  if (scene) return scene;
+
+  lanesEl.innerHTML = "";
+
+  scene = document.createElement("div");
+  scene.className = "scene";
+
+  const battlefield = document.createElement("div");
+  battlefield.className = "battlefield";
+
+  const fog1 = document.createElement("div"); fog1.className = "fog";
+  const fog2 = document.createElement("div"); fog2.className = "fog f2";
+
+  scene.appendChild(battlefield);
+  scene.appendChild(fog1);
+  scene.appendChild(fog2);
+
+  lanesEl.appendChild(scene);
+  return scene;
+} // (END ensureScene)
+
+/* Utility: scale mobs by y (depth illusion) */
+function depthScale(y01){
+  return 0.55 + clamp01(y01) * 0.55; // far -> small, near -> big
+} // (END depthScale)
+
+/* Create one mob DOM node (once per mob id) */
+function createMobDom(mobId, idx){
+  const scene = ensureScene();
+  const battlefield = scene.querySelector(".battlefield");
+
+  const wrap = document.createElement("div");
+  wrap.className = "mobAbs";
+  wrap.dataset.id = mobId;
+
+  const card = document.createElement("div");
+  card.className = "mobCard " + (["t1","t2","t3","t4"][idx % 4]);
+
+  const mobInner = document.createElement("div");
+  mobInner.className = "mob";
+
+  const targetTag = document.createElement("div");
+  targetTag.className = "targetTag";
+  targetTag.textContent = mobId;
+
+  const img = document.createElement("img");
+  img.className = "mobImg";
+  img.loading = "lazy";
+
+  const avatarFallback = document.createElement("div");
+  avatarFallback.className = "avatar";
+  avatarFallback.style.display = "none";
+  avatarFallback.textContent = mobId.slice(0,3);
+
+
+  const hpBar = document.createElement("div");
+  hpBar.className = "hpBar";
+
+  const hpFill = document.createElement("div");
+  hpFill.className = "hpFill";
+  hpBar.appendChild(hpFill);
+
+  mobInner.appendChild(targetTag);
+  mobInner.appendChild(img);
+  mobInner.appendChild(avatarFallback);
+  mobInner.appendChild(hpBar);
+
+  card.appendChild(mobInner);
+  wrap.appendChild(card);
+  battlefield.appendChild(wrap);
+
+  img.onerror = () => {
+    img.style.display = "none";
+    avatarFallback.style.display = "grid";
   };
 
-  function renderBadges(){
-    document.getElementById("playerBadge").textContent = "Player: " + (getPlayerName() || "(not set)");
-    document.getElementById("gameBadge").textContent = "Game: " + getGameId();
-    document.getElementById("turnBadge").textContent = "Turn: " + (uiState.turn ?? 1);
-    document.getElementById("partyCount").textContent = "Players: " + (uiState.party?.length ?? 0);
+  wrap.onclick = () => {
+    // note: actual alive/dead check happens in updater (we still allow click, but it won't set target if dead)
+    uiState.selectedMobId = mobId;
+    uiState.selectedPartyId = null;
+    document.getElementById("actionTarget").value = mobId;
+    // update classes only (no rebuild)
+    updateEncounterMobs();
+  };
+
+  const entry = { wrap, card, img, hpFill, targetTag, avatarFallback };
+  mobDom.set(mobId, entry);
+  return entry;
+} // (END createMobDom)
+
+/* Update / patch mobs in place (no innerHTML reset => no flicker) */
+function updateEncounterMobs(){
+  const scene = ensureScene();
+  const battlefield = scene.querySelector(".battlefield");
+  const rect = scene.getBoundingClientRect();
+  const w = Math.max(1, rect.width);
+  const h = Math.max(1, rect.height);
+  const pad = 10;
+
+  const now = Date.now();
+
+  const alive = (uiState.mobs || []).filter(m => Number(m.hp) > 0);
+
+  const corpses = [];
+  for (const [id, fx] of deadFx){
+    if (fx.untilMs > now && fx.lastMob) corpses.push(fx.lastMob);
   }
 
-  /* =========================
-     BATTLEFIELD RENDER (x,y)
-     ========================= */
-  function renderEncounter(){
-    const lanesEl = document.getElementById("lanes");
-    lanesEl.innerHTML = "";
+  const mobs = [...alive, ...corpses];
+  const seen = new Set();
 
-    const scene = document.createElement("div");
-    scene.className = "scene";
+  // draw order: far first, near last
+  mobs.sort((a,b) => Number(a.y ?? 0.5) - Number(b.y ?? 0.5));
 
-    const battlefield = document.createElement("div");
-    battlefield.className = "battlefield";
+  for (let i=0; i<mobs.length; i++){
+    const m = mobs[i];
+    const id = String(m.id ?? "");
+    if (!id) continue;
 
-    const fog1 = document.createElement("div");
-    fog1.className = "fog";
-    const fog2 = document.createElement("div");
-    fog2.className = "fog f2";
+    seen.add(id);
 
-    // Show dead mobs briefly
-    const now = Date.now();
-    const alive = (uiState.mobs || []).filter(m => Number(m.hp) > 0);
-
-    const corpses = [];
-    for (const [id, fx] of deadFx){
-      if (fx.untilMs > now && fx.lastMob) corpses.push(fx.lastMob);
+    let entry = mobDom.get(id);
+    if (!entry){
+      entry = createMobDom(id, i);
     }
 
-    const mobs = [...alive, ...corpses];
+    // Compute coords
+    const x01 = clamp01(Number(m.x ?? 0.5));
+    const y01 = clamp01(Number(m.y ?? 0.5));
 
-    const hpRatio = (m) => {
-      const max = Number(m.max || m.hpMax || 1);
-      const hp  = Number(m.hp || 0);
-      return max > 0 ? Math.max(0, Math.min(1, hp / max)) : 0;
-    };
+    const x = pad + x01 * (w - pad*2);
+    const y = pad + y01 * (h - pad*2);
 
-    const isThreat = (m) => {
-      const r = hpRatio(m);
-      const selected = (uiState.selectedMobId === m.id);
-      return selected || r >= 0.75;
-    };
+    // Position
+    entry.wrap.style.left = `${x}px`;
+    entry.wrap.style.top  = `${y}px`;
 
-    // Converts normalized coords to pixels inside scene
-    function placeMobAbs(wrap, x01, y01){
-      const rect = scene.getBoundingClientRect();
-      const w = Math.max(1, rect.width);
-      const h = Math.max(1, rect.height);
+    // Depth scale
+    const s = depthScale(y01);
+    entry.wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
 
-      // keep inside bounds with padding
-      const pad = 10;
-      const x = pad + clamp01(x01) * (w - pad*2);
-      const y = pad + clamp01(y01) * (h - pad*2);
+    // Z-index by y
+    entry.wrap.style.zIndex = String(Math.floor(y01 * 1000));
 
-      // center card horizontally, anchor near bottom vertically
-      wrap.style.left = `${x}px`;
-      wrap.style.top  = `${y}px`;
+    // HP
+    const max = Number(m.max || m.hpMax || 1);
+    const hp  = Number(m.hp || 0);
+    const hpPct = max > 0 ? clamp01(hp / max) * 100 : 0;
+    entry.hpFill.style.width = `${hpPct}%`;
+
+    // Tag + fallback text (keeps correct if id changed – normally it won't)
+    const label = String(m.displayName || m.avatarId || id);
+    entry.targetTag.textContent = label;                 // shows "Spider"
+    entry.avatarFallback.textContent = label.slice(0,3); // shows "Spi"
+
+    // Classes
+    const isDead = hp <= 0;
+    entry.card.classList.toggle("dead", isDead);
+
+    // Only allow selecting alive mobs (if dead, clear selection if it was selected)
+    if (isDead && uiState.selectedMobId === id){
+      uiState.selectedMobId = null;
     }
 
-    // Depth scaling based on y (far=small, near=big)
-    function depthScale(y01){
-      // y01: 0 top/far -> 1 bottom/near
-      // tune: far 0.55, near 1.10
-      return 0.55 + clamp01(y01) * 0.55;
+    entry.card.classList.toggle("selected", uiState.selectedMobId === id);
+
+    const threat = (uiState.selectedMobId === id) || (hpPct >= 75);
+    entry.card.classList.toggle("threat", threat);
+
+    // Death icon: add/remove only on state change
+    let deathIcon = entry.card.querySelector(".deathIcon");
+    if (isDead && !deathIcon){
+      deathIcon = document.createElement("div");
+      deathIcon.className = "deathIcon";
+      deathIcon.innerHTML = `<img src="${MEDIA.images.dead}" alt="dead" />`;
+      entry.card.appendChild(deathIcon);
+    } else if (!isDead && deathIcon){
+      deathIcon.remove();
     }
 
-    function makeMobCard(m, idx){
-      const wrap = document.createElement("div");
-      wrap.className = "mobAbs";
+    // Image: only set src if changed (prevents flicker)
+    const wantSrc = mobImageUrl(m.avatarId || id);
+    if (entry.img.getAttribute("src") !== wantSrc){
+      entry.img.style.display = "";
+      entry.avatarFallback.style.display = "none";
+      entry.img.src = wantSrc;
+    }
+  }
 
-      const card = document.createElement("div");
-      const isDead = Number(m.hp) <= 0;
+  // Remove missing mobs
+  for (const [id, entry] of mobDom){
+    if (!seen.has(id)){
+      entry.wrap.remove();
+      mobDom.delete(id);
+    }
+  }
+} // (END updateEncounterMobs)
+/* ======================================================================
+   ENCOUNTER (NO FLICKER) - PERSISTENT DOM (END)
+   ====================================================================== */
 
-      card.className = "mobCard " + (isThreat(m) ? "threat" : "");
-      if (isDead) card.classList.add("dead");
-      card.classList.add(["t1","t2","t3","t4"][idx % 4]);
 
-      if (uiState.selectedMobId === m.id){
-        card.classList.add("selected");
-      }
+/* ======================================================================
+   PARTY RENDER (BEGIN)
+   ====================================================================== */
+function barRow(label, percent01, rightText, cls){
+  const w = Math.round(percent01 * 100);
+  return `
+    <div class="pBarRow">
+      <div style="font-weight:900;opacity:.9;">${label}</div>
+      <div class="pBar ${cls}"><div style="width:${w}%;"></div></div>
+      <div style="text-align:right;opacity:.85;">${escapeHtml(rightText)}</div>
+    </div>
+  `;
+} // (END barRow)
 
-      // scale by depth
-      const s = depthScale(Number(m.y ?? 0.5));
-      wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
+function renderParty(){
+  const partyEl = document.getElementById("party");
+  partyEl.innerHTML = "";
 
-      const hpPct = hpRatio(m) * 100;
-      const imgUrl = mobImageUrl(m.avatarId || m.id);
+  (uiState.party || []).forEach(p => {
+    const row = document.createElement("div");
+    row.className = "pRow";
 
-      card.innerHTML = `
-        <div class="mob">
-          <div class="targetTag">${escapeHtml(m.id)}</div>
+    if (uiState._damagedIds && uiState._damagedIds.has(p.id)){
+      row.classList.add("damaged");
+    }
+    if (uiState.selectedPartyId === p.id){
+      row.classList.add("selected");
+    }
 
-          <img class="mobImg"
-              src="${escapeHtml(imgUrl)}"
-              alt="${escapeHtml(m.id)}"
-              loading="lazy"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
-          <div class="avatar" style="display:none">${escapeHtml(m.id).slice(0,3)}</div>
+    const hpP = pct(p.hp, p.hpMax);
+    const enP = pct(p.en, p.enMax);
+    const mnP = pct(p.mn, p.mnMax);
 
-          ${isDead ? `
-            <div class="deathIcon">
-              <img src="${MEDIA.images.dead}" alt="dead" />
-            </div>
-          ` : ""}
+    const lvl = Number(p.level ?? 0);
+    const xp  = Number(p.xp ?? 0);
+    const xpMax = getXpMax(p); // can be null
+    const xpP = (xpMax && xpMax > 0) ? pct(xp, xpMax) : 0;
 
-          <div class="hpBar">
-            <div class="hpFill" style="width:${hpPct}%"></div>
-          </div>
+    const imgUrl = playerImageUrl(p.avatarId);
+
+    row.innerHTML = `
+      <div class="pAvatar">
+        <img class="avatarImg"
+             src="${escapeHtml(imgUrl)}"
+             alt="${escapeHtml(p.id || "")}"
+             loading="lazy"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+        <div class="avatarText" style="display:none">
+          ${escapeHtml((p.id||"?").slice(0,2).toUpperCase())}
         </div>
-      `;
+      </div>
 
-      wrap.onclick = () => {
-        if (isDead) return;
-        uiState.selectedMobId = m.id;
-        uiState.selectedPartyId = null;
-        actionTargetEl.value = m.id;
-        renderAll();
-      };
+      <div class="pInfo">
+        <div class="pNameLine">
+          <span class="name">${escapeHtml(p.id || "")}</span>
 
-      wrap.appendChild(card);
-
-      // store coords for reposition on resize
-      wrap.dataset.x = String(m.x ?? 0.5);
-      wrap.dataset.y = String(m.y ?? 0.5);
-
-      return wrap;
-    }
-
-    // build mob nodes (sorted a bit so near mobs overlay far mobs)
-    mobs.sort((a,b) => Number(a.y ?? 0.5) - Number(b.y ?? 0.5));
-
-    mobs.forEach((m,i) => battlefield.appendChild(makeMobCard(m,i)));
-
-    scene.appendChild(battlefield);
-    scene.appendChild(fog1);
-    scene.appendChild(fog2);
-
-    lanesEl.appendChild(scene);
-
-    // after scene is in DOM, position everything
-    positionAllMobs(scene);
-  }
-
-  function positionAllMobs(sceneEl){
-    const battlefield = sceneEl.querySelector(".battlefield");
-    if (!battlefield) return;
-
-    const rect = sceneEl.getBoundingClientRect();
-    const w = Math.max(1, rect.width);
-    const h = Math.max(1, rect.height);
-
-    const pad = 10;
-
-    battlefield.querySelectorAll(".mobAbs").forEach(wrap => {
-      const x01 = Number(wrap.dataset.x ?? 0.5);
-      const y01 = Number(wrap.dataset.y ?? 0.5);
-
-      const x = pad + clamp01(x01) * (w - pad*2);
-      const y = pad + clamp01(y01) * (h - pad*2);
-
-      wrap.style.left = `${x}px`;
-      wrap.style.top  = `${y}px`;
-
-      // zIndex by y => closer in front
-      wrap.style.zIndex = String(Math.floor(clamp01(y01) * 1000));
-    });
-  }
-
-  function renderParty(){
-    const partyEl = document.getElementById("party");
-    partyEl.innerHTML = "";
-
-    (uiState.party || []).forEach(p => {
-      const row = document.createElement("div");
-      row.className = "pRow";
-
-      if (uiState._damagedIds && uiState._damagedIds.has(p.id)){
-        row.classList.add("damaged");
-      }
-      if (uiState.selectedPartyId === p.id) row.classList.add("selected");
-
-      const hpP = pct(p.hp, p.hpMax);
-      const enP = pct(p.en, p.enMax);
-      const mnP = pct(p.mn, p.mnMax);
-      const imgUrl = playerImageUrl(p.avatarId);
-
-      row.innerHTML = `
-        <div class="pAvatar">
-          <img class="avatarImg"
-               src="${escapeHtml(imgUrl)}"
-               alt="${escapeHtml(p.id || "")}"
-               loading="lazy"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
-          <div class="avatarText" style="display:none">
-            ${escapeHtml((p.id||"?").slice(0,2).toUpperCase())}
-          </div>
-        </div>
-
-        <div class="pInfo">
-          <div class="pNameLine">
-            <span class="name">${escapeHtml(p.id || "")}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="lvlBadge">Lvl ${escapeHtml(lvl)}</span>
             <span class="meta">${p.active ? "ACTIVE" : ""}</span>
           </div>
+        </div>
 
-          <div class="pBars">
+        <div class="pBars">
             ${barRow("HP", hpP, `${p.hp}/${p.hpMax}`, "hp")}
             ${barRow("EN", enP, `${p.en}/${p.enMax}`, "en")}
             ${barRow("MN", mnP, `${p.mn}/${p.mnMax}`, "mn")}
-          </div>
+                        ${
+            (xpMax && xpMax > 0)
+                ? barRow("XP", xpP, `${xp}/${xpMax}`, "xp")
+                : `<div class="pBarRow">
+                    <div style="font-weight:900;opacity:.9;">XP</div>
+                    <div class="pBar xp"><div style="width:0%;"></div></div>
+                    <div style="text-align:right;opacity:.85;">${escapeHtml(String(xp))}</div>
+                  </div>`
+            }
+
         </div>
-      `;
-
-      row.onclick = () => {
-        const name = (p.id || "").trim();
-        if (!name) return;
-
-        actionTargetEl.value = name;
-        uiState.selectedPartyId = p.id;
-        uiState.selectedMobId = null;
-        renderAll();
-      };
-
-      partyEl.appendChild(row);
-    });
-  }
-
-  function barRow(label, percent01, rightText, cls){
-    const w = Math.round(percent01 * 100);
-    return `
-      <div class="pBarRow">
-        <div style="font-weight:900;opacity:.9;">${label}</div>
-        <div class="pBar ${cls}"><div style="width:${w}%;"></div></div>
-        <div style="text-align:right;opacity:.85;">${escapeHtml(rightText)}</div>
       </div>
     `;
-  }
 
-  function renderAll(){
-    renderBadges();
-    renderEncounter();
-    renderParty();
-  }
+    row.onclick = () => {
+      const name = (p.id || "").trim();
+      if (!name) return;
+      actionTargetEl.value = name;
 
-  /* =========================
-     State polling
-     ========================= */
-  let lastState = null;
-  const playedDeaths = new Set();
+      uiState.selectedPartyId = p.id;
+      uiState.selectedMobId = null;
 
-  function extractMobsMap(state){
-    const map = new Map();
-    (state?.mobs || []).forEach(m => map.set(m.id, m));
-    return map;
-  }
-
-  function showLootToast(text){
-    const host = document.getElementById("lootToastHost");
-    if (!host) return;
-    const el = document.createElement("div");
-    el.className = "lootToast";
-    el.textContent = text;
-    host.appendChild(el);
-    setTimeout(() => el.remove(), 1800);
-  }
-
-  function detectMobDeaths(prev, next){
-    const prevMap = extractMobsMap(prev);
-    const nextMap = extractMobsMap(next);
-    const now = Date.now();
-
-    for (const [id, m] of nextMap) {
-      if (Number(m.hp) > 0) {
-        playedDeaths.delete(id);
-        deadFx.delete(id);
-      }
-    }
-
-    const triggerDeathFx = (id, mobSnapshot) => {
-      if (playedDeaths.has(id)) return;
-      playedDeaths.add(id);
-      playSound("mobdeath");
-      deadFx.set(id, { untilMs: now + DEAD_STAY_MS, lastMob: { ...mobSnapshot, hp: 0 } });
-      showLootToast(`${id} is killed!`);
+      // Update selection without recreating encounter DOM
+      updateEncounterMobs();
+      renderParty();
+      renderBadges();
     };
 
-    for (const [id, nextMob] of nextMap){
-      const prevMob = prevMap.get(id);
-      const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
-      const isDead   = Number(nextMob.hp) <= 0;
-      if (wasAlive && isDead) triggerDeathFx(id, nextMob);
-    }
-
-    for (const [id, prevMob] of prevMap){
-      const existsNow = nextMap.has(id);
-      const wasAlive  = Number(prevMob.hp) > 0;
-      if (wasAlive && !existsNow) triggerDeathFx(id, prevMob);
-    }
-
-    for (const [id, fx] of deadFx){
-      if (now > fx.untilMs) deadFx.delete(id);
-    }
-  }
-
-  async function updateState(){
-    try{
-      const res = await fetch(STATE_URL, { headers: authHeaders(), cache: "no-store" });
-
-      if (res.status === 401) { doLogout(); return; }
-      if(!res.ok) return;
-
-      const s = await res.json();
-      updateInfoMarquee(s.infoMsg);
-
-      // damage feedback
-      const damages = detectPartyDamage(lastState || uiState, s);
-      if (damages.length > 0){
-        const me = getPlayerName();
-        const myHit = damages.find(d => d.id === me);
-        if (myHit){
-          const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
-          triggerHitFeedback(intensity);
-          playRandomHitSound();
-          s._damagedIds = new Set([me]);
-          setTimeout(() => {
-            if (uiState && uiState._damagedIds){
-              uiState._damagedIds = null;
-              renderParty();
-            }
-          }, 450);
-        }
-      }
-
-      detectMobDeaths(lastState || uiState, s);
-
-      const keepSelectedMobId   = uiState.selectedMobId;
-      const keepSelectedPartyId = uiState.selectedPartyId;
-
-      uiState = s;
-
-      const wasGameOver = String(lastState?.phase || "") === "gameover";
-      const isGameOver  = String(s.phase || "") === "gameover";
-      if (isGameOver) {
-        showGameOverOverlay(s.gameOverReason, s.restartInMs);
-        if (!wasGameOver) playSound("gameover");
-      } else {
-        hideGameOverOverlay();
-      }
-
-      if (s.selectedMobId == null)   uiState.selectedMobId   = keepSelectedMobId;
-      if (s.selectedPartyId == null) uiState.selectedPartyId = keepSelectedPartyId;
-
-      lastState = s;
-      renderAll();
-    } catch(e){}
-  }
-
-  /* =========================
-     Helpers
-     ========================= */
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, c => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[c]));
-  }
-  function mobImageUrl(mobId){
-    if (!mobId) return "";
-    const safe = mobId.replace(/[^a-zA-Z0-9_-]/g, "");
-    return IMG_BASE + safe + IMG_EXT;
-  }
-  function playerImageUrl(avatarId){
-    if (!avatarId) return "";
-    const safe = avatarId.replace(/[^a-zA-Z0-9_-]/g, "");
-    return AVATAR_IMG_BASE + safe + IMG_EXT;
-  }
-
-  /* =========================
-     Keyboard shortcuts (PC)
-     ========================= */
-  const isDesktopInput = window.matchMedia("(pointer: fine)").matches;
-
-  document.addEventListener("keydown", (e) => {
-    if (!isDesktopInput) return;
-    const tag = document.activeElement?.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA") return;
-    if (!/^[0-9]$/.test(e.key)) return;
-
-    const index = e.key === "0" ? 9 : (Number(e.key) - 1);
-    if (index < 0 || index >= ACTIONS.length) return;
-
-    const actionId = ACTIONS[index].id;
-    const btn = document.querySelector(`.action-btn[data-action="${actionId}"]`);
-    if (!btn) return;
-
-    e.preventDefault();
-    if (btn.classList.contains("cooldown")) return;
-    btn.click();
+    partyEl.appendChild(row);
   });
+} // (END renderParty)
+/* ======================================================================
+   PARTY RENDER (END)
+   ====================================================================== */
 
-  /* =========================
-     Info marquee
-     ========================= */
-  document.documentElement.style.setProperty("--infoSpeed", String(INFO_SPEED_PX_PER_SEC));
-  let lastInfoMsg = "";
 
-  function updateInfoMarquee(msg){
-    const marquee = document.getElementById("infoMarquee");
-    const a = document.getElementById("infoTextA");
-    if (!marquee || !a) return;
+/* ======================================================================
+   INFO MSG (BEGIN)
+   ====================================================================== */
+let lastInfoMsg = "";
 
-    const text = String(msg || "").trim();
-    const shown = text || "—";
+function updateInfoMarquee(msg){
+  const marquee = document.getElementById("infoMarquee");
+  const a = document.getElementById("infoTextA");
+  if (!marquee || !a) return;
 
-    a.textContent = shown;
-    marquee.title = text;
+  const text = String(msg || "").trim();
+  const shown = text || "—";
 
-    marquee.classList.remove("scrolling");
-    marquee.style.removeProperty("--infoShift");
-    marquee.style.removeProperty("--infoDur");
-    lastInfoMsg = text;
-  }
+  a.textContent = shown;
+  marquee.title = text;
 
-  /* =========================
-     Game Over
-     ========================= */
-  function showGameOverOverlay(reason, restartInMs){
-    const overlay = document.getElementById("gameOverOverlay");
-    const reasonEl = document.getElementById("gameOverReason");
-    const secEl = document.getElementById("gameOverSeconds");
-    if (!overlay) return;
+  marquee.classList.remove("scrolling");
+  marquee.style.removeProperty("--infoShift");
+  marquee.style.removeProperty("--infoDur");
 
-    reasonEl.textContent = reason || "You lost";
-    const sec = Math.max(0, Math.ceil((Number(restartInMs) || 0) / 1000));
-    secEl.textContent = String(sec);
+  lastInfoMsg = text;
+} // (END updateInfoMarquee)
+/* ======================================================================
+   INFO MSG (END)
+   ====================================================================== */
 
-    overlay.classList.remove("hidden");
-    overlay.setAttribute("aria-hidden", "false");
-    document.body.classList.add("locked");
-  }
 
-  function hideGameOverOverlay(){
-    const overlay = document.getElementById("gameOverOverlay");
-    if (!overlay) return;
-    overlay.classList.add("hidden");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("locked");
-  }
+/* ======================================================================
+   DAMAGE + DEATH DETECTION (BEGIN)
+   ====================================================================== */
+function extractPartyMap(state){
+  const map = new Map();
+  (state?.party || []).forEach(p => map.set(p.id, p));
+  return map;
+} // (END extractPartyMap)
 
-  /* =========================
-     HitFlash
-     ========================= */
-  let lastHitFlashAt = 0;
+function detectPartyDamage(prev, next){
+  const prevMap = extractPartyMap(prev);
+  const out = [];
 
-  function triggerHitFeedback(intensity01 = 0.7){
-    if (!ENABLE_HIT_FLASH) return;
+  for (const p of (next?.party || [])){
+    const id = p.id;
+    const prevP = prevMap.get(id);
+    if (!prevP) continue;
 
-    const now = performance.now();
-    if (now - lastHitFlashAt < 500) return;
-    lastHitFlashAt = now;
+    const oldHp = Number(prevP.hp ?? 0);
+    const newHp = Number(p.hp ?? 0);
 
-    const flash = document.getElementById("hitFlash");
-    if (!flash) return;
-
-    flash.classList.remove("on");
-    void flash.offsetHeight;
-    flash.style.opacity = String(Math.max(0.2, Math.min(0.6, intensity01)));
-    flash.classList.add("on");
-
-    if (ENABLE_SHAKE){
-      document.body.classList.add("hitShake");
-      setTimeout(() => document.body.classList.remove("hitShake"), 260);
+    if (newHp < oldHp){
+      out.push({ id, dmg: oldHp - newHp, newHp, oldHp });
     }
   }
 
-  function updateFlashBtn(){
-    const b = document.getElementById("btnFlash");
-    if (!b) return;
-    b.textContent = "Flash: " + (ENABLE_HIT_FLASH ? "ON" : "OFF");
+  return out;
+} // (END detectPartyDamage)
+
+
+// begin ShowToast
+function showToast(text, type = "info", ms = 1800){
+  const host = document.getElementById("lootToastHost");
+  if (!host) return;
+
+  const el = document.createElement("div");
+  el.className = "lootToast";
+
+  const t = String(type || "info").toLowerCase();
+
+  if (t === "error") el.classList.add("toastError");
+  else if (t === "warn" || t === "warning") el.classList.add("toastWarn");
+  else if (t === "success") el.classList.add("toastSuccess");
+  else el.classList.add("toastInfo");
+
+  el.textContent = String(text || "—");
+
+  // Optional: make animation duration match ms (recommended)
+  el.style.animationDuration = `${Math.max(300, ms)}ms`;
+
+  host.appendChild(el);
+  setTimeout(() => el.remove(), Math.max(300, ms) + 50);
+}// (END showToast)
+
+function showLootToast(text){
+  showToast(text, "info", 1800);
+} // (END showLootToast)
+
+let lastState = null;
+const playedDeaths = new Set();
+
+function extractMobsMap(state){
+  const map = new Map();
+  (state?.mobs || []).forEach(m => map.set(m.id, m));
+  return map;
+} // (END extractMobsMap)
+
+function detectMobDeaths(prev, next){
+  const prevMap = extractMobsMap(prev);
+  const nextMap = extractMobsMap(next);
+  const now = Date.now();
+
+  // If mob became alive again, allow FX again
+  for (const [id, m] of nextMap) {
+    if (Number(m.hp) > 0) {
+      playedDeaths.delete(id);
+      deadFx.delete(id);
+    }
   }
 
-  document.getElementById("btnFlash")?.addEventListener("click", () => {
-    ENABLE_HIT_FLASH = !ENABLE_HIT_FLASH;
-    localStorage.setItem("enableHitFlash", ENABLE_HIT_FLASH ? "1" : "0");
-    updateFlashBtn();
-  });
+  const triggerDeathFx = (id, mobSnapshot) => {
+    if (playedDeaths.has(id)) return;
+    playedDeaths.add(id);
+
+    playSound("mobdeath");
+
+    deadFx.set(id, {
+      untilMs: now + DEAD_STAY_MS,
+      lastMob: { ...mobSnapshot, hp: 0 }
+    });
+
+    showLootToast(`${id} is killed!`);
+  };
+
+  // Case A: hp dropped to 0
+  for (const [id, nextMob] of nextMap){
+    const prevMob = prevMap.get(id);
+    const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
+    const isDead   = Number(nextMob.hp) <= 0;
+    if (wasAlive && isDead) triggerDeathFx(id, nextMob);
+  }
+
+  // Case B: mob got removed
+  for (const [id, prevMob] of prevMap){
+    const existsNow = nextMap.has(id);
+    const wasAlive  = Number(prevMob.hp) > 0;
+    if (wasAlive && !existsNow) triggerDeathFx(id, prevMob);
+  }
+
+  // Cleanup old corpse FX
+  for (const [id, fx] of deadFx){
+    if (now > fx.untilMs) deadFx.delete(id);
+  }
+} // (END detectMobDeaths)
+/* ======================================================================
+   DAMAGE + DEATH DETECTION (END)
+   ====================================================================== */
+
+  // Help Button handling
+  document.getElementById("btnHelp")?.addEventListener("click", () => {
+    window.open("help.html", "_blank", "noopener");
+  });//end Help button handling
+
+
+/* ======================================================================
+   GAME OVER + HIT FLASH (BEGIN)
+   ====================================================================== */
+function showGameOverOverlay(reason, restartInMs){
+  const overlay = document.getElementById("gameOverOverlay");
+  const reasonEl = document.getElementById("gameOverReason");
+  const secEl = document.getElementById("gameOverSeconds");
+  if (!overlay) return;
+
+  reasonEl.textContent = reason || "You lost";
+  const sec = Math.max(0, Math.ceil((Number(restartInMs) || 0) / 1000));
+  secEl.textContent = String(sec);
+
+  overlay.classList.remove("hidden");
+  overlay.setAttribute("aria-hidden", "false");
+  document.body.classList.add("locked");
+} // (END showGameOverOverlay)
+
+function hideGameOverOverlay(){
+  const overlay = document.getElementById("gameOverOverlay");
+  if (!overlay) return;
+
+  overlay.classList.add("hidden");
+  overlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("locked");
+} // (END hideGameOverOverlay)
+
+let lastHitFlashAt = 0;
+
+function triggerHitFeedback(intensity01 = 0.7){
+  if (!ENABLE_HIT_FLASH) return;
+
+  const now = performance.now();
+  if (now - lastHitFlashAt < 500) return;
+  lastHitFlashAt = now;
+
+  const flash = document.getElementById("hitFlash");
+  if (!flash) return;
+
+  flash.classList.remove("on");
+  void flash.offsetHeight;
+  flash.style.opacity = String(Math.max(0.2, Math.min(0.6, intensity01)));
+  flash.classList.add("on");
+
+  if (ENABLE_SHAKE){
+    document.body.classList.add("hitShake");
+    setTimeout(() => document.body.classList.remove("hitShake"), 260);
+  }
+} // (END triggerHitFeedback)
+
+function updateFlashBtn(){
+  const b = document.getElementById("btnFlash");
+  if (!b) return;
+  b.textContent = "Flash: " + (ENABLE_HIT_FLASH ? "ON" : "OFF");
+} // (END updateFlashBtn)
+
+document.getElementById("btnFlash")?.addEventListener("click", () => {
+  ENABLE_HIT_FLASH = !ENABLE_HIT_FLASH;
+  localStorage.setItem("enableHitFlash", ENABLE_HIT_FLASH ? "1" : "0");
   updateFlashBtn();
+});
+updateFlashBtn();
+/* ======================================================================
+   GAME OVER + HIT FLASH (END)
+   ====================================================================== */
 
-  /* party damage detector */
-  function extractPartyMap(state){
-    const map = new Map();
-    (state?.party || []).forEach(p => map.set(p.id, p));
-    return map;
-  }
-  function detectPartyDamage(prev, next){
-    const prevMap = extractPartyMap(prev);
-    const out = [];
-    for (const p of (next?.party || [])){
-      const id = p.id;
-      const prevP = prevMap.get(id);
-      if (!prevP) continue;
-      const oldHp = Number(prevP.hp ?? 0);
-      const newHp = Number(p.hp ?? 0);
-      if (newHp < oldHp){
-        out.push({ id, dmg: oldHp - newHp, newHp, oldHp });
+
+/* ======================================================================
+   RENDER ALL (BEGIN)
+   ====================================================================== */
+function renderAll(){
+  renderBadges();
+  updateEncounterMobs();  // IMPORTANT: patches DOM (no flicker)
+  renderParty();
+} // (END renderAll)
+/* ======================================================================
+   RENDER ALL (END)
+   ====================================================================== */
+
+
+/* ======================================================================
+   STATE POLLING (BEGIN)
+   ====================================================================== */
+async function updateState(){
+  try{
+    const res = await fetch(STATE_URL, { headers: authHeaders(), cache: "no-store" });
+    if (res.status === 401) { doLogout(); return; }
+    if (!res.ok) return;
+
+    const s = await res.json();
+
+    const meName = getPlayerName();
+    const mePlayer = (s.party || []).find(p => String(p.id) === String(meName)) || null;
+
+    updateInfoMarquee(s.infoMsg);
+
+    // Damage feedback: only current player gets effects
+    const damages = detectPartyDamage(lastState || uiState, s);
+    if (damages.length > 0 && meName){
+      const myHit = damages.find(d => d.id === meName);
+      if (myHit){
+        const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
+        triggerHitFeedback(intensity);
+        playRandomHitSound();
+
+        s._damagedIds = new Set([meName]);
+        setTimeout(() => {
+          if (uiState && uiState._damagedIds){
+            uiState._damagedIds = null;
+            renderParty();
+          }
+        }, 450);
       }
     }
-    return out;
+
+    detectMobDeaths(lastState || uiState, s);
+
+    const keepSelectedMobId   = uiState.selectedMobId;
+    const keepSelectedPartyId = uiState.selectedPartyId;
+
+    uiState = s;
+
+    const wasGameOver = String(lastState?.phase || "") === "gameover";
+    const isGameOver  = String(s.phase || "") === "gameover";
+
+    if (isGameOver){
+      showGameOverOverlay(s.gameOverReason, s.restartInMs);
+      if (!wasGameOver) playSound("gameover");
+    } else {
+      hideGameOverOverlay();
+    }
+
+    const wasWave = String(lastState?.phase || "") === "wavecompleted";
+    const isWave  = String(s.phase || "") === "wavecompleted";
+
+    // Show wave overlay (only if not gameover)
+    if (!isGameOver && isWave){
+      // If your server can send nextWaveInTurns or nextWaveInMs, use it.
+      // For now we just show "incoming". (You can pass null.)
+      showWaveOverlay(s.wave, s.nextWaveInTurns ?? null);
+
+      // one-time success toast when entering wavecompleted
+      if (!wasWave && typeof showToast === "function"){
+        showToast(`Wave ${Number(s.wave) || 0} cleared!`, "success", 1800);
+      }
+    } else {
+      hideWaveOverlay();
+    }
+
+    if (s.selectedMobId == null)   uiState.selectedMobId   = keepSelectedMobId;
+    if (s.selectedPartyId == null) uiState.selectedPartyId = keepSelectedPartyId;
+
+    lastState = s;
+
+    // ✅ this must receive the PLAYER OBJECT, not the name
+    checkPlayerStatToasts(mePlayer);
+
+    renderAll();
+  } catch(e){
+    // ignore network errors
+  }
+} // (END updateState)
+/* ======================================================================
+   STATE POLLING (END)
+   ====================================================================== */
+
+/* ======================================================================
+   XP,Level, Credits Toasts (BEGIN)
+   ====================================================================== */
+// ---------- PLAYER STAT CHANGE TOASTS ----------
+
+let lastPlayerStats = null;   // null = first snapshot (no toasts)
+
+function resetPlayerStatTracking() {
+  lastPlayerStats = null;
+}
+
+function checkPlayerStatToasts(player) {
+  // player is your own player object from JSON state
+  // expected fields: credits, level, xp, potions
+
+  if (!player) return;
+
+  // First snapshot → store only, no toasts
+  if (lastPlayerStats === null) {
+    lastPlayerStats = {
+      credits: player.credits ?? 0,
+      level:   player.level   ?? 0,
+      xp:      player.xp      ?? 0,
+      potions: player.potions ?? 0
+    };
+    return;
   }
 
-  /* =========================
-     Boot
-     ========================= */
-  buildButtons();
-  setInterval(tickCooldowns, 100);
-  tickCooldowns();
+  // Helper to compare and toast
+  function diff(key, label, positiveMsg, negativeMsg) {
+    const prev = lastPlayerStats[key];
+    const curr = player[key];
 
-  renderAll();
+    if (curr === prev) return;
 
-  // Re-position mobs on resize (coords are normalized)
-  window.addEventListener("resize", () => {
-    const scene = document.querySelector(".scene");
-    if (scene) positionAllMobs(scene);
-  });
+    const delta = curr - prev;
 
-  setInterval(updateState, 2555);
-  updateState();
+    if (delta > 0) {
+      showToast(
+        positiveMsg.replace("{n}", Math.abs(delta)),
+        "success",
+        1500
+      );
+    } else {
+      showToast(
+        negativeMsg.replace("{n}", Math.abs(delta)),
+        "warning",
+        1500
+      );
+    }
 
-  // overlay logout
-  window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("btnGameOverLogout")?.addEventListener("click", doLogout);
-  });
+    lastPlayerStats[key] = curr;
+  }
 
+  diff(
+    "credits",
+    "Credits",
+    "+{n} Credits",
+    "-{n} Credits"
+  );
+
+  diff(
+    "xp",
+    "XP",
+    "+{n} XP",
+    "-{n} XP"
+  );
+
+  diff(
+    "potions",
+    "Potions",
+    "+{n} Potion(s)",
+    "-{n} Potion(s)"
+  );
+
+  // Level is special → usually only positive
+  if (player.level !== lastPlayerStats.level) {
+    if (player.level > lastPlayerStats.level) {
+      showToast(
+        `Level Up! You are now Level ${player.level}`,
+        "success",
+        2200
+      );
+    } else {
+      showToast(
+        `Level changed to ${player.level}`,
+        "warning",
+        1500
+      );
+    }
+    lastPlayerStats.level = player.level;
+  }
+}
+
+
+
+/* ======================================================================
+   XP,Level, Credits Toasts (END)
+   ====================================================================== */
+/* ======================================================================
+   Wave over Functions (BEGIN)
+   ====================================================================== */
+  function showWaveOverlay(wave, nextInTurns){
+    const el = document.getElementById("waveOverlay");
+    const title = document.getElementById("waveTitle");
+    const sub = document.getElementById("waveSub");
+    if (!el || !title || !sub) return;
+
+    title.textContent = `WAVE ${Number(wave) || 0} CLEARED`;
+    sub.textContent = (nextInTurns != null)
+      ? `Next wave in ~${nextInTurns} turns…`
+      : `Next wave incoming…`;
+
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+  }
+
+  function hideWaveOverlay(){
+    const el = document.getElementById("waveOverlay");
+    if (!el) return;
+    el.classList.add("hidden");
+    el.setAttribute("aria-hidden", "true");
+  }
+
+
+/* ======================================================================
+   Wave over Functions (END)
+   ====================================================================== */
+
+
+/* ======================================================================
+   Helper Functions (BEGIN)
+   ====================================================================== */
+
+  function getMe(){
+    const me = getPlayerName();
+    if (!me) return null;
+    return (uiState.party || []).find(p => String(p.id) === String(me)) || null;
+  } // (END getMe)
+
+  function getResourceValue(player, res){
+    if (!player) return 0;
+    if (res === "en") return Number(player.en ?? 0);
+    if (res === "mn") return Number(player.mn ?? 0);
+    return 0;
+  } // (END getResourceValue)
+
+  function resLabel(res){
+    return res === "en" ? "Energy" : (res === "mn" ? "Mana" : "Resource");
+  } // (END resLabel)
+
+  function canPayCost(actionId){
+    const rule = ACTION_COSTS[actionId];
+    if (!rule || !rule.res || Number(rule.cost) <= 0) return { ok:true };
+
+    const me = getMe();
+    const cur = getResourceValue(me, rule.res);
+    const need = Number(rule.cost);
+
+    return { ok: cur >= need, res: rule.res, cur, need };
+  } // (END canPayCost)
+
+    function getPotionCount(){
+    const me = getMe();
+    return Number(me?.potions ?? 0);
+  } // (END getPotionCount)
+
+  function getXpMax(p){
+    // hardcoded at the moment
+    return Number(100);
+    // prefer explicit max
+    if (p && p.xpMax != null) return Number(p.xpMax);
+
+    // alternative naming: "xpToNext" means progress to next level (0..xpToNext)
+    if (p && p.xpToNext != null) return Number(p.xpToNext);
+
+    // unknown → no max
+    return null;
+  }
+
+
+/* ======================================================================
+   KEYBOARD SHORTCUTS (BEGIN)
+   ====================================================================== */
+const isDesktopInput = window.matchMedia("(pointer: fine)").matches;
+
+document.addEventListener("keydown", (e) => {
+  if (!isDesktopInput) return;
+
+  const tag = document.activeElement?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+  if (!/^[0-9]$/.test(e.key)) return;
+
+  const index = e.key === "0" ? 9 : (Number(e.key) - 1);
+  if (index < 0 || index >= ACTIONS.length) return;
+
+  const actionId = ACTIONS[index].id;
+  const btn = document.querySelector(`.action-btn[data-action="${actionId}"]`);
+  if (!btn) return;
+
+  e.preventDefault();
+  if (btn.classList.contains("cooldown")) return;
+
+  btn.click();
+});
+/* ======================================================================
+   KEYBOARD SHORTCUTS (END)
+   ====================================================================== */
+
+
+/* ======================================================================
+   BOOT (BEGIN)
+   ====================================================================== */
+buildButtons();
+setInterval(tickCooldowns, 100);
+tickCooldowns();
+
+renderAll();
+
+// Re-position existing mob DOM nodes when resized (no rebuild)
+window.addEventListener("resize", () => {
+  updateEncounterMobs();
+});
+
+setInterval(updateState, 555);
+updateState();
+
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("btnGameOverLogout")?.addEventListener("click", doLogout);
+});
+/* ======================================================================
+   BOOT (END)
+   ====================================================================== */
 </script>
 
 <!-- GAME OVER OVERLAY -->
@@ -1820,6 +2370,15 @@
     </div>
 
     <div class="overlayHint">Get more help!!!</div>
+  </div>
+</div>
+
+
+<!-- WAVE OVER OVERLAY -->
+<div id="waveOverlay" class="hidden" aria-hidden="true">
+  <div class="waveCard">
+    <div class="waveTitle" id="waveTitle">WAVE CLEARED</div>
+    <div class="waveSub" id="waveSub">Next wave incoming…</div>
   </div>
 </div>
 

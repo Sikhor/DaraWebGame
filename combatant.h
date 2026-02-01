@@ -23,10 +23,14 @@ inline constexpr float DEVIATION= 5.f;
 inline constexpr float STAT_BASEDAMAGEPLAYER= 50.f;  
 
 inline constexpr int INITIALPOTIONS= 10;  
-inline constexpr int MEZZTURNS= 10;  
+inline constexpr int MEZZTURNS= 100;  
 
-inline constexpr int MAXSLOTS=4;
-inline constexpr int MAXLANES=3;
+inline constexpr int MAXSLOTS=6;
+inline constexpr int MAXLANES=10;
+
+inline constexpr float MOBSPEED= 0.5f;
+
+inline constexpr int XPPERLEVEL= 100;  
 
 enum class ECombatantDifficulty
 {
@@ -157,7 +161,7 @@ protected:
     float BaseDefense=1.f;
     float DefenseModifier= 0.f;
 
-    float Speed= DARA_MOB_SPEED;
+    float Speed= MOBSPEED;
     float CurrentField= 0.f;
 
     float HP = MAXHP;
@@ -177,6 +181,14 @@ protected:
     int PotionAmount= INITIALPOTIONS;
     int MezzCounter= 0;
 
+    int Level=0;
+    int XP=0;
+    int Credits= 0;
+
+    std::string InstanceId="";
+    std::string TemplateId="";
+
+
     ECombatantType Type = ECombatantType::Mob;
     ECombatantDifficulty Difficulty= ECombatantDifficulty::Normal;
     ECombatantAttackType AttackType= ECombatantAttackType::Melee;
@@ -184,6 +196,7 @@ protected:
 
     void CheckStats();
     float GetRandomDamage();
+    void LevelUp();
 
 public:
     Combatant(const std::string& name, ECombatantType type);
@@ -208,13 +221,20 @@ public:
     int GetMaxHP() const { return static_cast<int>(MaxHP); }
     int GetMaxEnergy() const { return static_cast<int>(MaxEnergy); }
     int GetMaxMana() const { return static_cast<int>(MaxMana); }
-    int GetLevel() const { return 1; } // Placeholder
-    int GetGold() const { return 100; } // Placeholder
-    int GetExperience() const { return 0; } // Placeholder
+    int GetPotionAmount() const {return PotionAmount;}
     float GetBaseDefense() const{return BaseDefense;}
     float GetBaseDamage() const{return BaseDamage;}
     float GetCurrentDefense() const{return BaseDefense+DefenseModifier;}
     float GetCurrentDamage() const{return BaseDamage+DamageModifier;}
+
+    // level, xp and credits
+    int GetLevel() const { return Level; } // Placeholder
+    int GetCredits() const { return Credits; } // Placeholder
+    int GetXP() const { return XP; } // Placeholder
+
+    void AddXP(int amount);
+    void AddCredits(int amount){Credits+=amount;}
+    void AddPotion(int amount){PotionAmount+=amount;};
 
     std::string GetAttackType()const;
     std::string GetDifficulty()const{return std::string(ToString(Difficulty));}
@@ -253,6 +273,12 @@ public:
     float GetManaPct() const;
     float GetEnergyPct() const;
     json ToJson() const;
+
+    void SetInstanceId(std::string instId){InstanceId= instId;}
+    std::string GetInstanceId()const {return InstanceId;}
+    void SetTemplateId(std::string templateId){TemplateId= templateId;}
+    std::string GetTemplateId()const {return TemplateId;}
+
 };
 
 
