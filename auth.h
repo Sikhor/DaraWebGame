@@ -25,7 +25,3 @@ bool GetSessionFromRequest(
     Session& outSession,
     std::string* outErr = nullptr); 
 
-// callback when a new player is created    
-using OnNewPlayerFn = std::function<std::string(const std::string&, const std::string&, const std::string&)>;
-
-void SetOnNewPlayerCallback(OnNewPlayerFn cb);

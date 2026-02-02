@@ -19,14 +19,6 @@
 #include "sessions.h"
 using json = nlohmann::json;
 
-//global here to be set in main.cpp
-static OnNewPlayerFn g_onNewPlayer;
-
-void SetOnNewPlayerCallback(OnNewPlayerFn cb)
-{
-    g_onNewPlayer = std::move(cb);
-}
-
 
 
 // --- base64url decode helper ---
@@ -340,7 +332,7 @@ static bool EnsureGoogleCertsFresh(std::string* outErr)
 struct GoogleClaims
 {
     std::string sub;
-    std::string email;
+    std::string eMail;
     bool email_verified = false;
     std::string name;
     std::string picture;
@@ -420,7 +412,7 @@ static bool VerifyGoogleIdToken(const std::string& idToken, GoogleClaims& out, s
         catch (...) {}
 
         // email can be missing depending on scopes / configuration; for Google Sign-In it’s usually present
-        try { out.email = decoded.get_payload_claim("email").as_string(); }
+        try { out.eMail = decoded.get_payload_claim("email").as_string(); }
         catch (...) {}
 
         try { out.email_verified = decoded.get_payload_claim("email_verified").as_boolean(); }
@@ -433,7 +425,7 @@ static bool VerifyGoogleIdToken(const std::string& idToken, GoogleClaims& out, s
         catch (...) {}
 
         // Enforce "Google-only" and "verified email" identity
-        if (out.email.empty())
+        if (out.eMail.empty())
         {
             if (outErr) *outErr = "Token missing email claim";
             return false;
@@ -494,14 +486,12 @@ void RegisterAuthRoutes(httplib::Server& server)
             // Create your own session token
             const std::string token = MakeToken();
             Session s;
-            s.userName = claims.email;
-            s.expiresAt = std::chrono::system_clock::now() + std::chrono::hours(24 * kSessionDays);
-            if (g_onNewPlayer) {
-                s.playerName = g_onNewPlayer(s.userName, claims.name, claims.picture);
-            } else {
-                s.playerName = "DaraAgent-" + std::to_string((std::rand() % 900) + 100);; // fallback, falls callback nicht gesetzt
-            }
+            s.sub= claims.sub;
+            s.userName = claims.eMail;
+            s.eMail= claims.eMail;
+            s.name= claims.name;
 
+            s.expiresAt = std::chrono::system_clock::now() + std::chrono::hours(24 * kSessionDays);
             {
                 std::lock_guard<std::mutex> lk(g_sessionsMutex);
                 g_sessions[token] = s;

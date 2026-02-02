@@ -221,15 +221,11 @@
     position:absolute;
     left: 0;
     top: 0;
-
-    /* IMPORTANT: this makes movements smooth without recreating DOM */
     transition: left 120ms linear, top 120ms linear, transform 120ms linear;
-
     pointer-events:auto;
     transform-origin: 50% 90%;
   }
 
-  /* Mob card (same look) */
   .mobCard{
     width: var(--mobCardSize);
     height: var(--mobCardSize);
@@ -255,7 +251,6 @@
     50%     { transform: translate3d(0,var(--bobY),0) rotate(0.20deg); }
   }
 
-  /* threat glow */
   .mobCard.threat{
     border-color: rgba(120,200,255,0.28);
   }
@@ -272,7 +267,6 @@
     50%     { opacity:1.00; filter: blur(0.2px); }
   }
 
-  /* Selected marker */
   .mobCard.selected{
     border-color: rgba(120,200,255,0.70) !important;
     box-shadow:
@@ -357,7 +351,6 @@
     font-size: 12px;
   }
 
-  /* death overlay */
   .mobCard.dead{
     filter: grayscale(0.9) brightness(0.8);
   }
@@ -381,13 +374,11 @@
     50%     { opacity: 1.00; transform: scale(1.08); }
   }
 
-  /* reduced motion */
   @media (prefers-reduced-motion: reduce){
     .scene::before, .fog, .fog.f2, .mobCard, .mobAbs{ animation:none !important; transition:none !important; }
   }
 
   /* ---------- Info (non-moving, like your last state) ---------- */
-  /* TEMP: hide info marquee */
   #infoMarquee{ display:none !important; }
   .infoMarquee{
     position: relative;
@@ -540,22 +531,20 @@
     transition: box-shadow 180ms ease, background 180ms ease;
   }
 
-  /* --- Level badge in party list --- */
-.lvlBadge{
-  font-size: 11px;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.90);
-  white-space: nowrap;
-}
+  .lvlBadge{
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.90);
+    white-space: nowrap;
+  }
 
-/* --- XP bar style (purple-ish) --- */
-.pBar.xp > div{
-  background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(255,210,120,0.90));
-}
+  .pBar.xp > div{
+    background: linear-gradient(90deg, rgba(200,140,255,0.95), rgba(255,210,120,0.90));
+  }
 
   /* ---------- BOTTOM HUD ---------- */
   .hud{
@@ -648,11 +637,10 @@
     pointer-events: none;
   }
 
-  /* ===== ACTION BUTTON COUNTER ===== */
   .action-btn .count{
     position: absolute;
     inset: 0;
-    display: none;                 /* hidden by default */
+    display: none;
     align-items: center;
     justify-content: center;
     font-weight: 900;
@@ -664,14 +652,10 @@
     pointer-events: none;
     z-index: 3;
   }
-
-  /* slightly smaller on mobile */
   @media (max-width: 900px){
     .action-btn .count{ font-size: 14px; }
   }
 
-
-  /* Cooldown overlay */
   .cd-overlay{
     position: absolute;
     inset: 0;
@@ -699,6 +683,102 @@
     z-index: 1;
     pointer-events: none;
   }
+
+  /* Hide the real target input */
+  .target-input{
+    position:absolute !important;
+    width:1px !important;
+    height:1px !important;
+    padding:0 !important;
+    margin:-1px !important;
+    border:0 !important;
+    overflow:hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+  }
+
+  .targetPill{
+    height: 34px;
+    min-width: 170px;
+    max-width: 320px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.22);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    overflow:hidden;
+  }
+
+  .targetPillImg{
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.25);
+    flex: 0 0 auto;
+  }
+  .targetPillMain{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .targetPillText{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .targetPillClear{
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.85);
+    font-weight: 900;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .targetPillClear:hover{ filter: brightness(1.15); }
+  .targetPillClear:active{ transform: translateY(1px); }
+
+  .targetPillBadges.inline{
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .tpBadge{
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .4px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.86);
+    text-transform: none;
+  }
+
+  .tpAtk-ranged { border-color: rgba(120,200,255,0.35); background: rgba(20,60,90,0.35); }
+  .tpAtk-melee  { border-color: rgba(255,170,80,0.35); background: rgba(80,40,10,0.35); }
+  .tpAtk-combi  { border-color: rgba(180,140,255,0.35); background: rgba(55,30,85,0.35); }
+  .tpAtk-healer { border-color: rgba(80,255,140,0.35); background: rgba(10,70,30,0.35); }
+
+  .tpDiff-normal   { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
+  .tpDiff-boss     { border-color: rgba(255,80,80,0.45);   background: rgba(80,10,10,0.45); }
+  .tpDiff-groupmob { border-color: rgba(120,200,255,0.35); background: rgba(10,25,45,0.45); }
+  .tpDiff-groupboss{ border-color: rgba(255,130,80,0.40);  background: rgba(70,25,10,0.45); }
+  .tpDiff-raidmob  { border-color: rgba(200,140,255,0.35); background: rgba(55,30,85,0.45); }
+  .tpDiff-raidboss { border-color: rgba(255,40,140,0.42);  background: rgba(90,10,45,0.48); }
 
   /* ---------- MOBILE ---------- */
   @media (max-width: 900px){
@@ -735,7 +815,6 @@
     .action-btn img{ width: 24px; height: 24px; }
   }
 
-  /* Rotate hint */
   #rotateHint{
     position: fixed;
     inset: 0;
@@ -753,7 +832,6 @@
     #rotateHint{ display: flex; }
   }
 
-  /* ===== Landscape mobile block ===== */
   @media (orientation: landscape) and (max-width: 1024px){
     :root{
       --gap: 6px;
@@ -836,18 +914,18 @@
     opacity: 0.85;
   }
   body.locked #gameOverOverlay button{ pointer-events: auto; }
+
   /* ===== WAVE COMPLETED OVERLAY ===== */
   #waveOverlay{
     position: fixed;
     inset: 0;
-    z-index: 99995;          /* below gameOver (99998) but above everything else */
+    z-index: 99995;
     display: grid;
     place-items: center;
     background: rgba(0,0,0,0.35);
     backdrop-filter: blur(2px);
-    pointer-events: none;    /* allow UI to still be used if you want */
+    pointer-events: none;
   }
-
   #waveOverlay.hidden{ display:none; }
 
   .waveCard{
@@ -859,21 +937,16 @@
     padding: 14px 16px;
     text-align: center;
   }
-
   .waveTitle{
     font-weight: 900;
     letter-spacing: 0.8px;
     font-size: 20px;
   }
-
   .waveSub{
     margin-top: 6px;
     font-size: 12px;
     color: rgba(255,255,255,0.78);
   }
-
-
-
 
   /* ===== DAMAGE FEEDBACK ===== */
   #hitFlash{
@@ -906,7 +979,6 @@
     100% { transform: translate3d(0,0,0); }
   }
 
-  /* loot toast */
   #lootToastHost{
     position: fixed;
     left: 50%;
@@ -938,26 +1010,23 @@
     100% { opacity:0; transform: translateY(-10px); }
   }
 
-  /* ===== TOAST VARIANTS ===== */
   .lootToast.toastError{
     border-color: rgba(255,80,80,0.45);
     background: rgba(80,10,10,0.70);
     box-shadow: 0 18px 48px rgba(0,0,0,0.55), 0 0 24px rgba(255,80,80,0.10);
   }
-
   .lootToast.toastWarn{
     border-color: rgba(255,190,80,0.45);
     background: rgba(80,50,10,0.65);
   }
-
   .lootToast.toastInfo{
     border-color: rgba(120,200,255,0.35);
     background: rgba(10,25,45,0.60);
   }
   .lootToast.toastSuccess{
-  border-color: rgba(80,255,140,0.40);
-  background: rgba(10,70,30,0.65);
-  box-shadow: 0 18px 48px rgba(0,0,0,0.55), 0 0 24px rgba(80,255,140,0.10);
+    border-color: rgba(80,255,140,0.40);
+    background: rgba(10,70,30,0.65);
+    box-shadow: 0 18px 48px rgba(0,0,0,0.55), 0 0 24px rgba(80,255,140,0.10);
   }
 </style>
 </head>
@@ -983,7 +1052,7 @@
     </div>
     <div class="topbarRight">
       <span class="badge" id="gameBadge">Game: 0</span>
-      <button id="btnHelp" class="top-btn" type="button">Help</button>
+      <button id="btnHelp" class="btnTop" type="button">Help</button>
       <button class="btnTop" id="btnLogout" title="Logout">Logout</button>
     </div>
   </div>
@@ -996,9 +1065,19 @@
       <div class="panelHeader">
         <span>Encounter</span>
         <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
-          <input id="actionTarget" class="target-input" placeholder="Target" />
+          <input id="actionTarget" class="target-input" placeholder="Target" aria-hidden="true" tabindex="-1" />
+          <div id="targetPill" class="targetPill" title="">
+            <img id="targetPillImg" class="targetPillImg" alt="" />
+            <div class="targetPillMain">
+              <span id="targetPillText" class="targetPillText">No Target</span>
+              <span class="targetPillBadges inline">
+                <span id="tpAttack" class="tpBadge">—</span>
+                <span id="tpDiff" class="tpBadge">—</span>
+              </span>
+            </div>
+            <button id="targetPillClear" class="targetPillClear" type="button" title="Clear target">×</button>
+          </div>
 
-          <!-- Rolling info message (currently static) -->
           <div id="infoMarquee" class="infoMarquee" title="">
             <div class="infoTrack">
               <div class="infoInner" id="infoInner">
@@ -1013,7 +1092,6 @@
         </div>
       </div>
 
-      <!-- Container stays the same, but we render the battlefield scene into it -->
       <div class="lanes" id="lanes"></div>
     </div>
 
@@ -1050,13 +1128,10 @@ let ENABLE_SHAKE = false;
 let ENABLE_HIT_FLASH = false;
 let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80");
 
-/* Keep dead mobs visible briefly (even if server removes them) */
-const deadFx = new Map(); // id -> { untilMs, lastMob }
+const deadFx = new Map();
 const DEAD_STAY_MS = 2200;
 
-/* IMPORTANT: DOM cache => prevents flicker (no re-create each tick) */
-const mobDom = new Map(); // id -> { wrap, card, img, hpFill, targetTag, avatarFallback }
-
+const mobDom = new Map();
 /* ======================================================================
    GLOBALS (END)
    ====================================================================== */
@@ -1070,6 +1145,37 @@ const LOGIN_PAGE = "index.html";
 function getToken() { return localStorage.getItem("sessionToken") || ""; }           // (END getToken)
 function getPlayerName() { return localStorage.getItem("playerName") || ""; }       // (END getPlayerName)
 function getGameId(){ return localStorage.getItem("gameId") || "0"; }               // (END getGameId)
+
+/* =====================
+   CHARACTER CONTEXT
+   ===================== */
+function readCharacterFromUrlOnce(){
+  const qs = new URLSearchParams(window.location.search);
+  const cid = (qs.get("characterId") || "").trim();
+  const cname = (qs.get("characterName") || "").trim();
+
+  if (cid) localStorage.setItem("characterId", cid);
+  if (cname) localStorage.setItem("characterName", cname);
+
+  // clean URL (optional)
+  if (cid || cname){
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete("characterId");
+    clean.searchParams.delete("characterName");
+    window.history.replaceState({}, "", clean.toString());
+  }
+} // (END readCharacterFromUrlOnce)
+
+function getCharacterId(){ return localStorage.getItem("characterId") || ""; }      // (END getCharacterId)
+function getCharacterName(){ return localStorage.getItem("characterName") || ""; } // (END getCharacterName)
+
+function requireCharacterOrRedirect(){
+  const cid = getCharacterId();
+  const cname = getCharacterName();
+  if (!cid && !cname){
+    window.location.href = LOGIN_PAGE; // back to character select in index.html
+  }
+} // (END requireCharacterOrRedirect)
 
 function authHeaders(extra = {}) {
   const t = getToken();
@@ -1110,6 +1216,8 @@ async function doLogout() {
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("playerName");
     localStorage.removeItem("gameId");
+    localStorage.removeItem("characterId");
+    localStorage.removeItem("characterName");
   };
 
   if (!token) {
@@ -1141,6 +1249,8 @@ document.getElementById("btnLogout").addEventListener("click", doLogout);
 document.getElementById("btnLogoutParty")?.addEventListener("click", doLogout);
 
 requireAuthOrRedirect();
+readCharacterFromUrlOnce();
+requireCharacterOrRedirect();
 /* ======================================================================
    AUTH + STORAGE (END)
    ====================================================================== */
@@ -1163,6 +1273,7 @@ const LOGOUT_URL = "/api/v001/darawebgame/auth/logout";
 const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
 const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
 const IMG_EXT = ".png";
+
 const ACTION_COSTS = {
   attack:     { res: "en", cost: 10 },
   defend:     { res: "en", cost: 10 },
@@ -1172,9 +1283,10 @@ const ACTION_COSTS = {
   shoot:      { res: "en", cost: 10 },
   usepotion:  { res: null, cost: 0  },
   talk:       { res: null, cost: 0  },
-  revive:     { res: "mn", cost: 10 },   // or "en" if you want
+  revive:     { res: "mn", cost: 10 },
   evac:       { res: null, cost: 0  }
 };
+
 const MEDIA = {
   images: {
     attack: "https://gameinfo.daraempire.com/wp-content/uploads/2026/01/JumpAttack-150x150.png",
@@ -1246,6 +1358,19 @@ const actionsEl = document.getElementById("actions");
 const actionTargetEl = document.getElementById("actionTarget");
 const actionMsgEl = document.getElementById("actionMsg");
 
+const targetPillEl = document.getElementById("targetPill");
+const targetPillImgEl = document.getElementById("targetPillImg");
+const targetPillTextEl = document.getElementById("targetPillText");
+const targetPillClearEl = document.getElementById("targetPillClear");
+
+targetPillClearEl?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  uiState.selectedMobId = null;
+  clearTarget();
+  updateEncounterMobs();
+});
+
 function getActionTarget(){ return (actionTargetEl.value || "").trim(); } // (END getActionTarget)
 function getActionMsg(){ return (actionMsgEl.value || "").trim(); }       // (END getActionMsg)
 
@@ -1292,29 +1417,24 @@ function buildButtons(){
     btn.dataset.action = a.id;
     btn.dataset.cd = String(a.cd);
 
-    // --- icon ---
     const img = document.createElement("img");
     img.src = MEDIA.images[a.id] || "";
     img.alt = a.id;
     btn.appendChild(img);
 
-    // --- centered counter (potions, ammo, charges, etc.) ---
     const count = document.createElement("div");
     count.className = "count";
     btn.appendChild(count);
 
-    // --- cooldown fill ---
     const fill = document.createElement("div");
     fill.className = "cd-fill";
     btn.appendChild(fill);
 
-    // --- cooldown overlay (number) ---
     const overlay = document.createElement("div");
     overlay.className = "cd-overlay";
     overlay.innerHTML = `<div class="cd-time"></div>`;
     btn.appendChild(overlay);
 
-    // --- label ---
     const tip = document.createElement("div");
     tip.className = "tip";
     tip.textContent = a.label;
@@ -1324,10 +1444,8 @@ function buildButtons(){
       const actionId = a.id;
       const cdSec = a.cd;
 
-      // cooldown check
       if (getRemaining(actionId) > 0) return;
 
-      // block potion use if none
       if (actionId === "usepotion"){
         const n = getPotionCount ? getPotionCount() : 0;
         if (Number(n) <= 0){
@@ -1336,7 +1454,6 @@ function buildButtons(){
         }
       }
 
-      // resource check (energy/mana) if you use ACTION_COSTS with {res,cost}
       if (typeof canPayCost === "function"){
         const pay = canPayCost(actionId);
         if (pay && pay.ok === false){
@@ -1348,21 +1465,26 @@ function buildButtons(){
         }
       }
 
-      // play sound
       playSound(actionId);
 
       const userName = getPlayerName();
+      const characterId = getCharacterId();
+      const characterName = getCharacterName();
+
       if (!userName) {
         console.warn("No playerName in localStorage yet");
         return;
       }
+      if (!characterId && !characterName){
+        console.warn("No character selected");
+        window.location.href = LOGIN_PAGE;
+        return;
+      }
 
-      // start cooldown
       startCooldown(actionId, cdSec);
       tickCooldowns();
 
-      const actionTargetInput = getActionTarget();
-      const actionTarget = resolveTargetIdFromInput(actionTargetInput);
+      const actionTarget = getActionTarget();
       const actionMsg = getActionMsg() || actionId;
 
       try {
@@ -1372,6 +1494,8 @@ function buildButtons(){
           body: JSON.stringify({
             gameId: String(getGameId()),
             userName,
+            characterId,
+            characterName,
             actionId,
             actionTarget,
             actionMsg
@@ -1380,7 +1504,6 @@ function buildButtons(){
 
         if (res.status === 401) doLogout();
 
-        // optional: if server returns error json/text, show as toast
         if (!res.ok && typeof showToast === "function"){
           const txt = await res.text().catch(() => "");
           const msg = txt ? txt.slice(0, 140) : `Action failed (${res.status})`;
@@ -1396,34 +1519,30 @@ function buildButtons(){
   }
 } // (END buildButtons)
 
+function tickCooldowns(){
+  document.querySelectorAll(".action-btn").forEach(btn => {
+    const actionId = btn.dataset.action;
 
-  function tickCooldowns(){
-    document.querySelectorAll(".action-btn").forEach(btn => {
-      const actionId = btn.dataset.action;
+    const totalMs = Number(btn.dataset.cd) * 1000;
+    const remainingMs = getRemaining(actionId);
+    setButtonCooldownUI(btn, remainingMs, totalMs);
 
-      // existing cooldown logic
-      const totalMs = Number(btn.dataset.cd) * 1000;
-      const remainingMs = getRemaining(actionId);
-      setButtonCooldownUI(btn, remainingMs, totalMs);
+    const countEl = btn.querySelector(".count");
+    if (!countEl) return;
 
-      // ===== COUNTERS =====
-      const countEl = btn.querySelector(".count");
-      if (!countEl) return;
-
-      if (actionId === "usepotion"){
-        const n = getPotionCount();
-
-        if (n > 0){
-          countEl.textContent = String(n);
-          countEl.style.display = "flex";
-        } else {
-          countEl.style.display = "none";
-        }
+    if (actionId === "usepotion"){
+      const n = getPotionCount();
+      if (n > 0){
+        countEl.textContent = String(n);
+        countEl.style.display = "flex";
       } else {
         countEl.style.display = "none";
       }
-    });
-  } // (END tickCooldowns)
+    } else {
+      countEl.style.display = "none";
+    }
+  });
+} // (END tickCooldowns)
 
 actionMsgEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
@@ -1443,7 +1562,7 @@ actionMsgEl.addEventListener("keydown", (e) => {
 function clamp01(x){ return Math.max(0, Math.min(1, x)); } // (END clamp01)
 function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; } // (END pct)
 
-/* Demo state (server will override via /state) */
+/* Demo state */
 let uiState = {
   turn: 1,
   mobs: [
@@ -1464,11 +1583,13 @@ let uiState = {
 };
 
 function renderBadges(){
-  document.getElementById("playerBadge").textContent = "Player: " + (getPlayerName() || "(not set)");
+  const p = getPlayerName() || "(not set)";
+  const c = getCharacterName() || getCharacterId() || "(no character)";
+  document.getElementById("playerBadge").textContent = `Player: ${p} • Char: ${c}`;
   document.getElementById("gameBadge").textContent = "Game: " + getGameId();
   document.getElementById("turnBadge").textContent = "Turn: " + (uiState.turn ?? 1);
   document.getElementById("waveBadge").textContent =
-  "Wave: " + (uiState.wave ?? 0) + " | Left: " + (uiState.waveMobsLeft ?? 0);
+    "Wave: " + (uiState.wave ?? 0) + " | Left: " + (uiState.waveMobsLeft ?? 0);
   document.getElementById("partyCount").textContent = "Players: " + (uiState.party?.length ?? 0);
 } // (END renderBadges)
 
@@ -1497,8 +1618,6 @@ function playerImageUrl(avatarId){
 /* ======================================================================
    ENCOUNTER (NO FLICKER) - PERSISTENT DOM (BEGIN)
    ====================================================================== */
-
-/* Create the scene ONCE and reuse it forever */
 function ensureScene(){
   const lanesEl = document.getElementById("lanes");
   let scene = lanesEl.querySelector(".scene");
@@ -1523,12 +1642,10 @@ function ensureScene(){
   return scene;
 } // (END ensureScene)
 
-/* Utility: scale mobs by y (depth illusion) */
 function depthScale(y01){
-  return 0.55 + clamp01(y01) * 0.55; // far -> small, near -> big
+  return 0.55 + clamp01(y01) * 0.55;
 } // (END depthScale)
 
-/* Create one mob DOM node (once per mob id) */
 function createMobDom(mobId, idx){
   const scene = ensureScene();
   const battlefield = scene.querySelector(".battlefield");
@@ -1556,7 +1673,6 @@ function createMobDom(mobId, idx){
   avatarFallback.style.display = "none";
   avatarFallback.textContent = mobId.slice(0,3);
 
-
   const hpBar = document.createElement("div");
   hpBar.className = "hpBar";
 
@@ -1581,24 +1697,17 @@ function createMobDom(mobId, idx){
   wrap.onclick = () => {
     uiState.selectedMobId = mobId;
     uiState.selectedPartyId = null;
-
-    const m = (uiState.mobs || []).find(x => String(x.id) === String(mobId));
-    document.getElementById("actionTarget").value =
-      m?.displayName || m?.avatarId || mobId;
-
+    setTargetMobId(mobId);
     updateEncounterMobs();
   };
-
 
   const entry = { wrap, card, img, hpFill, targetTag, avatarFallback };
   mobDom.set(mobId, entry);
   return entry;
 } // (END createMobDom)
 
-/* Update / patch mobs in place (no innerHTML reset => no flicker) */
 function updateEncounterMobs(){
   const scene = ensureScene();
-  const battlefield = scene.querySelector(".battlefield");
   const rect = scene.getBoundingClientRect();
   const w = Math.max(1, rect.width);
   const h = Math.max(1, rect.height);
@@ -1616,7 +1725,6 @@ function updateEncounterMobs(){
   const mobs = [...alive, ...corpses];
   const seen = new Set();
 
-  // draw order: far first, near last
   mobs.sort((a,b) => Number(a.y ?? 0.5) - Number(b.y ?? 0.5));
 
   for (let i=0; i<mobs.length; i++){
@@ -1631,40 +1739,31 @@ function updateEncounterMobs(){
       entry = createMobDom(id, i);
     }
 
-    // Compute coords
     const x01 = clamp01(Number(m.x ?? 0.5));
     const y01 = clamp01(Number(m.y ?? 0.5));
 
     const x = pad + x01 * (w - pad*2);
     const y = pad + y01 * (h - pad*2);
 
-    // Position
     entry.wrap.style.left = `${x}px`;
     entry.wrap.style.top  = `${y}px`;
 
-    // Depth scale
     const s = depthScale(y01);
     entry.wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
-
-    // Z-index by y
     entry.wrap.style.zIndex = String(Math.floor(y01 * 1000));
 
-    // HP
     const max = Number(m.max || m.hpMax || 1);
     const hp  = Number(m.hp || 0);
     const hpPct = max > 0 ? clamp01(hp / max) * 100 : 0;
     entry.hpFill.style.width = `${hpPct}%`;
 
-    // Tag + fallback text (keeps correct if id changed – normally it won't)
     const label = String(m.displayName || m.avatarId || id);
-    entry.targetTag.textContent = label;                 // shows "Spider"
-    entry.avatarFallback.textContent = label.slice(0,3); // shows "Spi"
+    entry.targetTag.textContent = label;
+    entry.avatarFallback.textContent = label.slice(0,3);
 
-    // Classes
     const isDead = hp <= 0;
     entry.card.classList.toggle("dead", isDead);
 
-    // Only allow selecting alive mobs (if dead, clear selection if it was selected)
     if (isDead && uiState.selectedMobId === id){
       uiState.selectedMobId = null;
     }
@@ -1674,7 +1773,6 @@ function updateEncounterMobs(){
     const threat = (uiState.selectedMobId === id) || (hpPct >= 75);
     entry.card.classList.toggle("threat", threat);
 
-    // Death icon: add/remove only on state change
     let deathIcon = entry.card.querySelector(".deathIcon");
     if (isDead && !deathIcon){
       deathIcon = document.createElement("div");
@@ -1685,7 +1783,6 @@ function updateEncounterMobs(){
       deathIcon.remove();
     }
 
-    // Image: only set src if changed (prevents flicker)
     const wantSrc = mobImageUrl(m.avatarId || id);
     if (entry.img.getAttribute("src") !== wantSrc){
       entry.img.style.display = "";
@@ -1694,7 +1791,6 @@ function updateEncounterMobs(){
     }
   }
 
-  // Remove missing mobs
   for (const [id, entry] of mobDom){
     if (!seen.has(id)){
       entry.wrap.remove();
@@ -1742,7 +1838,7 @@ function renderParty(){
 
     const lvl = Number(p.level ?? 0);
     const xp  = Number(p.xp ?? 0);
-    const xpMax = getXpMax(p); // can be null
+    const xpMax = getXpMax(p);
     const xpP = (xpMax && xpMax > 0) ? pct(xp, xpMax) : 0;
 
     const imgUrl = playerImageUrl(p.avatarId);
@@ -1770,19 +1866,18 @@ function renderParty(){
         </div>
 
         <div class="pBars">
-            ${barRow("HP", hpP, `${p.hp}/${p.hpMax}`, "hp")}
-            ${barRow("EN", enP, `${p.en}/${p.enMax}`, "en")}
-            ${barRow("MN", mnP, `${p.mn}/${p.mnMax}`, "mn")}
-                        ${
+          ${barRow("HP", hpP, `${p.hp}/${p.hpMax}`, "hp")}
+          ${barRow("EN", enP, `${p.en}/${p.enMax}`, "en")}
+          ${barRow("MN", mnP, `${p.mn}/${p.mnMax}`, "mn")}
+          ${
             (xpMax && xpMax > 0)
-                ? barRow("XP", xpP, `${xp}/${xpMax}`, "xp")
-                : `<div class="pBarRow">
-                    <div style="font-weight:900;opacity:.9;">XP</div>
-                    <div class="pBar xp"><div style="width:0%;"></div></div>
-                    <div style="text-align:right;opacity:.85;">${escapeHtml(String(xp))}</div>
-                  </div>`
-            }
-
+              ? barRow("XP", xpP, `${xp}/${xpMax}`, "xp")
+              : `<div class="pBarRow">
+                  <div style="font-weight:900;opacity:.9;">XP</div>
+                  <div class="pBar xp"><div style="width:0%;"></div></div>
+                  <div style="text-align:right;opacity:.85;">${escapeHtml(String(xp))}</div>
+                </div>`
+          }
         </div>
       </div>
     `;
@@ -1795,7 +1890,6 @@ function renderParty(){
       uiState.selectedPartyId = p.id;
       uiState.selectedMobId = null;
 
-      // Update selection without recreating encounter DOM
       updateEncounterMobs();
       renderParty();
       renderBadges();
@@ -1813,7 +1907,6 @@ function renderParty(){
    INFO MSG (BEGIN)
    ====================================================================== */
 let lastInfoMsg = "";
-
 function updateInfoMarquee(msg){
   const marquee = document.getElementById("infoMarquee");
   const a = document.getElementById("infoTextA");
@@ -1865,8 +1958,6 @@ function detectPartyDamage(prev, next){
   return out;
 } // (END detectPartyDamage)
 
-
-// begin ShowToast
 function showToast(text, type = "info", ms = 1800){
   const host = document.getElementById("lootToastHost");
   if (!host) return;
@@ -1875,15 +1966,12 @@ function showToast(text, type = "info", ms = 1800){
   el.className = "lootToast";
 
   const t = String(type || "info").toLowerCase();
-
   if (t === "error") el.classList.add("toastError");
   else if (t === "warn" || t === "warning") el.classList.add("toastWarn");
   else if (t === "success") el.classList.add("toastSuccess");
   else el.classList.add("toastInfo");
 
   el.textContent = String(text || "—");
-
-  // Optional: make animation duration match ms (recommended)
   el.style.animationDuration = `${Math.max(300, ms)}ms`;
 
   host.appendChild(el);
@@ -1908,7 +1996,6 @@ function detectMobDeaths(prev, next){
   const nextMap = extractMobsMap(next);
   const now = Date.now();
 
-  // If mob became alive again, allow FX again
   for (const [id, m] of nextMap) {
     if (Number(m.hp) > 0) {
       playedDeaths.delete(id);
@@ -1930,7 +2017,6 @@ function detectMobDeaths(prev, next){
     showLootToast(`${id} is killed!`);
   };
 
-  // Case A: hp dropped to 0
   for (const [id, nextMob] of nextMap){
     const prevMob = prevMap.get(id);
     const wasAlive = prevMob ? (Number(prevMob.hp) > 0) : true;
@@ -1938,14 +2024,12 @@ function detectMobDeaths(prev, next){
     if (wasAlive && isDead) triggerDeathFx(id, nextMob);
   }
 
-  // Case B: mob got removed
   for (const [id, prevMob] of prevMap){
     const existsNow = nextMap.has(id);
     const wasAlive  = Number(prevMob.hp) > 0;
     if (wasAlive && !existsNow) triggerDeathFx(id, prevMob);
   }
 
-  // Cleanup old corpse FX
   for (const [id, fx] of deadFx){
     if (now > fx.untilMs) deadFx.delete(id);
   }
@@ -1954,11 +2038,9 @@ function detectMobDeaths(prev, next){
    DAMAGE + DEATH DETECTION (END)
    ====================================================================== */
 
-  // Help Button handling
-  document.getElementById("btnHelp")?.addEventListener("click", () => {
-    window.open("help.html", "_blank", "noopener");
-  });//end Help button handling
-
+document.getElementById("btnHelp")?.addEventListener("click", () => {
+  window.open("help.html", "_blank", "noopener");
+});
 
 /* ======================================================================
    GAME OVER + HIT FLASH (BEGIN)
@@ -1988,7 +2070,6 @@ function hideGameOverOverlay(){
 } // (END hideGameOverOverlay)
 
 let lastHitFlashAt = 0;
-
 function triggerHitFeedback(intensity01 = 0.7){
   if (!ENABLE_HIT_FLASH) return;
 
@@ -2032,7 +2113,7 @@ updateFlashBtn();
    ====================================================================== */
 function renderAll(){
   renderBadges();
-  updateEncounterMobs();  // IMPORTANT: patches DOM (no flicker)
+  updateEncounterMobs();
   renderParty();
 } // (END renderAll)
 /* ======================================================================
@@ -2045,18 +2126,25 @@ function renderAll(){
    ====================================================================== */
 async function updateState(){
   try{
-    const res = await fetch(STATE_URL, { headers: authHeaders(), cache: "no-store" });
+    // include character info in state request
+    const url = new URL(STATE_URL, window.location.origin);
+    const cid = getCharacterId();
+    const gid = getGameId();
+    if (cid) url.searchParams.set("characterId", cid);
+    if (gid) url.searchParams.set("gameId", String(gid));
+
+    const res = await fetch(url.toString(), { headers: authHeaders(), cache: "no-store" });
     if (res.status === 401) { doLogout(); return; }
     if (!res.ok) return;
 
     const s = await res.json();
 
-    const meName = getPlayerName();
+    // "me" should be your CHARACTER name (fallback to playerName)
+    const meName = getCharacterName() || getPlayerName();
     const mePlayer = (s.party || []).find(p => String(p.id) === String(meName)) || null;
 
     updateInfoMarquee(s.infoMsg);
 
-    // Damage feedback: only current player gets effects
     const damages = detectPartyDamage(lastState || uiState, s);
     if (damages.length > 0 && meName){
       const myHit = damages.find(d => d.id === meName);
@@ -2095,13 +2183,8 @@ async function updateState(){
     const wasWave = String(lastState?.phase || "") === "wavecompleted";
     const isWave  = String(s.phase || "") === "wavecompleted";
 
-    // Show wave overlay (only if not gameover)
     if (!isGameOver && isWave){
-      // If your server can send nextWaveInTurns or nextWaveInMs, use it.
-      // For now we just show "incoming". (You can pass null.)
       showWaveOverlay(s.wave, s.nextWaveInTurns ?? null);
-
-      // one-time success toast when entering wavecompleted
       if (!wasWave && typeof showToast === "function"){
         showToast(`Wave ${Number(s.wave) || 0} cleared!`, "success", 1800);
       }
@@ -2114,36 +2197,32 @@ async function updateState(){
 
     lastState = s;
 
-    // ✅ this must receive the PLAYER OBJECT, not the name
     checkPlayerStatToasts(mePlayer);
+    CheckTargetClearNeeded();
+    renderTargetPillFromId(getActionTarget());
 
     renderAll();
   } catch(e){
-    // ignore network errors
+    // ignore
   }
 } // (END updateState)
 /* ======================================================================
    STATE POLLING (END)
    ====================================================================== */
 
+
 /* ======================================================================
    XP,Level, Credits Toasts (BEGIN)
    ====================================================================== */
-// ---------- PLAYER STAT CHANGE TOASTS ----------
-
-let lastPlayerStats = null;   // null = first snapshot (no toasts)
+let lastPlayerStats = null;
 
 function resetPlayerStatTracking() {
   lastPlayerStats = null;
 }
 
 function checkPlayerStatToasts(player) {
-  // player is your own player object from JSON state
-  // expected fields: credits, level, xp, potions
-
   if (!player) return;
 
-  // First snapshot → store only, no toasts
   if (lastPlayerStats === null) {
     lastPlayerStats = {
       credits: player.credits ?? 0,
@@ -2154,8 +2233,7 @@ function checkPlayerStatToasts(player) {
     return;
   }
 
-  // Helper to compare and toast
-  function diff(key, label, positiveMsg, negativeMsg) {
+  function diff(key, positiveMsg, negativeMsg) {
     const prev = lastPlayerStats[key];
     const curr = player[key];
 
@@ -2164,165 +2242,214 @@ function checkPlayerStatToasts(player) {
     const delta = curr - prev;
 
     if (delta > 0) {
-      showToast(
-        positiveMsg.replace("{n}", Math.abs(delta)),
-        "success",
-        1500
-      );
+      showToast(positiveMsg.replace("{n}", Math.abs(delta)), "success", 1500);
     } else {
-      showToast(
-        negativeMsg.replace("{n}", Math.abs(delta)),
-        "warning",
-        1500
-      );
+      showToast(negativeMsg.replace("{n}", Math.abs(delta)), "warning", 1500);
     }
 
     lastPlayerStats[key] = curr;
   }
 
-  diff(
-    "credits",
-    "Credits",
-    "+{n} Credits",
-    "-{n} Credits"
-  );
+  diff("credits", "+{n} Credits", "-{n} Credits");
+  diff("xp", "+{n} XP", "-{n} XP");
+  diff("potions", "+{n} Potion(s)", "-{n} Potion(s)");
 
-  diff(
-    "xp",
-    "XP",
-    "+{n} XP",
-    "-{n} XP"
-  );
-
-  diff(
-    "potions",
-    "Potions",
-    "+{n} Potion(s)",
-    "-{n} Potion(s)"
-  );
-
-  // Level is special → usually only positive
   if (player.level !== lastPlayerStats.level) {
     if (player.level > lastPlayerStats.level) {
-      showToast(
-        `Level Up! You are now Level ${player.level}`,
-        "success",
-        2200
-      );
+      showToast(`Level Up! You are now Level ${player.level}`, "success", 2200);
     } else {
-      showToast(
-        `Level changed to ${player.level}`,
-        "warning",
-        1500
-      );
+      showToast(`Level changed to ${player.level}`, "warning", 1500);
     }
     lastPlayerStats.level = player.level;
   }
 }
-
-
-
 /* ======================================================================
    XP,Level, Credits Toasts (END)
    ====================================================================== */
+
+
 /* ======================================================================
    Wave over Functions (BEGIN)
    ====================================================================== */
-  function showWaveOverlay(wave, nextInTurns){
-    const el = document.getElementById("waveOverlay");
-    const title = document.getElementById("waveTitle");
-    const sub = document.getElementById("waveSub");
-    if (!el || !title || !sub) return;
+function showWaveOverlay(wave, nextInTurns){
+  const el = document.getElementById("waveOverlay");
+  const title = document.getElementById("waveTitle");
+  const sub = document.getElementById("waveSub");
+  if (!el || !title || !sub) return;
 
-    title.textContent = `WAVE ${Number(wave) || 0} CLEARED`;
-    sub.textContent = (nextInTurns != null)
-      ? `Next wave in ~${nextInTurns} turns…`
-      : `Next wave incoming…`;
+  title.textContent = `WAVE ${Number(wave) || 0} CLEARED`;
+  sub.textContent = (nextInTurns != null)
+    ? `Next wave in ~${nextInTurns} turns…`
+    : `Next wave incoming…`;
 
-    el.classList.remove("hidden");
-    el.setAttribute("aria-hidden", "false");
-  }
+  el.classList.remove("hidden");
+  el.setAttribute("aria-hidden", "false");
+}
 
-  function hideWaveOverlay(){
-    const el = document.getElementById("waveOverlay");
-    if (!el) return;
-    el.classList.add("hidden");
-    el.setAttribute("aria-hidden", "true");
-  }
-
-
+function hideWaveOverlay(){
+  const el = document.getElementById("waveOverlay");
+  if (!el) return;
+  el.classList.add("hidden");
+  el.setAttribute("aria-hidden", "true");
+}
 /* ======================================================================
    Wave over Functions (END)
    ====================================================================== */
 
 
 /* ======================================================================
-   Helper Functions (BEGIN)
+   Target Pill functions (BEGIN)
+   ====================================================================== */
+function normKey(s){
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function mapAttackType(s){
+  const k = normKey(s);
+  switch(k){
+    case "ranged": return { text: "Ranged", cls: "tpAtk-ranged" };
+    case "melee":  return { text: "Melee", cls: "tpAtk-melee" };
+    case "combi":  return { text: "Ranged/Melee", cls: "tpAtk-combi" };
+    case "healer": return { text: "Healer", cls: "tpAtk-healer" };
+    default:       return { text: (s ? String(s).toLowerCase() : "—"), cls: "" };
+  }
+}
+
+function mapDifficulty(s){
+  const k = normKey(s);
+  switch(k){
+    case "normal":    return { text: "Normal", cls: "tpDiff-normal" };
+    case "boss":      return { text: "Boss", cls: "tpDiff-boss" };
+    case "groupmob":  return { text: "Group Mob", cls: "tpDiff-groupmob" };
+    case "groupboss": return { text: "Group Boss", cls: "tpDiff-groupboss" };
+    case "raidmob":   return { text: "Raid Mob",  cls: "tpDiff-raidmob" };
+    case "raidboss":  return { text: "Raid Boss", cls: "tpDiff-raidboss" };
+    default:          return { text: (s ? String(s).toLowerCase() : "—"), cls: "" };
+  }
+}
+
+function setBadge(el, mapping, prefix){
+  if (!el) return;
+  el.classList.forEach(c => { if (c.startsWith(prefix)) el.classList.remove(c); });
+  el.textContent = mapping.text;
+  if (mapping.cls) el.classList.add(mapping.cls);
+}
+/* ======================================================================
+   Target Pill functions (END)
    ====================================================================== */
 
-  function getMe(){
-    const me = getPlayerName();
-    if (!me) return null;
-    return (uiState.party || []).find(p => String(p.id) === String(me)) || null;
-  } // (END getMe)
 
-  function getResourceValue(player, res){
-    if (!player) return 0;
-    if (res === "en") return Number(player.en ?? 0);
-    if (res === "mn") return Number(player.mn ?? 0);
-    return 0;
-  } // (END getResourceValue)
+/* ======================================================================
+   Helper Functions (BEGIN)
+   ====================================================================== */
+function getMe(){
+  const me = getCharacterName() || getPlayerName();
+  if (!me) return null;
+  return (uiState.party || []).find(p => String(p.id) === String(me)) || null;
+} // (END getMe)
 
-  function resLabel(res){
-    return res === "en" ? "Energy" : (res === "mn" ? "Mana" : "Resource");
-  } // (END resLabel)
+function getResourceValue(player, res){
+  if (!player) return 0;
+  if (res === "en") return Number(player.en ?? 0);
+  if (res === "mn") return Number(player.mn ?? 0);
+  return 0;
+} // (END getResourceValue)
 
-  function canPayCost(actionId){
-    const rule = ACTION_COSTS[actionId];
-    if (!rule || !rule.res || Number(rule.cost) <= 0) return { ok:true };
+function resLabel(res){
+  return res === "en" ? "Energy" : (res === "mn" ? "Mana" : "Resource");
+} // (END resLabel)
 
-    const me = getMe();
-    const cur = getResourceValue(me, rule.res);
-    const need = Number(rule.cost);
+function canPayCost(actionId){
+  const rule = ACTION_COSTS[actionId];
+  if (!rule || !rule.res || Number(rule.cost) <= 0) return { ok:true };
 
-    return { ok: cur >= need, res: rule.res, cur, need };
-  } // (END canPayCost)
+  const me = getMe();
+  const cur = getResourceValue(me, rule.res);
+  const need = Number(rule.cost);
 
-    function getPotionCount(){
-    const me = getMe();
-    return Number(me?.potions ?? 0);
-  } // (END getPotionCount)
+  return { ok: cur >= need, res: rule.res, cur, need };
+} // (END canPayCost)
 
-  function getXpMax(p){
-    // hardcoded at the moment
-    return Number(100);
-    // prefer explicit max
-    if (p && p.xpMax != null) return Number(p.xpMax);
+function getPotionCount(){
+  const me = getMe();
+  return Number(me?.potions ?? 0);
+} // (END getPotionCount)
 
-    // alternative naming: "xpToNext" means progress to next level (0..xpToNext)
-    if (p && p.xpToNext != null) return Number(p.xpToNext);
+function getXpMax(p){
+  return Number(100);
+}
 
-    // unknown → no max
-    return null;
+function getMobById(id){
+  return (uiState.mobs || []).find(m => String(m.id) === String(id)) || null;
+}
+
+function setTargetMobId(mobId){
+  const id = String(mobId || "").trim();
+  actionTargetEl.value = id;
+  actionTargetEl.dataset.targetId = id;
+  renderTargetPillFromId(id);
+}
+
+function clearTarget(){
+  actionTargetEl.value = "";
+  delete actionTargetEl.dataset.targetId;
+  renderTargetPillFromId("");
+}
+
+function renderTargetPillFromId(id){
+  const mob = id ? getMobById(id) : null;
+
+  const label = mob ? String(mob.displayName || mob.avatarId || mob.id) : "No Target";
+  const imgSrc = mob ? mobImageUrl(mob.avatarId || mob.id) : "";
+
+  const tpAttackEl = document.getElementById("tpAttack");
+  const tpDiffEl   = document.getElementById("tpDiff");
+
+  if (mob){
+    const atk = mapAttackType(mob.attackType);
+    const dif = mapDifficulty(mob.difficulty);
+    setBadge(tpAttackEl, atk, "tpAtk-");
+    setBadge(tpDiffEl,   dif, "tpDiff-");
+  } else {
+    setBadge(tpAttackEl, {text:"—", cls:""}, "tpAtk-");
+    setBadge(tpDiffEl,   {text:"—", cls:""}, "tpDiff-");
   }
 
-  function resolveTargetIdFromInput(input){
-    const name = String(input || "").trim();
-    if (!name) return "";
+  if (targetPillTextEl) targetPillTextEl.textContent = label;
+  if (targetPillEl) targetPillEl.title = mob ? `${label} (${mob.id})` : "No Target";
 
-    // 1) exact id match
-    const byId = (uiState.mobs || []).find(m => m.id === name);
-    if (byId) return byId.id;
-
-    // 2) match by displayName (first alive match)
-    const byName = (uiState.mobs || []).find(
-      m => m.displayName === name && Number(m.hp) > 0
-    );
-    if (byName) return byName.id;
-
-    // 3) fallback: return as-is
-    return name;
+  if (targetPillImgEl){
+    if (imgSrc){
+      targetPillImgEl.style.display = "";
+      targetPillImgEl.src = imgSrc;
+      targetPillImgEl.onerror = () => { targetPillImgEl.style.display = "none"; };
+    } else {
+      targetPillImgEl.style.display = "none";
+      targetPillImgEl.removeAttribute("src");
+    }
   }
+
+  if (targetPillClearEl){
+    targetPillClearEl.style.display = id ? "" : "none";
+  }
+}
+
+function CheckTargetClearNeeded(){
+  const curTarget = getActionTarget();
+  if (curTarget){
+    const m = getMobById(curTarget);
+    if (!m || Number(m.hp) <= 0){
+      clearTarget();
+      uiState.selectedMobId = null;
+    }
+  }
+}
+/* ======================================================================
+   Helper functions (END)
+   ====================================================================== */
 
 
 /* ======================================================================
@@ -2364,7 +2491,6 @@ tickCooldowns();
 
 renderAll();
 
-// Re-position existing mob DOM nodes when resized (no rebuild)
 window.addEventListener("resize", () => {
   updateEncounterMobs();
 });
@@ -2396,7 +2522,6 @@ window.addEventListener("DOMContentLoaded", () => {
     <div class="overlayHint">Get more help!!!</div>
   </div>
 </div>
-
 
 <!-- WAVE OVER OVERLAY -->
 <div id="waveOverlay" class="hidden" aria-hidden="true">

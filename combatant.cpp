@@ -91,6 +91,15 @@ int Combatant::GetEnergy() const
     return static_cast<int>(Energy);
 }
 
+void Combatant::RegenTurnMob()
+{
+    DefenseModifier-=1.f;
+    DamageModifier-=1.f;
+    MezzCounter-=1;
+    CheckStats();
+}
+
+
 void Combatant::RegenTurn()
 {
     HP += GetRandomFloat(1.f, 4.f);
@@ -315,6 +324,8 @@ void Combatant::SetLane(int lane, int slot)
 
 bool Combatant::ShouldMove()
 {
+    if(MezzCounter>0)return false;
+
     CurrentField+=Speed;
     return CurrentField>(Lane+1) && Lane<MAXLANES && MezzCounter<1;
 }
@@ -502,4 +513,18 @@ void Combatant::LevelUp()
     MaxHP+=20;
     MaxEnergy+=20;
     MaxMana+=20;
+}
+
+void Combatant::InitLevel(int level)
+{
+    Level= level;
+    HP= MAXHP*(1+Level*0.2);
+    MaxHP= MAXHP*(1+Level*0.2);
+    Energy= MAXENERGY*(1+Level*0.2);
+    MaxEnergy= MAXENERGY*(1+Level*0.2);
+    Mana= MAXMANA*(1+Level*0.2);
+    MaxMana= MAXMANA*(1+Level*0.2);
+    BaseDamage=STAT_BASEDAMAGE_PLAYER+(Level*2);
+    BaseDefense=STAT_BASEDEFENSE_PLAYER+(Level*2);
+
 }

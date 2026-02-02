@@ -20,7 +20,8 @@ inline constexpr float MAXHP=   900.f;
 inline constexpr float SPELLCOST= 10.f;
 inline constexpr float MELEECOST= 10.f;
 inline constexpr float DEVIATION= 5.f;
-inline constexpr float STAT_BASEDAMAGEPLAYER= 50.f;  
+inline constexpr float STAT_BASEDAMAGE_PLAYER= 50.f;  
+inline constexpr float STAT_BASEDEFENSE_PLAYER= 2.f;  
 
 inline constexpr int INITIALPOTIONS= 10;  
 inline constexpr int MEZZTURNS= 100;  
@@ -156,9 +157,9 @@ protected:
     bool Active=true;
     std::string AvatarId="MSAgent-Soldorn";
     std::string MobClass="MSAgent-Soldorn";
-    float BaseDamage=STAT_BASEDAMAGEPLAYER;
+    float BaseDamage=STAT_BASEDAMAGE_PLAYER;
     float DamageModifier= 0.f;
-    float BaseDefense=1.f;
+    float BaseDefense=STAT_BASEDEFENSE_PLAYER;
     float DefenseModifier= 0.f;
 
     float Speed= MOBSPEED;
@@ -201,6 +202,7 @@ protected:
 public:
     Combatant(const std::string& name, ECombatantType type);
     Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana, std::string mobClass="MSAgent-Soldorn", int lane=0, int slot=0);
+    Combatant(){"unknown",ECombatantType::Player;}
     void InitFromMobTemplate(
         const std::string& mobClass,
         ECombatantAttackType attackType,
@@ -214,6 +216,16 @@ public:
     void Revive();
 
     bool IsAlive() const;
+    std::string GetId(){return Id;}
+    void InitId(std::string id){Id=id;}
+    void InitName(std::string name){Name=name;}
+    void InitPlayerType(){AttackType= ECombatantAttackType::Combi;}
+    void InitXP(int xp){XP=xp;}
+    void InitLevel(int level);
+    void InitCredits(int credits){Credits= credits;}
+    void InitPotions(int potions){PotionAmount= potions;}
+
+
     int GetHP() const;
     int GetMana() const;
     int GetEnergy() const;
@@ -247,6 +259,7 @@ public:
     void SetAvatarId(std::string avatarId) { AvatarId=avatarId; }   
 
     void RegenTurn();
+    void RegenTurnMob();
 
     std::string GetName() const;
 

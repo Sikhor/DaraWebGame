@@ -100,6 +100,63 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
     Cv.notify_all();
 }
 
+void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character selectedCharacter)
+{
+    std::lock_guard<std::mutex> lock(CacheMutex);
+
+    // Players is a map/unordered_map: key -> shared_ptr<Combatant>
+    auto it = std::find_if(Players.begin(), Players.end(),
+        [&](const auto& kv)   // kv is: pair<const string, shared_ptr<Combatant>>
+        {
+            const auto& p = kv.second;
+            if (!p) return false;
+
+            const bool sameChar =
+                (!selectedCharacter.characterId.empty() &&
+                 p->GetId() == selectedCharacter.characterId);
+
+            const bool sameName = (p->GetName() == playerName);
+
+            return sameChar || sameName;
+        });
+
+    const bool exists = (it != Players.end());
+
+    if (!exists)
+    {
+        auto p = std::make_shared<Combatant>();
+        p->InitPlayerType();
+
+        p->InitName(playerName);
+        p->InitId(selectedCharacter.characterId);
+
+        p->InitLevel(selectedCharacter.level);
+        p->InitXP(selectedCharacter.xp);
+        p->InitCredits(selectedCharacter.credits);
+        p->InitPotions(selectedCharacter.potions);
+
+        // Choose what key to store under:
+        // Option A: key by playerName (display name)
+        Players[playerName] = p;
+
+        // Option B (recommended): key by characterId or userId (stable)
+        // Players[selectedCharacter.characterId] = p;
+
+        return;
+    }
+
+    // Update existing
+    auto& p = it->second;
+    p->InitName(playerName);
+    p->InitId(selectedCharacter.characterId);
+    p->InitLevel(selectedCharacter.level);
+    p->InitXP(selectedCharacter.xp);
+    p->InitCredits(selectedCharacter.credits);
+    p->InitPotions(selectedCharacter.potions);
+}
+
+
+
 json CombatDirector::GetPlayerStateJson(const std::string& playerName) const
 {
     std::shared_ptr<Combatant> p;
@@ -406,6 +463,17 @@ void CombatDirector::RegenPlayers()
     }
 }
 
+void CombatDirector::RegenMobs()
+{
+    for (auto& [name, mob] : Mobs)
+    {
+        if (mob && mob->IsAlive())
+            mob->RegenTurnMob();
+    }
+}
+
+
+
 void CombatDirector::ResolverLoop()
 {
     while (Running.load())
@@ -471,6 +539,7 @@ void CombatDirector::ResolverLoop()
 
             ResolvePlayers(actions, turnLog);
             RegenPlayers();
+            RegenMobs();
         }
 
         // Step C: AI (no lock). Build snapshot under lock, then call AI unlocked.
@@ -598,7 +667,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
         outTurnLog.push_back(a.playerName + " does: " + a.actionId + " (" + a.actionMsg + ")");
             std::string logMsg;
 
-        if(a.actionId=="attack" || a.actionId=="fireball"|| a.actionId=="shoot"|| a.actionId=="mezz"){
+        if(a.actionId=="attack" || a.actionId=="fireball"|| a.actionId=="shoot"|| a.actionId=="mezmerize"){
             std::shared_ptr<Combatant> target;
             std::shared_ptr<Combatant> player;
             auto pit=Players.find(a.playerName);

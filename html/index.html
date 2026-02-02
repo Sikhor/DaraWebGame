@@ -160,6 +160,70 @@
       background: rgba(20,30,40,0.7);
     }
 
+
+    /********* Character select */
+    #charOverlay{
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .char-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(120,140,200,0.18);
+      background: rgba(8,12,20,0.55);
+    }
+    .char-left{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      min-width:0;
+    }
+    .char-avatar{
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(120,140,200,0.25);
+      background: rgba(122,167,255,0.14);
+      flex: 0 0 auto;
+    }
+    .char-meta{ min-width:0; }
+    .char-name{
+      margin:0;
+      font-size: 14px;
+      color:#fff;
+    }
+    .char-sub{
+      margin:2px 0 0;
+      font-size: 12px;
+      color:#9aa6b2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 320px;
+    }
+    .char-btn{
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #2a3340;
+      background: rgba(10,14,20,0.6);
+      color: #e6e6e6;
+      cursor: pointer;
+      font-size: 13px;
+      white-space:nowrap;
+    }
+    .char-btn:active{ transform: translateY(1px); }
+    /********* end Character select */
+    
     .google-login-wrap {
       display: flex;
       justify-content: center;
@@ -332,6 +396,56 @@
 
 </div>
   
+<!-- ================= CHARACTER SELECT OVERLAY ================= -->
+<div id="charOverlay" style="display:none;">
+  <div class="login-bg"></div>
+  <div class="login-overlay"></div>
+
+  <div class="login-content" style="max-width: 520px;">
+    <img
+      src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/AttentionSignal-300x300.png"
+      alt="Agent Console"
+      class="login-icon"
+      style="filter: drop-shadow(0 0 10px rgba(122,167,255,0.35));"
+    />
+
+    <h1>Choose your Agent</h1>
+
+    <div class="login-chat" style="margin-bottom: 12px;">
+      <div class="chat-msg system">
+        <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Turnario-300x300.jpg">
+        <div class="chat-body">
+          &gt;&gt; Authentication OK<br>
+          &gt;&gt; Select existing agent or create a new identity…
+        </div>
+      </div>
+      <div class="chat-msg control">
+        <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Christi-300x300.jpg">
+        <div class="chat-body">
+          Logged in as: <span id="whoAmI" style="color:#fff"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Character list -->
+    <div id="charList" style="text-align:left; display:grid; gap:10px; margin-bottom: 10px;"></div>
+
+    <!-- Create new character -->
+    <div style="text-align:left; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; margin-top: 10px;">
+      <div style="font-size: 12px; color:#9aa6b2; margin-bottom: 6px;">Create new Agent</div>
+      <input id="newCharName" type="text" placeholder="CharacterName (e.g. Arikara-296)"
+             style="width:100%; height:42px; border-radius:10px; border:1px solid #2a3340;
+                    background: rgba(10,14,20,0.6); color:#e6e6e6; padding:0 12px; outline:none;" />
+      <button id="btnCreateChar" class="reset-login-btn" type="button" style="margin-top:10px;">
+        Create Agent
+      </button>
+    </div>
+
+    <button id="btnBackToLogin" class="reset-login-btn" type="button" style="margin-top:10px;">
+      Logout / Switch account
+    </button>
+  </div>
+</div>
 
   <script>
     // ---------- GOOGLE BUTTON RENDER ----------
@@ -432,7 +546,7 @@
 
       localStorage.setItem("sessionToken", j.token);
       localStorage.setItem("playerName", j.playerName || "Unknown Agent");
-      goToGame();
+      showCharacterSelect();
     }
 
     // ---------- INIT ----------
@@ -462,12 +576,210 @@
         });
 
         if (r.ok) {
-          goToGame();
+          loadAndShowCharacters();
         } else {
           showLogin();
         }
       })();
     });
+
+
+  /***********************
+   * BEGIN Character Select 
+   */
+  // --- overlay toggles ---
+  function showLogin(){
+    document.getElementById("loginOverlay").style.display = "flex";
+    document.getElementById("charOverlay").style.display = "none";
+    renderGoogleButton();
+  }
+  function showCharacterSelect(){
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("charOverlay").style.display = "flex";
+  }
+
+  // --- helper: auth header ---
+  function authHeader(){
+    const token = localStorage.getItem("sessionToken") || "";
+    return { "Authorization": "Bearer " + token };
+  }
+
+  // --- API calls (placeholders) ---
+  async function apiGetCharacters(){
+    const r = await fetch("/api/v001/darawebgame/characters", {
+      headers: { ...authHeader() }
+    });
+    if (!r.ok) throw new Error("Could not load characters");
+    return r.json(); // expected: { characters:[{characterId, characterName, level, className}] }
+  }
+
+  async function apiCreateCharacter(characterName){
+    const r = await fetch("/api/v001/darawebgame/characters", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", ...authHeader() },
+      body: JSON.stringify({ characterName })
+    });
+    const j = await r.json().catch(()=> ({}));
+    if (!r.ok) throw new Error(j.message || "Create failed");
+    return j; // expected: { characterId, characterName }
+  }
+
+  async function apiSelectCharacter(characterId){
+    // optional: backend can set "active character" in session
+    const r = await fetch("/api/v001/darawebgame/characters/select", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", ...authHeader() },
+      body: JSON.stringify({ characterId })
+    });
+    // if you don't need this endpoint, you can remove it and just redirect to game.html
+    if (!r.ok) {
+      const j = await r.json().catch(()=> ({}));
+      throw new Error(j.message || "Select failed");
+    }
+  }
+
+  // --- render character list ---
+  function renderCharacterList(chars){
+    const host = document.getElementById("charList");
+    host.innerHTML = "";
+
+    if (!chars || chars.length === 0){
+      host.innerHTML = `<div class="chat-line control" style="margin:0;">
+        No agents found. Create your first character below.
+      </div>`;
+      return;
+    }
+
+    for (const c of chars){
+      const div = document.createElement("div");
+      div.className = "char-item";
+
+      const lvl = (c.level ?? 1);
+      const cls = (c.className ?? "Operative");
+      const cid = c.characterId ?? c.id ?? "";
+      const cname = c.characterName ?? c.name ?? "Unknown";
+
+      div.innerHTML = `
+        <div class="char-left">
+          <div class="char-avatar"></div>
+          <div class="char-meta">
+            <p class="char-name">${escapeHtml(cname)}</p>
+            <p class="char-sub">Level ${lvl} • ${escapeHtml(cls)} • ID ${escapeHtml(String(cid))}</p>
+          </div>
+        </div>
+        <button class="char-btn" type="button">Enter</button>
+      `;
+
+      div.querySelector("button").addEventListener("click", async () => {
+        try{
+          // optional server-side select
+          if (cid) await apiSelectCharacter(cid);
+
+          // redirect to game (pass characterId + characterName)
+          const url = new URL("game.html", window.location.href);
+          if (cid) url.searchParams.set("characterId", cid);
+          url.searchParams.set("characterName", cname);
+          window.location.replace(url.toString());
+        }catch(e){
+          alert(e.message || "Failed to enter game");
+        }
+      });
+
+      host.appendChild(div);
+    }
+  }
+
+  // --- load chars + show overlay ---
+  async function loadAndShowCharacters(){
+    showCharacterSelect();
+
+    const who = document.getElementById("whoAmI");
+    who.textContent = localStorage.getItem("playerName") || "Unknown";
+
+    try{
+      const data = await apiGetCharacters();
+      const chars = data.characters || data || [];
+      renderCharacterList(chars);
+    }catch(e){
+      document.getElementById("charList").innerHTML =
+        `<div class="chat-line system" style="margin:0;">[ Error loading characters: ${escapeHtml(e.message)} ]</div>`;
+    }
+  }
+
+  // --- tiny sanitizer ---
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+    }[m]));
+  }
+
+  // --- wire buttons ---
+  document.addEventListener("DOMContentLoaded", () => {
+    const back = document.getElementById("btnBackToLogin");
+    if (back) back.addEventListener("click", async () => {
+      // full logout + show login
+      await doLogout(); // uses your existing function
+    });
+
+    const createBtn = document.getElementById("btnCreateChar");
+    if (createBtn) createBtn.addEventListener("click", async () => {
+      const inp = document.getElementById("newCharName");
+      const name = (inp.value || "").trim();
+      if (!name){
+        alert("Please enter a character name");
+        return;
+      }
+      try{
+        createBtn.disabled = true;
+        const created = await apiCreateCharacter(name);
+
+        // reload list after create
+        inp.value = "";
+        await loadAndShowCharacters();
+
+        // optionally auto-enter created:
+        // const url = new URL("game.html", window.location.href);
+        // url.searchParams.set("characterId", created.characterId);
+        // url.searchParams.set("characterName", created.characterName || name);
+        // window.location.replace(url.toString());
+      }catch(e){
+        alert(e.message || "Create failed");
+      }finally{
+        createBtn.disabled = false;
+      }
+    });
+  });
+
+  // --- MODIFY your Google callback to go to character select, not game ---
+  async function onGoogleCredential(response) {
+    const r = await fetch("/api/v001/darawebgame/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: response.credential })
+    });
+
+    const j = await r.json();
+    if (!r.ok) {
+      alert(j.message || "Login failed");
+      return;
+    }
+
+    localStorage.setItem("sessionToken", j.token);
+    localStorage.setItem("playerName", j.playerName || "Unknown Agent");
+
+    // NEW: show character select
+    await loadAndShowCharacters();
+  }
+
+  // --- MODIFY your autoLogin: if token valid -> load characters instead of goToGame ---
+  // Replace the part where you do goToGame() after /me is ok:
+  // if (r.ok) { goToGame(); }  -->  if (r.ok) { loadAndShowCharacters(); }
+
+   
+  /***********************
+   * END Character Select 
+   */
+
   </script>
 
 </body>

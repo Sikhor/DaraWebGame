@@ -15,6 +15,7 @@
 #include "sessions.h"
 #include "MobTemplateStore.h"
 #include "DaraConfig.h"
+#include "character.h"
 
 CombatDirector* g_combatDirector = nullptr;
 MobTemplateStore g_mobTemplates;
@@ -77,16 +78,17 @@ static std::string GeneratePlayerName(const std::string& base)
 
 std::string NewPlayer(const std::string& userName,
                       const std::string& displayName,
-                      const std::string& pictureUrl)
+                      Character character)
 {
-    std::string playerName = GeneratePlayerName(displayName);
+    //std::string playerName = GeneratePlayerName(displayName);
     // Your join logic:
-    g_combatDirector->AddOrUpdatePlayer(playerName);
-    DaraLog("LOGIN", userName + " " + displayName + " "+ playerName);
+    g_combatDirector->AddOrUpdatePlayer(displayName, character);
+
+    DaraLog("LOGIN", "Created character :" + displayName + " for "+ userName);
 
     // Optional: welcome narrative / combatlog
     //CombatLogState.PushPlayerLog(playerName, "You arrive on Dara III.", "talk");
-    return playerName;
+    return displayName;
 }
 
 
@@ -598,10 +600,143 @@ server.Options("/me", [](const httplib::Request&, httplib::Response& res){
     AddCorsHeadersAuth(res);
     res.status = 204;
 });
+server.Options("/characters", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+
+server.Options("/characters/create", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+server.Options("/characters/select", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+server.Options("/characters/me", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+server.Options("/characters/delete", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+
+server.Get("/characters", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeadersAuth(res);
+
+    Session session;
+    std::string err;
+    if (!GetSessionFromRequest(req, session, &err)) {
+        res.status = 401;
+        res.set_content((json{{"status","error"},{"message",err}}).dump(), "application/json");
+        return;
+    }
+
+    // session.userName = userKey (email or google sub)
+    const std::string userKey = session.userName;
+
+    json out;
+    out["status"] = "ok";
+    out["selectedCharacterId"] = session.characterId; // optional
+    out["characters"] = SerializeCharactersForUser(userKey);
+
+    res.status = 200;
+    res.set_content(out.dump(), "application/json");
+});
+
+server.Post("/characters/select", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeadersAuth(res);
+
+    const std::string token = GetBearerToken(req);
+    if (token.empty()) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Missing Authorization Bearer token"})", "application/json");
+        return;
+    }
+
+    Session session;
+    if (!TryGetSession(token, session)) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Invalid or expired session"})", "application/json");
+        return;
+    }
+
+    json body;
+    try { body = json::parse(req.body); }
+    catch (...) {
+        res.status = 400;
+        res.set_content(R"({"status":"error","message":"Invalid JSON body"})", "application/json");
+        return;
+    }
+
+    // EXPECTED REQUEST BODY:
+    // { "characterId":"..." }
+    //
+    // RETURNS:
+    // { "status":"ok", "selectedCharacterId":"...", "character":{...} }
+
+    std::string characterId = TrimCopy(body.value("characterId", ""));
+    if (characterId.empty()) {
+        res.status = 400;
+        res.set_content(R"({"status":"error","message":"characterId is required"})", "application/json");
+        return;
+    }else{
+        DaraLog("LOGIN", session.userName+" has chosen characterId:"+characterId);
+        DaraLog("LOGIN", "Session.sub:"+session.sub);
+        DaraLog("LOGIN", "Session.userName:"+session.userName);
+        DaraLog("LOGIN", "Session.eMail:"+session.eMail);
+        DaraLog("LOGIN", "Session.name:"+session.name);
+    }
+
+    Character chosen;
+    bool found = false;
+    
+    {
+        std::lock_guard<std::mutex> lock(g_charsMutex);
+        auto it = g_charsByUser.find(session.userName);
+        if (it != g_charsByUser.end()) {
+            auto& vec = it->second;
+            Character* c = FindCharacterLocked(vec, characterId);
+            if (c) { chosen = *c; found = true; }
+        }
+    }
+
+    if (!found) {
+        res.status = 404;
+        res.set_content(R"({"status":"error","message":"Character not found"})", "application/json");
+        return;
+    }
+
+    // Persist selection in session
+    session.characterId = chosen.characterId;
+    session.characterName = chosen.characterName;
+
+    // IMPORTANT: you must update your session store for this token.
+    UpdateSessionByToken(token, session);
+    SetSessionCharacter(token, chosen.characterId, chosen.characterName);
+
+    // Now that a character is selected, you can join combat as that character:
+    NewPlayer(session.userName, chosen.characterName, chosen);
+
+    json out;
+    out["status"] = "ok";
+    out["selectedCharacterId"] = chosen.characterId;
+    out["character"] = SerializeSelectedCharacterLockedForUser(session.userName, chosen.characterId);
+
+    res.status = 200;
+    res.set_content(out.dump(), "application/json");
+});
+
+
+
+
+    SeedTestCharacters();
     InitializeMobStore();
     g_combatDirector->Start();
 
-    SetOnNewPlayerCallback(NewPlayer);
     InitialActions();
     DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(WEBSERVER_PORT)+"  e.g. /action");
     server.listen("0.0.0.0", WEBSERVER_PORT);

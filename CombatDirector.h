@@ -14,6 +14,7 @@
 #include "json.hpp"
 #include "combatant.h"
 #include "DaraConfig.h"
+#include "character.h"
 
 enum class EGamePhase
 {
@@ -29,6 +30,7 @@ struct MobRewards
     float lootChance = 0.15f; // 15%
     // You can add loot tables etc.
 };
+
 
 
 
@@ -60,6 +62,7 @@ public:
 
     // Player/mob management (call when joining/leaving/spawning)
     void AddOrUpdatePlayer(const std::string& playerName);
+    void AddOrUpdatePlayer(const std::string& playerName, Character selectedCharacter);
     bool ApplyDamageToPlayer(const std::string& playerName, float dmg);
     bool ApplyDamageToPlayerLocked(const std::string& playerName, float dmg);
     void RemovePlayer(const std::string& playerName);
@@ -138,6 +141,7 @@ private:
     void ResolvePlayers(const std::vector<PlayerAction>& actions,
                         std::vector<std::string>& outTurnLog);
     void RegenPlayers();
+    void RegenMobs();
 
     json BuildAiRequestSnapshotLocked(uint64_t turnId) const;
 

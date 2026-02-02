@@ -57,6 +57,7 @@ add_executable(DaraWebGameServer
     auth.cpp
     sessions.cpp
     MobTemplateStore.cpp
+    character.cpp
 )
 
 target_include_directories(DaraWebGameServer PRIVATE
