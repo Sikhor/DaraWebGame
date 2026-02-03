@@ -982,8 +982,8 @@
   #lootToastHost{
     position: fixed;
     left: 50%;
-    top: 14%;
-    transform: translateX(-50%);
+    top: calc(env(safe-area-inset-top) + 8px); /* << near the very top */
+    transform: translateX(-80%);
     z-index: 99996;
     pointer-events: none;
     display:flex;

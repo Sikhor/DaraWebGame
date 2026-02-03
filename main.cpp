@@ -16,9 +16,13 @@
 #include "MobTemplateStore.h"
 #include "DaraConfig.h"
 #include "character.h"
+#include "CharacterRepository.h"
+#include "CharacterDbWorker.h"
 
 CombatDirector* g_combatDirector = nullptr;
 MobTemplateStore g_mobTemplates;
+
+CharacterDbWorker g_dbWorker;
 
 void TrimHistory(std::vector<json>& hist);
 
@@ -42,6 +46,18 @@ static constexpr size_t kMaxHistoryMessages = 12;
 
 std::string Narrative= "Some cool story that I have here ..";
 
+extern CharacterDbWorker g_dbWorker;
+
+static bool PostLoginInit(Session& s)
+{
+    // If you key character cache by email:
+    if (s.eMail.empty()) return true;
+
+    bool isDone = g_dbWorker.LoadUserBlocking(s.eMail, 800); // 800ms cap
+    isDone= true; 
+    return isDone; // never block login
+}
+
 void InitializeMobStore()
 {
     std::string err;
@@ -56,8 +72,8 @@ void InitializeMobStore()
     DaraLog("FILE", "Loaded mob templates");
 
 }
-
-static std::string GeneratePlayerName(const std::string& base)
+/* NOT USED ATM but very handy
+static std::string GeneratePlayerName()
 {
    static const std::vector<std::string> a = {
         "Zan","Ista","Vor","Kel","Ryn","Tar","Mal","Zen","Dro","Tun","Tro","Ari"
@@ -74,7 +90,7 @@ static std::string GeneratePlayerName(const std::string& base)
     std::uniform_int_distribution<int> distNum(100, 999);
 
     return a[distA(rng)] + b[distB(rng)] + "-" + std::to_string(distNum(rng));
-}
+} */
 
 std::string NewPlayer(const std::string& userName,
                       const std::string& displayName,
@@ -115,7 +131,7 @@ static std::string TrimCopy(std::string s)
     return s;
 }
 
-
+/*
 static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
 {
     std::lock_guard<std::mutex> lock(g_stateMapMutex);
@@ -123,7 +139,9 @@ static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
     if (!ptr) ptr = std::make_shared<GameState>();
     return ptr;
 }
+    */
 
+    /*
 static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actions)
 {
     std::string combined = "PlayerActions:\n";
@@ -138,6 +156,7 @@ static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actio
     }
     return combined;
 }
+    */
 
 void DebugMsg(const json& messages)
 {
@@ -161,6 +180,7 @@ void DebugNewMsg(const std::string& newMsg)
     std::cout <<"--------------------------------"<< std::endl;
 }
 
+/*
 static std::string ReadNextToken(const std::string& text, size_t pos)
 {
     // skip spaces
@@ -186,10 +206,11 @@ static std::string ReadNextToken(const std::string& text, size_t pos)
 
     return text.substr(start, pos - start);
 }
+*/
 
 std::string ContactAI(
     std::string gameId   = "0",
-    int turnId = 0,
+
     std::string turnMsg= "PlayerActions: NONE\n")
 {
     // 0) Read API key + prompt
@@ -341,6 +362,7 @@ void InitialActions()
     // Example initial actions to setup the game state
 }
 
+/*
 static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vector<PendingAction> actionsCopy)
 {
     static int turnId=0;
@@ -365,6 +387,7 @@ static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vect
         state->results[turnNumber] = std::move(r);
     }
 }
+    */
 
 void TrimHistory(std::vector<json>& hist)
 {
@@ -481,7 +504,7 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
         return;
     }
     // DAS ist jetzt deine Player-Identität
-    const std::string& playerName = session.playerName;
+    //const std::string& playerName = session.playerName;
 
     json out = g_combatDirector->GetUIStateSnapshotJsonLocked();
     if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
@@ -529,6 +552,8 @@ server.Post("/auth/logout", [](const httplib::Request& req, httplib::Response& r
 
 server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
 {
+    //ATTENTION REMOVE NEXT LINE WHEN IMPLEMENTING THIS!
+    (void)req;
     AddCorsHeaders(res);
     res.status = 200;
     
@@ -548,6 +573,8 @@ server.Get("/story", [](const httplib::Request& req, httplib::Response& res)
 
 server.Get("/combatlog", [](const httplib::Request& req, httplib::Response& res)
 {
+    //ATTENTION REMOVE NEXT LINE WHEN IMPLEMENTING THIS!
+    (void)req;
     AddCorsHeaders(res);
     res.status = 204;
 
@@ -634,13 +661,19 @@ server.Get("/characters", [](const httplib::Request& req, httplib::Response& res
         return;
     }
 
-    // session.userName = userKey (email or google sub)
-    const std::string userKey = session.userName;
+    // session.eMail = userKey (email or google sub)
+    const std::string userKey = session.eMail;
 
     json out;
     out["status"] = "ok";
-    out["selectedCharacterId"] = session.characterId; // optional
-    out["characters"] = SerializeCharactersForUser(userKey);
+    if (!HasCharactersCachedForUser(userKey)) {
+        g_dbWorker.RequestLoadUser(userKey);
+        out["charactersLoading"] = true;
+        out["characters"] = json::array();
+    } else {
+        out["charactersLoading"] = false;
+        out["characters"] = SerializeCharactersForUser(userKey);
+    }
 
     res.status = 200;
     res.set_content(out.dump(), "application/json");
@@ -672,6 +705,22 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
         return;
     }
 
+    //cached access of usermails characters
+    // Ensure characters are cached for this user (key = email)
+    if (!HasCharactersCachedForUser(session.eMail))
+    {
+        // async request to load from DB; client can retry shortly
+        g_dbWorker.RequestLoadUser(session.eMail);
+
+        json out;
+        out["status"] = "loading";
+        out["charactersLoading"] = true;
+        out["characters"] = json::array();
+
+        res.status = 200;
+        res.set_content(out.dump(), "application/json");
+        return;
+    }
     // EXPECTED REQUEST BODY:
     // { "characterId":"..." }
     //
@@ -696,7 +745,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     
     {
         std::lock_guard<std::mutex> lock(g_charsMutex);
-        auto it = g_charsByUser.find(session.userName);
+        auto it = g_charsByUser.find(session.eMail);
         if (it != g_charsByUser.end()) {
             auto& vec = it->second;
             Character* c = FindCharacterLocked(vec, characterId);
@@ -724,22 +773,74 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     json out;
     out["status"] = "ok";
     out["selectedCharacterId"] = chosen.characterId;
-    out["character"] = SerializeSelectedCharacterLockedForUser(session.userName, chosen.characterId);
+    out["character"] = SerializeSelectedCharacterLockedForUser(session.eMail, chosen.characterId);
+
 
     res.status = 200;
     res.set_content(out.dump(), "application/json");
 });
 
+server.Post("/characters/create", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeadersAuth(res);
+
+    const std::string token = GetBearerToken(req);
+    if (token.empty()) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Missing Authorization Bearer token"})", "application/json");
+        return;
+    }
+
+    Session session;
+    if (!TryGetSession(token, session)) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Invalid or expired session"})", "application/json");
+        return;
+    }
+
+    json body;
+    try { body = json::parse(req.body); }
+    catch (...) {
+        res.status = 400;
+        res.set_content(R"({"status":"error","message":"Invalid JSON body"})", "application/json");
+        return;
+    }
+
+    DaraLog("CREATECHAR", "eMail "+ session.eMail+ " Response.body="+body.dump(2));
+
+    // Validate request fields
+    const std::string charactername  = body.value("characterName", "unknown");
+    const std::string characterclass = body.value("characterClass", "Agent");
+    const std::string characteravatar= body.value("avatar", "MSAgent-Soldorn");
+
+    if (charactername.empty() || characterclass.empty())
+        throw std::runtime_error("Missing characterName or characterClass");
+
+    // DB write (safe here: character screen, not in match tick)
+    int newId = CreateCharacter(session.userName, session.eMail, charactername, characterclass, characteravatar);
+
+    DaraLog("CREATECHAR", "eMail"+ session.eMail+ "CharacterName:"+charactername+" New Id:"+std::to_string(newId));
+
+    json out;
+    out["ok"] = true;
+    out["characterId"] = std::to_string(newId);
+    out["characterName"]= charactername;
+    out["avatar"]= characteravatar;
 
 
+    res.status = 200;
+    res.set_content(out.dump(), "application/json");
+});
 
-    SeedTestCharacters();
+    SetPostLoginHook(PostLoginInit);
     InitializeMobStore();
     g_combatDirector->Start();
+    g_dbWorker.Start();
 
     InitialActions();
     DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(WEBSERVER_PORT)+"  e.g. /action");
     server.listen("0.0.0.0", WEBSERVER_PORT);
 
+    g_dbWorker.Stop();
 
 }

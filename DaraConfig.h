@@ -1,4 +1,7 @@
 #pragma once
+#include <iostream>
+#include <iomanip>
+
 inline constexpr int WEBSERVER_PORT= 9050;
 inline constexpr int PLAYERS_EXPECTED= 1;
 inline constexpr int PLAYERS_MAX= 1;

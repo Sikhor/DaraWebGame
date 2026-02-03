@@ -9,7 +9,7 @@ std::unordered_map<std::string, std::vector<Character>> g_charsByUser;
 std::mutex g_charsMutex;
 
 
-static std::string NowIsoUtc()
+std::string NowIsoUtc()
 {
     using namespace std::chrono;
     auto now = system_clock::now();
@@ -20,7 +20,7 @@ static std::string NowIsoUtc()
 #else
     gmtime_r(&t, &tm);
 #endif
-    char buf[32];
+    char buf[64];
     std::snprintf(buf, sizeof(buf), "%04d-%02d-%02dT%02d:%02d:%02dZ",
                   tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                   tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -28,7 +28,7 @@ static std::string NowIsoUtc()
 }
 
 // simple id generator; if you already have GenerateUUID() use that
-static std::string GenerateCharacterId()
+std::string GenerateCharacterId()
 {
     static thread_local std::mt19937 rng{ std::random_device{}() };
     std::uniform_int_distribution<uint32_t> dist(0, 0xFFFFFFFF);
@@ -44,7 +44,7 @@ static std::string GenerateCharacterId()
     return oss.str();
 }
 
-static json CharacterToJson(const Character& ch)
+json CharacterToJson(const Character& ch)
 {
     return json{
         {"characterId", ch.characterId},
@@ -146,68 +146,6 @@ static std::string MakeTestId(const std::string& prefix, int n)
     return prefix + "-" + std::to_string(n);
 }
 
-void SeedTestCharacters()
-{
-    std::lock_guard<std::mutex> lock(g_charsMutex);
-
-    g_charsByUser.clear();
-
-    // -----------------------------
-    // User A
-    // -----------------------------
-    const std::string userA = "sikhor63@gmail.com";
-
-    g_charsByUser[userA].push_back(Character{
-        .characterId   = MakeTestId("char", 1),
-        .characterName = "Alicia Storm",
-        .characterClass= "Lyndarie",
-        .level         = 7,
-        .xp            = 340,
-        .credits       = 1200,
-        .potions       = 3,
-        .createdAtIso  = NowIso()
-    });
-
-    g_charsByUser[userA].push_back(Character{
-        .characterId   = MakeTestId("char", 2),
-        .characterName = "Alicia Vex",
-        .characterClass= "Mercenary",
-        .level         = 3,
-        .xp            = 90,
-        .credits       = 400,
-        .potions       = 1,
-        .createdAtIso  = NowIso()
-    });
-
-    // -----------------------------
-    // User B
-    // -----------------------------
-    const std::string userB = "bob@example.org";
-
-    g_charsByUser[userB].push_back(Character{
-        .characterId   = MakeTestId("char", 3),
-        .characterName = "Borkhan",
-        .characterClass= "Cyborg",
-        .level         = 12,
-        .xp            = 910,
-        .credits       = 5200,
-        .potions       = 6,
-        .createdAtIso  = NowIso()
-    });
-
-    g_charsByUser[userB].push_back(Character{
-        .characterId   = MakeTestId("char", 4),
-        .characterName = "Borkhan-X",
-        .characterClass         = "Tank",
-        .level         = 5,
-        .xp            = 210,
-        .credits       = 900,
-        .potions       = 2,
-        .createdAtIso  = NowIso()
-    });
-
-}
-
 
 void DebugDumpCharacters(const std::string& lookupUser,
                          const std::string& lookupCharacterId)
@@ -235,4 +173,41 @@ void DebugDumpCharacters(const std::string& lookupUser,
     }
 
     std::cout << "===== END DEBUG DUMP =====\n\n";
+}
+
+
+void CacheApplyRewards(const std::string& userEmail,
+                       const std::string& characterId,
+                       int addXp, int addCredits, int addPotions)
+{
+    std::lock_guard<std::mutex> lock(g_charsMutex);
+    auto it = g_charsByUser.find(userEmail);
+    if (it == g_charsByUser.end()) return;
+    auto* ch = FindCharacterLocked(it->second, characterId);
+    if (!ch) return;
+
+    ch->xp += addXp;
+    ch->credits += addCredits;
+    ch->potions += addPotions;
+    ch->dirty = true;
+    // set dirtySinceMs...
+}
+
+
+std::vector<DirtyToSave> CollectDirtyCharacters()
+{
+    std::vector<DirtyToSave> out;
+    std::lock_guard<std::mutex> lock(g_charsMutex);
+
+    for (auto& [email, vec] : g_charsByUser)
+    {
+        for (auto& ch : vec)
+        {
+            if (!ch.dirty) continue;
+            ch.dirty = false;
+
+            out.push_back({email, ch.characterId, ch.level, ch.xp, ch.credits, ch.potions});
+        }
+    }
+    return out;
 }

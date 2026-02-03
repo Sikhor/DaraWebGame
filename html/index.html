@@ -614,7 +614,7 @@
   }
 
   async function apiCreateCharacter(characterName){
-    const r = await fetch("/api/v001/darawebgame/characters", {
+    const r = await fetch("/api/v001/darawebgame/characters/create", {
       method: "POST",
       headers: { "Content-Type":"application/json", ...authHeader() },
       body: JSON.stringify({ characterName })

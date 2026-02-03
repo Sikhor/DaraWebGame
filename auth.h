@@ -4,7 +4,13 @@
 #include <functional>
 #include "sessions.h"
 
+struct Session;
 
+// Called after a session was created/updated successfully.
+// Return false to indicate "non-fatal init failed" (optional).
+using PostLoginHook = std::function<bool(Session&)>;
+
+void SetPostLoginHook(PostLoginHook hook);
 
 
 // Register /auth/google, /logout, /me

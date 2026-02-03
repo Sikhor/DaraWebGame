@@ -4,6 +4,7 @@
 #include <iostream>
 #include "uistate.h"
 #include "MobTemplateStore.h"
+#include "CharacterRepository.h"
 
 extern MobTemplateStore g_mobTemplates;
 
@@ -27,7 +28,6 @@ int RandSlot()
 }
 bool ShallMobSpawn(int turn)
 {
-    int chance= 1000-300-turn;
     static thread_local std::mt19937 rng{ std::random_device{}() };
     static std::uniform_int_distribution<int> dist(0, 1000);
     return dist(rng)>turn;
@@ -476,6 +476,13 @@ void CombatDirector::RegenMobs()
 
 void CombatDirector::ResolverLoop()
 {
+    static int dbUpdateCounter=0;
+    dbUpdateCounter++;
+    if(dbUpdateCounter>10){
+        CommitCacheToDB();
+        dbUpdateCounter=0;
+    }
+
     while (Running.load())
     {
         std::vector<PlayerAction> actions;
@@ -811,8 +818,13 @@ void CombatDirector::RewardPlayersForMobDeath(
         const int xp = RandInt(rng, r.xpMin, r.xpMax);
         const int credits = RandInt(rng, r.creditsMin, r.creditsMax);
 
-        p.AddXP(xp);
-        p.AddCredits(credits);
+        if(p.GetDifficulty()=="Normal"){
+            p.AddXP(xp);
+        }else{
+            p.AddXP(xp+10);
+        }
+        if (Rand01(rng) < r.creditsChance)
+            p.AddCredits(credits);
 
         if (Rand01(rng) < r.lootChance)
             MaybeGiveLoot(rng, p, mobName);

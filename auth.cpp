@@ -19,7 +19,12 @@
 #include "sessions.h"
 using json = nlohmann::json;
 
+static PostLoginHook g_postLoginHook;
 
+void SetPostLoginHook(PostLoginHook hook)
+{
+    g_postLoginHook = std::move(hook);
+}
 
 // --- base64url decode helper ---
 static std::string Base64UrlToBase64(std::string s) {
@@ -491,11 +496,24 @@ void RegisterAuthRoutes(httplib::Server& server)
             s.eMail= claims.eMail;
             s.name= claims.name;
 
+ 
             s.expiresAt = std::chrono::system_clock::now() + std::chrono::hours(24 * kSessionDays);
             {
                 std::lock_guard<std::mutex> lk(g_sessionsMutex);
                 g_sessions[token] = s;
             }
+
+            // we notify main.cpp to load the characters for this user if needed
+            if (g_postLoginHook)
+            {
+                // non-fatal: login should still succeed even if DB is slow
+                (void)g_postLoginHook(s);
+
+                // IMPORTANT: if the hook modifies session fields (e.g. charactersLoaded),
+                // persist them here: I DO NOT DO THAT atm
+                // UpdateSessionByToken(token, s);
+            }
+
 
             json out = {
                 {"status","ok"},
