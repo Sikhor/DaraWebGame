@@ -81,7 +81,7 @@ public:
     json SerializePlayersLocked() const;
     json SerializeMobsLocked() const;
 
-    json GetUIStateSnapshotJsonLocked() const;
+    json GetUIStateSnapshotJsonLocked(const std::string playerName) const;
     void SetLane(std::string mobname, int lanenumber, int slotnumber);
 
 

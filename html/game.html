@@ -215,6 +215,30 @@
     pointer-events:none; /* wrappers re-enable */
     z-index: 2;
   }
+  /* Begin Player card */
+/* ===== PLAYER CARD (BOTTOM-CENTER IN SCENE) ===== */
+  .playerAbs{
+    position:absolute;
+    left: 50%;
+    top: 50%;
+    pointer-events: auto;
+    transform-origin: 50% 90%;
+    z-index: 2000;
+  }
+
+  .playerAbs .mobCard{
+    /* slight visual distinction (optional) */
+    border-color: rgba(120,255,180,0.22);
+    box-shadow: 0 18px 34px rgba(0,0,0,0.55);
+  }
+
+  .playerAbs .targetTag{
+    background: rgba(80,255,140,0.14);
+    border: 1px solid rgba(80,255,140,0.24);
+    display:block !important;
+  }
+
+  /* END Player card */
 
   /* Mob wrapper positioned by x/y */
   .mobAbs{
@@ -377,6 +401,110 @@
   @media (prefers-reduced-motion: reduce){
     .scene::before, .fog, .fog.f2, .mobCard, .mobAbs{ animation:none !important; transition:none !important; }
   }
+
+  /* Non normal mobs */
+  /* ===== BIGGER NON-NORMAL MOBS ===== */
+.mobAbs.isNonNormal{
+  /* extra scale on top of your depthScale() */
+  transform: translate3d(-50%, -85%, 0) scale(var(--mobScale, 1));
+}
+
+.mobAbs.diff-boss,
+.mobAbs.diff-groupboss,
+.mobAbs.diff-raidboss{
+  /* bosses even bigger */
+  --mobExtraScale: 0.35;
+}
+
+.mobAbs.diff-groupmob,
+.mobAbs.diff-raidmob{
+  /* group/raid mobs a bit bigger */
+  --mobExtraScale: 0.20;
+}
+
+.mobAbs.diff-normal{
+  --mobExtraScale: 0.00;
+}
+
+/* Attack mode ****/
+.atk-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:999px;
+  font-size:12px; margin-left:6px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.atk-ranged{ box-shadow: 0 0 10px rgba(120,180,255,0.35); }
+
+.ranged-pulse{
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(120,180,255,0.85),
+    0 0 26px rgba(120,180,255,0.70),
+    0 0 54px rgba(120,180,255,0.35);
+  animation: rangedPulse 520ms ease-out 1;
+}
+
+@keyframes rangedPulse{
+  0%   { transform: scale(1.00); filter: brightness(1.00); }
+  40%  { transform: scale(1.05); filter: brightness(1.18); }
+  100% { transform: scale(1.00); filter: brightness(1.00); }
+}
+/* END Attack mode ****/
+/* Begin Projectile mode ****/
+/* ===== RANGED PROJECTILE FX ===== */
+.fx-layer{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.fx-tracer{
+  position:absolute;
+  height:2px;
+  transform-origin: 0 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(120,200,255,0.0),
+    rgba(120,200,255,0.9),
+    rgba(120,200,255,0.0)
+  );
+  box-shadow: 0 0 12px rgba(120,200,255,0.55);
+  border-radius: 2px;
+}
+
+.fx-shot{
+  position:absolute;
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background: rgba(160,220,255,0.95);
+  box-shadow:
+    0 0 10px rgba(160,220,255,0.9),
+    0 0 22px rgba(120,180,255,0.55);
+  transform: translate(-50%,-50%);
+}
+
+.fx-hit{
+  position:absolute;
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  border:2px solid rgba(160,220,255,0.85);
+  transform: translate(-50%,-50%) scale(0.6);
+  opacity: 0.9;
+  animation: fxHit 220ms ease-out forwards;
+}
+
+@keyframes fxHit{
+  to{
+    transform: translate(-50%,-50%) scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* END Projectile mode ****/
 
   /* ---------- Info (non-moving, like your last state) ---------- */
   #infoMarquee{ display:none !important; }
@@ -1126,6 +1254,13 @@
    ====================================================================== */
 let ENABLE_SHAKE = false;
 let ENABLE_HIT_FLASH = false;
+let SIZE_BOSS= 0.35;
+let SIZE_GROUPBOSS= 0.45;
+let SIZE_RAIDBOSS= 0.55;
+let SIZE_GROUPMOB= 0.30;
+let SIZE_RAIDMOB= 0.45;
+const RANGED_FX_COOLDOWN_MS = 2000; // 2 seconds
+
 let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80");
 
 const deadFx = new Map();
@@ -1143,7 +1278,7 @@ const mobDom = new Map();
 const LOGIN_PAGE = "index.html";
 
 function getToken() { return localStorage.getItem("sessionToken") || ""; }           // (END getToken)
-function getPlayerName() { return localStorage.getItem("playerName") || ""; }       // (END getPlayerName)
+function getPlayerName() { return localStorage.getItem("playerName") || "unknown player"; }       // (END getPlayerName)
 function getGameId(){ return localStorage.getItem("gameId") || "0"; }               // (END getGameId)
 
 /* =====================
@@ -1565,6 +1700,15 @@ function pct(v, max){ return max > 0 ? clamp01(v / max) : 0; } // (END pct)
 /* Demo state */
 let uiState = {
   turn: 1,
+  mobs: [],
+  party: [],
+  selectedMobId: null,
+  selectedPartyId: null
+};
+
+/* TEST JSON
+{
+  turn: 1,
   mobs: [
     { id: "MSAgent-Christie", x:0.18, y:0.72, hp:3,  max:6  },
     { id: "Kinora",           x:0.35, y:0.52, hp:3,  max:6  },
@@ -1580,7 +1724,8 @@ let uiState = {
   ],
   selectedMobId: null,
   selectedPartyId: null
-};
+};  
+END TESTJSON */
 
 function renderBadges(){
   const p = getPlayerName() || "(not set)";
@@ -1646,6 +1791,160 @@ function depthScale(y01){
   return 0.55 + clamp01(y01) * 0.55;
 } // (END depthScale)
 
+/* Begin PlayerCard functions ************************************/
+/* ======================================================================
+   PLAYER CARD IN SCENE (BEGIN)
+   ====================================================================== */
+let lastKnownMe = null;
+let playerDomEntry = null;
+
+function createPlayerDom(){
+  const scene = ensureScene();
+  const battlefield = scene.querySelector(".battlefield");
+
+  const wrap = document.createElement("div");
+  wrap.className = "playerAbs";
+  wrap.dataset.id = "__player__";
+
+  const card = document.createElement("div");
+  card.className = "mobCard t2"; // reuse same visuals
+
+  const inner = document.createElement("div");
+  inner.className = "mob";
+
+  const tag = document.createElement("div");
+  tag.className = "targetTag";
+  tag.textContent = "You";
+
+  const img = document.createElement("img");
+  img.className = "mobImg";
+  img.loading = "lazy";
+
+  const fallback = document.createElement("div");
+  fallback.className = "avatar";
+  fallback.style.display = "none";
+  fallback.textContent = "ME";
+
+  const hpBar = document.createElement("div");
+  hpBar.className = "hpBar";
+
+  const hpFill = document.createElement("div");
+  hpFill.className = "hpFill";
+  hpBar.appendChild(hpFill);
+
+  inner.appendChild(tag);
+  inner.appendChild(img);
+  inner.appendChild(fallback);
+  inner.appendChild(hpBar);
+
+  card.appendChild(inner);
+  wrap.appendChild(card);
+  battlefield.appendChild(wrap);
+
+  img.onerror = () => {
+    img.style.display = "none";
+    fallback.style.display = "grid";
+  };
+
+  // "same functionality": selectable + highlight, but does NOT set mob target
+  wrap.onclick = () => {
+    uiState.selectedPartyId = "__me__";
+    uiState.selectedMobId = null;
+    // if you want clicking yourself to clear target:
+    // clearTarget();
+
+    updateEncounterMobs();
+
+    try {
+      updateEncounterPlayer(getMe());
+    } catch(e) {
+      console.error("updateEncounterPlayer failed:", e);
+    }
+    renderParty();
+    renderBadges();
+  };
+
+  playerDomEntry = { wrap, card, img, hpFill, tag, fallback };
+  return playerDomEntry;
+}
+
+function updateEncounterPlayer(mePlayer){
+  const scene = ensureScene();
+  const rect = scene.getBoundingClientRect();
+  const w = Math.max(1, rect.width);
+  const h = Math.max(1, rect.height);
+  const pad = 10;
+
+  // keep last known "me" so card doesn't vanish during early/temporary missing state
+  if (mePlayer) lastKnownMe = mePlayer;
+
+  const data = mePlayer || lastKnownMe;
+
+  // always ensure the dom exists (show placeholder if we still have nothing)
+  const entry = playerDomEntry || createPlayerDom();
+
+  // bottom-middle inside scene
+  const x01 = 0.5;
+  const y01 = 0.92;
+
+  const x = pad + x01 * (w - pad*2);
+  const y = pad + y01 * (h - pad*2);
+
+  entry.wrap.style.left = `${x}px`;
+  entry.wrap.style.top  = `${y}px`;
+
+  const s = depthScale(y01) * 1.05;
+  entry.wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
+
+  // If we still don't have data, show a visible placeholder (instead of removing)
+  if (!data){
+    entry.tag.textContent = "Loading…";
+    entry.hpFill.style.width = "100%";
+    entry.img.style.display = "none";
+    entry.fallback.style.display = "grid";
+    entry.fallback.textContent = "…";
+    entry.card.classList.remove("selected");
+    return;
+  }
+
+  // HP
+  const max = Number(data.hpMax || data.maxHP || 1);
+  const hp  = Number(data.hp || 0);
+  const hpPct = max > 0 ? clamp01(hp / max) * 100 : 0;
+  entry.hpFill.style.width = `${hpPct}%`;
+
+  // label + image
+  const name = String(data.id || "You");
+  entry.tag.textContent = name;
+
+  const avatarId = data.avatarId || "";
+  const imgSrc = playerImageUrl(avatarId);
+
+  // IMPORTANT: if imgSrc is empty, show fallback (src="" won't trigger onerror reliably)
+  if (!imgSrc){
+    entry.img.removeAttribute("src");
+    entry.img.style.display = "none";
+    entry.fallback.style.display = "grid";
+  } else if (entry.img.getAttribute("src") !== imgSrc){
+    entry.img.style.display = "";
+    entry.fallback.style.display = "none";
+    entry.img.src = imgSrc;
+  }
+
+  entry.fallback.textContent = (name.slice(0,2) || "ME").toUpperCase();
+
+  const selected = (uiState.selectedPartyId === "__me__");
+  entry.card.classList.toggle("selected", selected);
+}
+
+/* ======================================================================
+   PLAYER CARD IN SCENE (END)
+   ====================================================================== */
+
+
+/* End PlayerCard functions **************************************/
+
+/* BEGIN createMobDom(... **************************************/
 function createMobDom(mobId, idx){
   const scene = ensureScene();
   const battlefield = scene.querySelector(".battlefield");
@@ -1654,8 +1953,12 @@ function createMobDom(mobId, idx){
   wrap.className = "mobAbs";
   wrap.dataset.id = mobId;
 
+
   const card = document.createElement("div");
   card.className = "mobCard " + (["t1","t2","t3","t4"][idx % 4]);
+
+  card.dataset.mobId = mobId;     // so we can select the card fast
+  card.classList.add("mob-card"); // optional helper class for querySelector
 
   const mobInner = document.createElement("div");
   mobInner.className = "mob";
@@ -1749,7 +2052,39 @@ function updateEncounterMobs(){
     entry.wrap.style.top  = `${y}px`;
 
     const s = depthScale(y01);
-    entry.wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
+
+    // --- difficulty scaling ---
+    const diffKey = normKey(m.difficulty); // uses your helper
+    entry.wrap.classList.remove(
+      "diff-normal","diff-boss","diff-groupmob","diff-groupboss","diff-raidmob","diff-raidboss",
+      "isNonNormal"
+    );
+
+    const cls = diffKey ? ("diff-" + diffKey) : "diff-normal";
+    entry.wrap.classList.add(cls);
+
+    const isNonNormal = diffKey && diffKey !== "normal";
+    entry.wrap.classList.toggle("isNonNormal", !!isNonNormal);
+
+    // choose extra scale (fallback if CSS variable not set)
+    let extra = 0;
+
+    let SIZE_BOSS= 0.55;
+    let SIZE_GROUPBOSS= 0.65;
+    let SIZE_RAIDBOSS= 0.75;
+    let SIZE_GROUPMOB= 0.40;
+    let SIZE_RAIDMOB= 0.55;
+
+    if (diffKey === "boss") extra= SIZE_BOSS;
+    if (diffKey === "groupboss") extra= SIZE_GROUPBOSS;
+    if (diffKey === "raidboss") extra = SIZE_RAIDBOSS;
+    if (diffKey === "groupmob") extra = SIZE_GROUPMOB;
+    if (diffKey === "raidmob") extra = 0.30;
+
+    // apply combined scale
+    const finalScale = s * (1 + extra);
+    entry.wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${finalScale})`;
+
     entry.wrap.style.zIndex = String(Math.floor(y01 * 1000));
 
     const max = Number(m.max || m.hpMax || 1);
@@ -1797,6 +2132,7 @@ function updateEncounterMobs(){
       mobDom.delete(id);
     }
   }
+
 } // (END updateEncounterMobs)
 /* ======================================================================
    ENCOUNTER (NO FLICKER) - PERSISTENT DOM (END)
@@ -2113,6 +2449,7 @@ updateFlashBtn();
    ====================================================================== */
 function renderAll(){
   renderBadges();
+  updateEncounterPlayer(getMe());
   updateEncounterMobs();
   renderParty();
 } // (END renderAll)
@@ -2140,14 +2477,19 @@ async function updateState(){
     const s = await res.json();
 
     // "me" should be your CHARACTER name (fallback to playerName)
-    const meName = getCharacterName() || getPlayerName();
-    const mePlayer = (s.party || []).find(p => String(p.id) === String(meName)) || null;
+    const myPlayerName = String(getPlayerName() || "").trim();
+    const mePlayer = (s.party || []).find(p =>
+        String(p.playerName || "").trim() === myPlayerName
+    ) || null;
 
     updateInfoMarquee(s.infoMsg);
 
-    const damages = detectPartyDamage(lastState || uiState, s);
+ const damages = detectPartyDamage(lastState || uiState, s);
+
+    const meName = String(mePlayer?.id || "").trim(); // party entry id (character display name)
+
     if (damages.length > 0 && meName){
-      const myHit = damages.find(d => d.id === meName);
+      const myHit = damages.find(d => String(d.id) === meName);
       if (myHit){
         const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
         triggerHitFeedback(intensity);
@@ -2163,7 +2505,23 @@ async function updateState(){
       }
     }
 
+
     detectMobDeaths(lastState || uiState, s);
+
+    // If party took damage, a mob attacked.
+    // Trigger ranged pulse on ranged mobs only.
+    if (damages.length > -10) {
+      // pick any ranged/combi mob that is alive (simple first version)
+      const attacker = (s.mobs || []).find(m =>
+        Number(m.hp) > 0 && (m.attackType === "Ranged" || m.attackType === "Combi")
+      );
+
+      if (attacker) {
+        // not used anymore when using projectile
+        //handleMobAttack(attacker);
+        handleMobAttackProjectile(attacker);
+      }
+    }
 
     const keepSelectedMobId   = uiState.selectedMobId;
     const keepSelectedPartyId = uiState.selectedPartyId;
@@ -2203,7 +2561,7 @@ async function updateState(){
 
     renderAll();
   } catch(e){
-    // ignore
+      console.error("updateState crashed:", e);
   }
 } // (END updateState)
 /* ======================================================================
@@ -2340,16 +2698,49 @@ function setBadge(el, mapping, prefix){
 /* ======================================================================
    Target Pill functions (END)
    ====================================================================== */
-
+  /* Error Handlers */
+  window.addEventListener("error", (e) => {
+    console.error("[WINDOW ERROR]", e.message, e.filename, e.lineno, e.colno);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    console.error("[PROMISE REJECTION]", e.reason);
+  });
 
 /* ======================================================================
    Helper Functions (BEGIN)
    ====================================================================== */
-function getMe(){
-  const me = getCharacterName() || getPlayerName();
-  if (!me) return null;
-  return (uiState.party || []).find(p => String(p.id) === String(me)) || null;
-} // (END getMe)
+  function getMe(){
+    const cid = String(getCharacterId() || "").trim();
+    const cname = String(getCharacterName() || "").trim();
+    const pname = String(getPlayerName() || "").trim();
+
+    // SAFE debug (won’t crash)
+    //console.log("[getMe] pname=", pname, "cname=", cname, "cid=", cid, "partyLen=", (uiState.party||[]).length);
+
+
+    const party = uiState.party || [];
+
+    // 1) best: match by characterId if your party has it
+    if (cid){
+      const hit = party.find(p => String(p.characterId || "").trim() === cid);
+      if (hit) return hit;
+    }
+
+    // 2) match by characterName/id (often same as p.id in your UI)
+    if (cname){
+      const hit = party.find(p => String(p.id || "").trim() === cname);
+      if (hit) return hit;
+    }
+
+    // 3) fallback: match by playerName if party has it
+    if (pname){
+      const hit = party.find(p => String(p.playerName || "").trim() === pname);
+      if (hit) return hit;
+    }
+
+    return null;
+  }
+
 
 function getResourceValue(player, res){
   if (!player) return 0;
@@ -2447,6 +2838,132 @@ function CheckTargetClearNeeded(){
     }
   }
 }
+
+function pulseRanged(mobEl){
+  if (!mobEl) return;
+  mobEl.classList.add("ranged-pulse");
+  setTimeout(()=>mobEl.classList.remove("ranged-pulse"), 560);
+}
+
+function handleMobAttack(mob){
+  if (!mob) return;
+
+  if (mob.attackType === "Ranged" || mob.attackType === "Combi") {
+    const mobEl = document.querySelector(`.mobCard[data-mob-id="${mob.id}"]`);
+    pulseRanged(mobEl);
+  }
+}
+
+
+function spawnRangedProjectile(fromEl){
+  if (!fromEl) return;
+
+  const layer = document.getElementById("fxLayer");
+  if (!layer) return;
+
+  const a = fromEl.getBoundingClientRect();
+
+  // start: right side of mob
+  const x1 = a.left + a.width * 0.75;
+  const y1 = a.top  + a.height * 0.35;
+
+  // end of projectile: party side (right edge of scene)
+  // const x2 = window.innerWidth * 0.92;
+  // const y2 = window.innerHeight * 0.55;
+  // end of projectile: somwehere middle bottom
+  // const x2 = window.innerWidth * 0.5;
+  // const y2 = window.innerHeight * 0.86;
+  // end of projectile: center of player card (fallback if not found)
+  const pc = getPlayerCardCenter();
+  const x2 = pc ? pc.x : (window.innerWidth * 0.5);
+  const y2 = pc ? (pc.y - 6) : (window.innerHeight * 0.86);
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  // tracer
+  const tracer = document.createElement("div");
+  tracer.className = "fx-tracer";
+  tracer.style.left = x1 + "px";
+  tracer.style.top  = y1 + "px";
+  tracer.style.width = dist + "px";
+  tracer.style.transform =
+    `translate(0,-50%) rotate(${angle}deg)`;
+  layer.appendChild(tracer);
+
+  // projectile head
+  const shot = document.createElement("div");
+  shot.className = "fx-shot";
+  shot.style.left = x1 + "px";
+  shot.style.top  = y1 + "px";
+  layer.appendChild(shot);
+
+  // animate projectile
+  shot.animate([
+    { left: x1 + "px", top: y1 + "px" },
+    { left: x2 + "px", top: y2 + "px" }
+  ], { duration: 160, easing: "linear" }).onfinish = () => {
+    shot.remove();
+
+    const hit = document.createElement("div");
+    hit.className = "fx-hit";
+    hit.style.left = x2 + "px";
+    hit.style.top  = y2 + "px";
+    layer.appendChild(hit);
+    setTimeout(()=>hit.remove(), 260);
+  };
+
+  // fade tracer
+  tracer.animate(
+    [{ opacity: 0.9 }, { opacity: 0 }],
+    { duration: 160, easing: "linear" }
+  ).onfinish = () => tracer.remove();
+}
+
+let lastRangedFxAt = 0;
+function handleMobAttackProjectile(mob){
+  if (!mob) return;
+  if(isMezzed(mob)) return;
+
+  // avoid projectile spam
+  const now = performance.now();
+  if (now - lastRangedFxAt < RANGED_FX_COOLDOWN_MS) return;
+  
+  lastRangedFxAt = now;
+  playSound("shoot");
+
+  const atk = normKey(mob.attackType);
+  if (atk === "ranged" || atk === "combi") {
+    const mobWrap = document.querySelector(
+      `.mobAbs[data-id="${mob.id}"]`
+    );
+    spawnRangedProjectile(mobWrap);
+  }
+}
+
+function getPlayerCardCenter(){
+  // Prefer the actual DOM entry if already created
+  const el = (playerDomEntry && playerDomEntry.wrap)
+    ? playerDomEntry.wrap
+    : document.querySelector(".playerAbs");
+
+  if (!el) return null;
+
+  const r = el.getBoundingClientRect();
+  return {
+    x: r.left + r.width * 0.5,
+    y: r.top  + r.height * 0.5
+  };
+}
+
+function isMezzed(m){
+  const c = String(m?.condition || "").trim().toLowerCase();
+  return c === "mezzed";
+}
+
+
 /* ======================================================================
    Helper functions (END)
    ====================================================================== */
@@ -2483,26 +3000,57 @@ document.addEventListener("keydown", (e) => {
 
 
 /* ======================================================================
-   BOOT (BEGIN)
+   BOOT (RELIABLE)
    ====================================================================== */
-buildButtons();
-setInterval(tickCooldowns, 100);
-tickCooldowns();
+let _started = false;
+let _stateTimer = null;
+let _cdTimer = null;
 
-renderAll();
+function startApp(){
+  if (_started) return;
+  _started = true;
 
-window.addEventListener("resize", () => {
-  updateEncounterMobs();
-});
-
-setInterval(updateState, 555);
-updateState();
-
-window.addEventListener("DOMContentLoaded", () => {
+  console.log("[BOOT] startApp()");
   document.getElementById("btnGameOverLogout")?.addEventListener("click", doLogout);
+
+  buildButtons();
+
+  if (_cdTimer) clearInterval(_cdTimer);
+  _cdTimer = setInterval(tickCooldowns, 100);
+  tickCooldowns();
+
+  // Ensure scene exists immediately, so player card can exist even before state arrives
+  ensureScene();
+
+  // Create placeholder player card immediately
+  try { updateEncounterPlayer(null); } catch(e){ console.error("updateEncounterPlayer boot failed:", e); }
+  try { updateEncounterMobs(); } catch(e){ console.error("updateEncounterMobs boot failed:", e); }
+  try { renderParty(); } catch(e){ console.error("renderParty boot failed:", e); }
+  try { renderBadges(); } catch(e){ console.error("renderBadges boot failed:", e); }
+
+  if (_stateTimer) clearInterval(_stateTimer);
+  _stateTimer = setInterval(updateState, 555);
+  updateState();
+
+  window.addEventListener("resize", () => {
+    updateEncounterMobs();
+    updateEncounterPlayer(getMe()); // keep player positioned on resize too
+  });
+}
+
+// Normal load
+window.addEventListener("DOMContentLoaded", startApp);
+
+// bfcache restore (this is the “works only after refresh” killer sometimes)
+window.addEventListener("pageshow", (e) => {
+  console.log("[BOOT] pageshow persisted=", e.persisted);
+  // On bfcache restore, intervals might be paused/stale depending on browser.
+  // Just restart safely:
+  _started = false;
+  startApp();
 });
 /* ======================================================================
-   BOOT (END)
+   END BOOT (RELIABLE)
    ====================================================================== */
 </script>
 
@@ -2531,5 +3079,6 @@ window.addEventListener("DOMContentLoaded", () => {
   </div>
 </div>
 
+<div id="fxLayer" class="fx-layer"></div>
 </body>
 </html>

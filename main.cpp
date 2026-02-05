@@ -48,6 +48,8 @@ std::string Narrative= "Some cool story that I have here ..";
 
 extern CharacterDbWorker g_dbWorker;
 
+// Post login some actions can be done
+// here we load the cache with the available characters
 static bool PostLoginInit(Session& s)
 {
     // If you key character cache by email:
@@ -504,9 +506,9 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
         return;
     }
     // DAS ist jetzt deine Player-Identität
-    //const std::string& playerName = session.playerName;
+    const std::string& playerName = session.playerName;
 
-    json out = g_combatDirector->GetUIStateSnapshotJsonLocked();
+    json out = g_combatDirector->GetUIStateSnapshotJsonLocked(playerName);
     if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
     if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["party"].dump(2) <<std::endl;
     if(DARA_DEBUG_FULLSTATE) std::cout << "/state reply: " << out.dump(2) <<std::endl;
@@ -673,6 +675,7 @@ server.Get("/characters", [](const httplib::Request& req, httplib::Response& res
     } else {
         out["charactersLoading"] = false;
         out["characters"] = SerializeCharactersForUser(userKey);
+        if(DARA_DEBUG_FULLSTATE) std::cout<< out["characters"].dump(2);
     }
 
     res.status = 200;
@@ -817,20 +820,90 @@ server.Post("/characters/create", [](const httplib::Request& req, httplib::Respo
         throw std::runtime_error("Missing characterName or characterClass");
 
     // DB write (safe here: character screen, not in match tick)
-    int newId = CreateCharacter(session.userName, session.eMail, charactername, characterclass, characteravatar);
+    auto created= CreateCharacterForUserAndCache(session.userName, session.eMail, charactername, characterclass, characteravatar);
+    if (created) {
+            DaraLog("CREATECHAR", "Created successfully: eMail"+ session.eMail+ "CharacterName:"+charactername+" New Id:"+created->characterId);
+            // you can immediately return created->characterId to the client if you want
+            json out;
+            out["ok"] = true;
+            out["characterId"] = created->characterId;
+            out["characterName"]= created->characterName;
+            out["avatar"]= created->avatar;
 
-    DaraLog("CREATECHAR", "eMail"+ session.eMail+ "CharacterName:"+charactername+" New Id:"+std::to_string(newId));
+
+            res.status = 200;
+            res.set_content(out.dump(), "application/json");
+            return;
+    } else {
+        // handle error -> return JSON error, toast, etc.
+        json out;
+        out["ok"] = false;
+        out["characterId"] = std::to_string(-1);
+        out["characterName"]= "unknown";
+        out["avatar"]= "none";
+
+        res.status = 200;
+        res.set_content(out.dump(), "application/json");
+    }
+});
+
+server.Post("/characters/delete", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeadersAuth(res);
+
+    const std::string token = GetBearerToken(req);
+    if (token.empty()) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Missing Authorization Bearer token"})", "application/json");
+        return;
+    }
+
+    Session session;
+    if (!TryGetSession(token, session)) {
+        res.status = 401;
+        res.set_content(R"({"status":"error","message":"Invalid or expired session"})", "application/json");
+        return;
+    }
+
+    json body;
+    try { body = json::parse(req.body); }
+    catch (...) {
+        res.status = 400;
+        res.set_content(R"({"status":"error","message":"Invalid JSON body"})", "application/json");
+        return;
+    }
+
+    const std::string characterId = body.value("characterId", "");
+    if (characterId.empty()) {
+        res.status = 400;
+        res.set_content(R"({"status":"error","message":"Missing characterId"})", "application/json");
+        return;
+    }
+
+    // IMPORTANT: pick the SAME key you used on CreateCharacter / cache.
+    // If your DB column UserId contains session.userName, use that here too.
+    const std::string userKey = session.userName;   // or session.userId (but be consistent!)
+
+    DaraLog("DELETECHAR", "Requested by eMail: " + session.eMail);
+    DaraLog("DELETECHAR", "UserKey: " + userKey + " CharacterId: " + characterId);
+
+    bool deleted = RemoveCharacter(userKey, characterId);
+    {
+        std::lock_guard<std::mutex> lock(g_charsMutex);
+        auto& vec = g_charsByUser[userKey];
+        vec.erase(std::remove_if(vec.begin(), vec.end(),
+            [&](const Character& c){ return c.characterId == characterId; }),
+            vec.end());
+    }
 
     json out;
-    out["ok"] = true;
-    out["characterId"] = std::to_string(newId);
-    out["characterName"]= charactername;
-    out["avatar"]= characteravatar;
-
+    out["ok"] = deleted;
+    out["characterId"] = deleted ? characterId : "-1";
 
     res.status = 200;
     res.set_content(out.dump(), "application/json");
 });
+
 
     SetPostLoginHook(PostLoginInit);
     InitializeMobStore();

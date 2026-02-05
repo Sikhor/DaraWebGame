@@ -29,6 +29,7 @@ bool MobTemplateStore::LoadFromFile(const std::string& path, std::string* err)
             t.mobClass    = m.at("mobClass").get<std::string>();
             t.attackType  = ParseAttackType(m.at("attackType").get<std::string>());
             t.difficulty  = ParseDifficulty(m.at("difficulty").get<std::string>());
+            t.speed       = m.at("speed").get<float>();
             t.wave        = m.at("wave").get<int>();
             t.maxHP       = m.at("maxHP").get<int>();
             t.maxEnergy   = m.at("maxEnergy").get<int>();
@@ -71,6 +72,7 @@ Combatant MobTemplateStore::CreateMobInstance(const std::string& mobId, int lane
         t.mobClass,
         t.attackType,
         t.difficulty,
+        t.speed,
         t.maxHP,
         t.maxEnergy,
         t.maxMana,

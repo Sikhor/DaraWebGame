@@ -31,6 +31,7 @@ private:
         std::string mobClass;
         ECombatantAttackType attackType;
         ECombatantDifficulty difficulty;
+        float speed;
         int wave;
         int maxHP;
         int maxEnergy;

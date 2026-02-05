@@ -95,9 +95,14 @@ UIState::json UIState::MobToJson(const Combatant& c)
     // out["lane"] = j.value("lane", c.GetLane());
     // out["slot"] = j.value("slot", c.GetSlot());
 
+    float variation = 0.1f; // 10%
+    float jitter = GetRandomFloat(-variation, variation);
+
     // center-of-cell mapping
     float x = (c.GetSlot() + 0.5f) / MAXSLOTS;
-    float y = std::clamp((c.GetLane() + 0.5f) / MAXLANES, 0.1f,0.9f);
+    if (!c.IsMezzed()) x += jitter;
+    // center-of-cell mapping
+    float y = std::clamp((c.GetLane() + 0.5f) / MAXLANES, 0.2f,0.8f);
 
     // optional safety clamp
     x = std::clamp(x, 0.0f, 1.0f);
@@ -119,6 +124,7 @@ UIState::json UIState::MobToJson(const Combatant& c)
     out["avatarId"] = c.GetAvatarId();
     out["difficulty"]= GetStringOr(j, "difficulty", c.GetDifficulty());
     out["attackType"]= GetStringOr(j, "attackType", c.GetAttackType());
+    out["condition"]= GetStringOr(j, "condition", c.GetCondition());
 
     return out;
 }
@@ -129,6 +135,7 @@ UIState::json UIState::PartyMemberToJson(const Combatant& c)
 
     json out;
     out["id"]    = GetStringOr(j, "name", c.GetName());
+    out["playerName"]    = GetStringOr(j, "playerName", c.GetName());
 
     out["hp"]    = j.value("hp", c.GetHP());
     out["hpMax"] = j.value("maxHp", j.value("hpMax", c.GetMaxHP()));

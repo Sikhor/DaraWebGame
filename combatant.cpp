@@ -340,7 +340,7 @@ bool Combatant::ShouldAttack()
 
         case ECombatantAttackType::Ranged:
             // Safer, slightly weaker
-            return Lane>=MAXLANES-1;
+            return true; // old one ! Lane>=MAXLANES-1;
 
         case ECombatantAttackType::Combi:
             // Flexible, tactical
@@ -362,6 +362,7 @@ void Combatant::InitFromMobTemplate(
     const std::string& mobClass,
     ECombatantAttackType attackType,
     ECombatantDifficulty difficulty,
+    float speed,
     int maxHP,
     int maxEnergy,
     int maxMana,
@@ -373,6 +374,8 @@ void Combatant::InitFromMobTemplate(
     AvatarId = mobClass;
     AttackType = attackType;
     Difficulty = difficulty;
+
+    Speed= speed;
 
     MaxHP = maxHP;     
     HP = maxHP;

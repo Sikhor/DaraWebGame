@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <ctime>
 #include <vector>
+#include <optional>
 #include "CharacterRepository.h"
 #include "character.h"
 #include "CharacterDbWorker.h"
@@ -191,18 +192,24 @@ void UpdateCharacter(
 // REMOVE CHARACTER
 // (delete character slot)
 // =======================================================
-void RemoveCharacter(int characterId)
+bool RemoveCharacter(std::string userKey, std::string pcharId)
 {
+    int characterId = std::stoi(pcharId); 
+    if(characterId<=0){
+        return false;
+    }
     auto con = CreateDbConnection();
 
     std::unique_ptr<sql::PreparedStatement> stmt(
         con->prepareStatement(
-            "DELETE FROM Characters WHERE CharacterId = ?"
+            "DELETE FROM Characters WHERE UserId= ? AND CharacterId = ?"
         )
     );
 
-    stmt->setInt(1, characterId);
+    stmt->setString(1, userKey);
+    stmt->setInt(2, characterId);
     stmt->executeUpdate();
+    return true;
 }
 
 
@@ -254,6 +261,7 @@ std::vector<CharacterRecord> GetCharactersForUser(const std::string& userMail)
         c.characterName  = rs->getString("CharacterName");
         c.characterClass = rs->getString("CharacterClass");
         c.avatar         = rs->getString("Avatar");
+        DaraLog("DEBUGDB", "Avatar: "+c.avatar);
         c.level          = rs->getInt("Level");
         c.xp             = rs->getInt("XP");
         c.credits        = rs->getInt("Credits");
@@ -283,8 +291,8 @@ void CommitCacheToDB()
 }
 
 
-bool CreateCharacterForUserAndCache(
-    const std::string& userId,
+std::optional<Character> CreateCharacterForUserAndCache(
+    const std::string& userKey,     // IMPORTANT: same key used by GetCharacters(userKey)
     const std::string& userEmail,
     const std::string& characterName,
     const std::string& characterClass,
@@ -292,24 +300,33 @@ bool CreateCharacterForUserAndCache(
 )
 {
     // 1) Create in DB (returns INT auto id)
-    int newId = CreateCharacter(userId, userEmail, characterName, characterClass, avatar);
+    int newId = CreateCharacter(userKey, userEmail, characterName, characterClass, avatar);
+    if (newId <= 0) {
+        return std::nullopt; // DB insert failed
+    }
 
-    // 2) Build cache object using that ID as string
+    // 2) Build cache object
     Character ch;
-    ch.characterId    = std::to_string(newId);   // <-- "123"
+    ch.characterId    = std::to_string(newId);
     ch.characterName  = characterName;
     ch.characterClass = characterClass;
+    ch.avatar         = avatar;      // <-- don't forget, your struct likely has this
     ch.level          = 1;
     ch.xp             = 0;
     ch.credits        = 0;
     ch.potions        = 0;
-    ch.createdAtIso   = NowIsoUtc();             // you already have this
+    ch.createdAtIso   = NowIsoUtc();
 
-    // 3) Store into cache
+    // 3) Store into cache (dedupe)
     {
         std::lock_guard<std::mutex> lock(g_charsMutex);
-        g_charsByUser[userEmail].push_back(std::move(ch));
+        auto& vec = g_charsByUser[userKey];
+
+        auto exists = std::any_of(vec.begin(), vec.end(), [&](const Character& c){
+            return c.characterId == ch.characterId;
+        });
+        if (!exists) vec.push_back(ch);
     }
 
-    return true;
+    return ch; // return the created character to caller
 }

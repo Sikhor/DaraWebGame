@@ -207,6 +207,7 @@ public:
         const std::string& mobClass,
         ECombatantAttackType attackType,
         ECombatantDifficulty difficulty,
+        float speed,
         int maxHP,
         int maxEnergy,
         int maxMana,
@@ -265,6 +266,8 @@ public:
 
     bool ShouldMove();
     bool ShouldAttack();
+    bool IsMezzed() const {return MezzCounter>0;}
+    std::string GetCondition() const {return IsMezzed()? "Mezzed" : "None" ;};
     void Debug();
     void DebugShort();
 

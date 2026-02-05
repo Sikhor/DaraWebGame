@@ -193,7 +193,7 @@
       height: 34px;
       border-radius: 10px;
       border: 1px solid rgba(120,140,200,0.25);
-      background: rgba(122,167,255,0.14);
+      background-color: rgba(122,167,255,0.14); 
       flex: 0 0 auto;
     }
     .char-meta{ min-width:0; }
@@ -223,6 +223,36 @@
     }
     .char-btn:active{ transform: translateY(1px); }
     /********* end Character select */
+    /* begin char btn delete */
+
+    .char-btn.delete{
+      border-color: rgba(220,80,80,0.6);
+      background: rgba(80,20,20,0.55);
+      color: #ffd6d6;
+    }
+
+    .char-btn.delete:hover{
+      background: rgba(120,30,30,0.65);
+    }
+
+    .char-btn.delete:active{
+      transform: translateY(1px);
+    }
+
+    .char-btn.confirm{
+      border-color: rgba(255,120,120,0.8);
+      background: rgba(120,30,30,0.75);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(255,80,80,0.35);
+    }
+
+    .char-btn.cancel{
+      border-color: rgba(120,140,200,0.35);
+      background: rgba(20,30,50,0.55);
+      color: #d4e0ff;
+    }
+
+    /* end char btn delete */
     
     .google-login-wrap {
       display: flex;
@@ -448,7 +478,7 @@
 </div>
 
   <script>
-    // ---------- GOOGLE BUTTON RENDER ----------
+     // ---------- GOOGLE BUTTON RENDER ----------
     function renderGoogleButton() {
       const el = document.getElementById("googleBtn");
       if (!el) return;
@@ -587,6 +617,8 @@
   /***********************
    * BEGIN Character Select 
    */
+   let g_charCache = []; // keeps last loaded characters
+
   // --- overlay toggles ---
   function showLogin(){
     document.getElementById("loginOverlay").style.display = "flex";
@@ -624,6 +656,18 @@
     return j; // expected: { characterId, characterName }
   }
 
+  async function apiDeleteCharacter(characterId){
+    const r = await fetch("/api/v001/darawebgame/characters/delete", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", ...authHeader() },
+      body: JSON.stringify({ characterId })
+    });
+
+    const j = await r.json().catch(()=> ({}));
+    if (!r.ok) throw new Error(j.message || "Delete failed");
+    return j;
+  }
+
   async function apiSelectCharacter(characterId){
     // optional: backend can set "active character" in session
     const r = await fetch("/api/v001/darawebgame/characters/select", {
@@ -637,7 +681,8 @@
       throw new Error(j.message || "Select failed");
     }
   }
-
+  
+  const AVATARURL="https://gameinfo.daraempire.com/wp-content/uploads/";
   // --- render character list ---
   function renderCharacterList(chars){
     const host = document.getElementById("charList");
@@ -645,7 +690,7 @@
 
     if (!chars || chars.length === 0){
       host.innerHTML = `<div class="chat-line control" style="margin:0;">
-        No agents found. Create your first character below.
+        No agents found. Create your first Agent/Character below.
       </div>`;
       return;
     }
@@ -658,32 +703,111 @@
       const cls = (c.className ?? "Operative");
       const cid = c.characterId ?? c.id ?? "";
       const cname = c.characterName ?? c.name ?? "Unknown";
+      
+      const avatarKey = String(c.avatar || c.Avatar || "").trim(); // accept avatar or Avatar
+      const avatarUrl = avatarKey
+        ? (avatarKey.startsWith("http")
+            ? avatarKey
+            : (AVATARURL + encodeURIComponent(avatarKey) + ".png"))
+        : "";
+
 
       div.innerHTML = `
         <div class="char-left">
-          <div class="char-avatar"></div>
+        <div class="char-avatar" style="${
+          avatarUrl
+            ? `background-image:url('${avatarUrl}');background-size:cover;background-position:center;`
+            : ""
+        }"></div>
           <div class="char-meta">
             <p class="char-name">${escapeHtml(cname)}</p>
             <p class="char-sub">Level ${lvl} • ${escapeHtml(cls)} • ID ${escapeHtml(String(cid))}</p>
           </div>
         </div>
-        <button class="char-btn" type="button">Enter</button>
+        <div style="display:flex; gap:6px;">
+          <button class="char-btn enter" type="button">Enter</button>
+          <button class="char-btn delete" type="button">Delete</button>
+        </div>
       `;
 
-      div.querySelector("button").addEventListener("click", async () => {
-        try{
-          // optional server-side select
-          if (cid) await apiSelectCharacter(cid);
+    const btnEnter  = div.querySelector(".enter");
+    const btnDelete = div.querySelector(".delete");
 
-          // redirect to game (pass characterId + characterName)
-          const url = new URL("game.html", window.location.href);
-          if (cid) url.searchParams.set("characterId", cid);
-          url.searchParams.set("characterName", cname);
-          window.location.replace(url.toString());
-        }catch(e){
-          alert(e.message || "Failed to enter game");
+    btnEnter.addEventListener("click", async () => {
+      try{
+        if (cid) await apiSelectCharacter(cid);
+
+        localStorage.setItem("characterId", String(cid));
+        localStorage.setItem("characterName", String(cname));
+        
+        const url = new URL("game.html", window.location.href);
+        if (cid) url.searchParams.set("characterId", cid);
+        url.searchParams.set("characterName", cname);
+        
+        window.location.replace(url.toString());
+      }catch(e){
+        alert(e.message || "Failed to enter game");
+      }
+    });
+
+    let confirmMode = false;
+    let confirmTimer = null;
+
+    btnDelete.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+
+      // First click → enter confirm mode
+      if (!confirmMode){
+        confirmMode = true;
+        btnDelete.textContent = "Confirm";
+        btnDelete.classList.add("confirm");
+
+        // Insert Cancel button
+        const btnCancel = document.createElement("button");
+        btnCancel.className = "char-btn cancel";
+        btnCancel.type = "button";
+        btnCancel.textContent = "Cancel";
+
+        btnDelete.after(btnCancel);
+
+        // Auto-cancel after 4 seconds
+        confirmTimer = setTimeout(resetConfirm, 4000);
+
+        btnCancel.addEventListener("click", (e) => {
+          e.stopPropagation();
+          resetConfirm();
+        });
+
+        // Click anywhere else cancels
+        const outsideCancel = () => resetConfirm();
+        setTimeout(() => document.addEventListener("click", outsideCancel, { once:true }), 0);
+
+        function resetConfirm(){
+          if (!confirmMode) return;
+          confirmMode = false;
+          btnDelete.textContent = "Delete";
+          btnDelete.classList.remove("confirm");
+          btnCancel.remove();
+          if (confirmTimer) clearTimeout(confirmTimer);
         }
-      });
+
+        return;
+      }
+
+      // Second click → CONFIRMED
+      try{
+        btnDelete.disabled = true;
+        await apiDeleteCharacter(cid);
+
+        g_charCache = g_charCache.filter(x =>
+          String(x.characterId ?? x.id) !== String(cid)
+        );
+        renderCharacterList(g_charCache);
+      }catch(e){
+        alert(e.message || "Delete failed");
+      }
+    });
+
 
       host.appendChild(div);
     }
@@ -699,12 +823,15 @@
     try{
       const data = await apiGetCharacters();
       const chars = data.characters || data || [];
-      renderCharacterList(chars);
+
+      g_charCache = Array.isArray(chars) ? chars : [];
+      renderCharacterList(g_charCache);
     }catch(e){
       document.getElementById("charList").innerHTML =
         `<div class="chat-line system" style="margin:0;">[ Error loading characters: ${escapeHtml(e.message)} ]</div>`;
     }
   }
+
 
   // --- tiny sanitizer ---
   function escapeHtml(s){
@@ -729,25 +856,38 @@
         alert("Please enter a character name");
         return;
       }
+
       try{
         createBtn.disabled = true;
+
         const created = await apiCreateCharacter(name);
+        // expected from server:
+        // { ok:true, characterId:"123", characterName:"Arikara-296", avatar:"..." }
 
-        // reload list after create
+        // Normalize object to match renderCharacterList expectations
+        const newChar = {
+          characterId: created.characterId,
+          characterName: created.characterName || name,
+          avatar: created.avatar || ""
+        };
+
+        // Add to cache (avoid duplicates if user double-clicked / retries)
+        g_charCache = (g_charCache || []).filter(c => String(c.characterId) !== String(newChar.characterId));
+        g_charCache.unshift(newChar); // put newest on top
+
+        // Re-render instantly
+        renderCharacterList(g_charCache);
+
         inp.value = "";
-        await loadAndShowCharacters();
-
-        // optionally auto-enter created:
-        // const url = new URL("game.html", window.location.href);
-        // url.searchParams.set("characterId", created.characterId);
-        // url.searchParams.set("characterName", created.characterName || name);
-        // window.location.replace(url.toString());
+        inp.focus();
       }catch(e){
         alert(e.message || "Create failed");
       }finally{
         createBtn.disabled = false;
       }
     });
+
+
   });
 
   // --- MODIFY your Google callback to go to character select, not game ---

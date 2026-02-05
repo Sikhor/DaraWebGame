@@ -8,8 +8,8 @@ void CommitCacheToDB();
 void CacheSetCharactersForUser(const std::string& userKey, std::vector<Character> chars);
 bool HasCharactersCachedForUser(const std::string& userKey);
 
-bool CreateCharacterForUserAndCache(
-    const std::string& userId,
+std::optional<Character> CreateCharacterForUserAndCache(
+    const std::string& userKey,     // IMPORTANT: same key used by GetCharacters(userKey)
     const std::string& userEmail,
     const std::string& characterName,
     const std::string& characterClass,
@@ -37,6 +37,7 @@ static Character RecordToCharacter(const CharacterRecord& r)
     c.characterId    = std::to_string(r.characterId); // IMPORTANT: your CharacterId is string currently
     c.characterName  = r.characterName;
     c.characterClass = r.characterClass;
+    c.avatar         = r.avatar;
     c.level          = r.level;
     c.xp             = r.xp;
     c.credits        = r.credits;
@@ -57,7 +58,7 @@ int CreateCharacter(const std::string& userId,
                     const std::string& avatar);
 
 void UpdateCharacter(int characterId, int level, int xp, int credits, int potions);
-void RemoveCharacter(int characterId);
+bool RemoveCharacter(std::string userKey, std::string characterId);
 
 
 

@@ -117,6 +117,7 @@ json SerializeCharactersLockedForUser(const std::string& userKey)
             {"xp",            ch.xp},
             {"credits",       ch.credits},
             {"potions",       ch.potions},
+            {"avatar",        ch.avatar},
             {"createdAt",     ch.createdAtIso}
         });
     }

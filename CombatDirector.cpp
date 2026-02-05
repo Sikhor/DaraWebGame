@@ -1137,7 +1137,7 @@ CombatDirector::json CombatDirector::GetLogTailJson(size_t lastN) const
 }
 
 
-json CombatDirector::GetUIStateSnapshotJsonLocked() const
+json CombatDirector::GetUIStateSnapshotJsonLocked(const std::string playerName) const
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
 
@@ -1173,6 +1173,7 @@ json CombatDirector::GetUIStateSnapshotJsonLocked() const
 
     uiJson["gameOverReason"] = GameOverReason;
     uiJson["infoMsg"]= InfoMsg;
+    uiJson["playerName"]= playerName;
 
     if (isGameOver)
     {
