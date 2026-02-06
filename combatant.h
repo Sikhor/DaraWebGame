@@ -48,6 +48,8 @@ enum class ECombatantAttackType
     Ranged,
     Melee,
     Combi,
+    Spider,
+    Insect,
     Healer
 };
 
@@ -76,7 +78,7 @@ static constexpr std::string_view ToString(ECombatantType t)
         case ECombatantType::Player: return "Player";
         case ECombatantType::Mob:    return "Mob";
         case ECombatantType::NPC:    return "NPC";
-        default:                     return "Unknown";
+        default:                     return "Unknown ECombatantType";
     }
 }
 
@@ -89,7 +91,7 @@ static constexpr std::string_view ToString(ECombatantDifficulty d)
         case ECombatantDifficulty::GroupBoss: return "GroupBoss";
         case ECombatantDifficulty::RaidMob:   return "RaidMob";
         case ECombatantDifficulty::RaidBoss:  return "RaidBoss";
-        default:                               return "Unknown";
+        default:                               return "Unknown ECombatantDifficulty";
     }
 }
 
@@ -99,8 +101,10 @@ static constexpr std::string_view ToString(ECombatantAttackType a)
         case ECombatantAttackType::Ranged: return "Ranged";
         case ECombatantAttackType::Melee:  return "Melee";
         case ECombatantAttackType::Combi:  return "Combi";
+        case ECombatantAttackType::Spider:  return "Spider";
+        case ECombatantAttackType::Insect:  return "Insect";
         case ECombatantAttackType::Healer: return "Healer";
-        default:                           return "Unknown";
+        default:                           return "Unknown ECombatantAttackType";
     }
 }
 
@@ -115,7 +119,7 @@ static constexpr std::string_view ToString(ECondition c)
         case ECondition::Defending:     return "Defending";
         case ECondition::Fleeing:       return "Fleeing";
         case ECondition::Incapacitated: return "Incapacitated";
-        default:                        return "Unknown";
+        default:                        return "Unknown ECondition";
     }
 }
 

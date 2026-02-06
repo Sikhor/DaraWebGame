@@ -142,8 +142,19 @@ ECombatantAttackType MobTemplateStore::ParseAttackType(const std::string& s)
     if (s == "Melee")  return ECombatantAttackType::Melee;
     if (s == "Ranged") return ECombatantAttackType::Ranged;
     if (s == "Combi")  return ECombatantAttackType::Combi;
+    if (s == "Spider")  return ECombatantAttackType::Spider;
+    if (s == "Insect")  return ECombatantAttackType::Insect;
     if (s == "Healer") return ECombatantAttackType::Healer;
-    throw std::runtime_error("Unknown attackType: " + s);
+    try
+    {
+        // somewhere deep inside
+        throw std::runtime_error("Unknown attackType: " + s);
+    }
+    catch (const std::runtime_error& e)
+    {
+        DaraLog("ERROR", e.what());
+    }
+
 }
 
 ECombatantDifficulty MobTemplateStore::ParseDifficulty(const std::string& s)
@@ -154,5 +165,14 @@ ECombatantDifficulty MobTemplateStore::ParseDifficulty(const std::string& s)
     if (s == "GroupBoss") return ECombatantDifficulty::GroupBoss;
     if (s == "RaidMob")   return ECombatantDifficulty::RaidMob;
     if (s == "RaidBoss")  return ECombatantDifficulty::RaidBoss;
-    throw std::runtime_error("Unknown difficulty: " + s);
+    try
+    {
+        // somewhere deep inside
+        throw std::runtime_error("Unknown difficulty: " + s);
+    }
+    catch (const std::runtime_error& e)
+    {
+        DaraLog("ERROR", e.what());
+    }
+
 }

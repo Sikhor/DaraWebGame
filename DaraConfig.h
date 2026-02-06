@@ -25,6 +25,7 @@ inline constexpr int DARA_DEBUG_FULLSTATE= 0;
 inline constexpr int DARA_MAX_MOBS= 4;
 inline constexpr int DARA_TURN_TIMEOUT= 3000;
 inline constexpr int DARA_GAMEOVER_PAUSE=10000;
+inline constexpr int DARA_WAVECOMPLETED_PAUSE=5; // in turns not in seconds;
 
 
 inline constexpr std::string_view DARA_DEAD_AVATAR_PLAYER = "Death";

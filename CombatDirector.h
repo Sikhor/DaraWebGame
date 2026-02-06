@@ -129,6 +129,8 @@ private:
     int WaveWaitTurns=5;
 
     void NewWave();
+    void ResetWave();
+
 
     // Thread loop
     void ResolverLoop();

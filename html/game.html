@@ -506,6 +506,273 @@
 
 /* END Projectile mode ****/
 
+/********************  BEGIN NEW FXLAYER *****************************/
+/* ====== Projectile / FX Layer ====== */
+#fxLayer{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.fx-bullet{
+  position: absolute;
+  height: 3px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, rgba(120,200,255,0), rgba(120,200,255,0.9), rgba(120,200,255,0));
+  filter: drop-shadow(0 0 6px rgba(120,200,255,0.55));
+  border-radius: 999px;
+  opacity: 0.95;
+}
+
+.fx-fireball{
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(255,255,220,1) 0%,
+    rgba(255,200,80,1) 30%,
+    rgba(255,90,0,0.95) 55%,
+    rgba(120,0,0,0.9) 75%,
+    rgba(0,0,0,0.0) 100%);
+  filter:
+    drop-shadow(0 0 10px rgba(255,120,30,0.9))
+    drop-shadow(0 0 22px rgba(180,40,0,0.6));
+  transform: translate(-50%, -50%);
+}
+
+/* 🔥 DER SCHWEIF 🔥 */
+.fx-fireball::after{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 18px;
+  transform: translate(-85%, -50%);
+  border-radius: 999px;
+
+  background: linear-gradient(90deg,
+    rgba(80,0,0,0.0)   0%,
+    rgba(140,0,0,0.45) 25%,
+    rgba(220,40,0,0.65) 45%,
+    rgba(255,120,30,0.55) 65%,
+    rgba(255,220,140,0.25) 80%,
+    rgba(255,240,200,0.0) 100%
+  );
+
+  filter:
+    blur(1.2px)
+    drop-shadow(0 0 8px rgba(255,80,0,0.65));
+
+  transform-origin: 85% 50%;
+  animation: fireSchweifFlackern 120ms ease-in-out infinite;
+}
+
+@keyframes fireSchweifFlackern{
+  0%   { opacity: 0.85; transform: translate(-85%, -50%) scaleX(0.95); }
+  50%  { opacity: 1.00; transform: translate(-85%, -50%) scaleX(1.05); }
+  100% { opacity: 0.90; transform: translate(-85%, -50%) scaleX(1.00); }
+}
+
+.fx-impact{
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255,220,160,0.9), rgba(255,80,0,0.1), rgba(255,80,0,0));
+  filter: drop-shadow(0 0 10px rgba(255,120,30,0.65));
+  animation: fxImpact 220ms ease-out forwards;
+}
+
+@keyframes fxImpact{
+  from{ transform: translate(-50%, -50%) scale(0.6); opacity: 0.9; }
+  to  { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+}
+
+
+/* ===== WEB PROJECTILE FX (Mob -> Player) ===== */
+
+.fx-webstrand{
+  position:absolute;
+  height: 2px;
+  transform-origin: 0 50%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(240,245,255,0.0) 0px,
+      rgba(240,245,255,0.55) 6px,
+      rgba(240,245,255,0.0) 12px
+    );
+  filter: drop-shadow(0 0 6px rgba(240,245,255,0.35));
+  opacity: 0.85;
+  border-radius: 999px;
+}
+
+.fx-webball{
+  position:absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  transform: translate(-50%,-50%);
+  background: radial-gradient(circle at 35% 35%,
+    rgba(255,255,255,0.95) 0%,
+    rgba(230,235,245,0.80) 35%,
+    rgba(190,200,220,0.45) 65%,
+    rgba(0,0,0,0.0) 100%);
+  box-shadow:
+    0 0 10px rgba(240,245,255,0.55),
+    0 0 20px rgba(200,220,255,0.25);
+}
+
+.fx-webball::after{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius:999px;
+  background:
+    radial-gradient(circle,
+      rgba(255,255,255,0.12),
+      rgba(255,255,255,0.0) 70%);
+  animation: webPulse 180ms ease-in-out infinite;
+}
+@keyframes webPulse{
+  0%,100%{ transform: scale(0.92); opacity: 0.85; }
+  50%    { transform: scale(1.08); opacity: 1.00; }
+}
+
+.fx-websplat{
+  position:absolute;
+  width: 42px;
+  height: 42px;
+  transform: translate(-50%,-50%);
+  opacity: 0.95;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(240,245,255,0.25));
+  animation: webSplat 520ms ease-out forwards;
+}
+
+.fx-websplat::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: 999px;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(255,255,255,0.0) 0deg 8deg,
+      rgba(255,255,255,0.55) 8deg 14deg
+    ),
+    radial-gradient(circle,
+      rgba(255,255,255,0.35) 0%,
+      rgba(255,255,255,0.0) 70%);
+}
+
+.fx-websplat::after{
+  content:"";
+  position:absolute;
+  inset:8px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle,
+      rgba(255,255,255,0.40) 0%,
+      rgba(255,255,255,0.0) 65%);
+  opacity: 0.85;
+}
+
+@keyframes webSplat{
+  0%   { transform: translate(-50%,-50%) scale(0.55); opacity: 0.0; }
+  15%  { opacity: 0.95; }
+  100% { transform: translate(-50%,-50%) scale(1.25); opacity: 0.0; }
+}
+
+/* ===== INSECT ACID SPIT FX ===== */
+
+.fx-acidtrail{
+  position:absolute;
+  height: 3px;
+  transform-origin: 0 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0.0),
+    rgba(140,255,90,0.45),
+    rgba(220,255,120,0.75),
+    rgba(140,255,90,0.25),
+    rgba(0,0,0,0.0)
+  );
+  filter: drop-shadow(0 0 8px rgba(140,255,90,0.35));
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+.fx-acidglob{
+  position:absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  transform: translate(-50%,-50%);
+  background: radial-gradient(circle at 35% 35%,
+    rgba(255,255,200,0.95) 0%,
+    rgba(200,255,120,0.95) 35%,
+    rgba(90,220,60,0.85) 60%,
+    rgba(20,120,20,0.35) 80%,
+    rgba(0,0,0,0.0) 100%);
+  box-shadow:
+    0 0 10px rgba(160,255,120,0.55),
+    0 0 24px rgba(90,220,60,0.25);
+}
+
+.fx-acidsplash{
+  position:absolute;
+  width: 46px;
+  height: 30px;
+  transform: translate(-50%,-50%) rotate(0deg);
+  pointer-events:none;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 10px rgba(120,255,80,0.25));
+  animation: acidSplash 560ms ease-out forwards;
+}
+
+.fx-acidsplash::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: 999px;
+  background:
+    radial-gradient(closest-side at 35% 45%,
+      rgba(220,255,140,0.75),
+      rgba(90,220,60,0.25),
+      rgba(0,0,0,0.0) 70%);
+  transform: rotate(-8deg);
+}
+
+.fx-acidsplash::after{
+  content:"";
+  position:absolute;
+  left: 10%;
+  top: 35%;
+  width: 80%;
+  height: 55%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle,
+      rgba(200,255,120,0.45),
+      rgba(0,0,0,0.0) 70%);
+  opacity: 0.85;
+}
+
+@keyframes acidSplash{
+  0%   { transform: translate(-50%,-50%) scale(0.65) rotate(-6deg); opacity: 0.0; }
+  15%  { opacity: 0.95; }
+  100% { transform: translate(-50%,-50%) scale(1.25) rotate(6deg); opacity: 0.0; }
+}
+
+
+
+
+/*********************  END NEW FXLAYER *****************************/
   /* ---------- Info (non-moving, like your last state) ---------- */
   #infoMarquee{ display:none !important; }
   .infoMarquee{
@@ -1622,6 +1889,9 @@ function buildButtons(){
       const actionTarget = getActionTarget();
       const actionMsg = getActionMsg() || actionId;
 
+
+      onPlayerDidAction(actionId, actionTarget);
+
       try {
         const res = await fetch(ACTION_URL, {
           method: "POST",
@@ -1893,7 +2163,7 @@ function updateEncounterPlayer(mePlayer){
   entry.wrap.style.left = `${x}px`;
   entry.wrap.style.top  = `${y}px`;
 
-  const s = depthScale(y01) * 1.05;
+  const s = depthScale(y01) * 0.55;  // player scale playersize
   entry.wrap.style.transform = `translate3d(-50%, -85%, 0) scale(${s})`;
 
   // If we still don't have data, show a visible placeholder (instead of removing)
@@ -2513,7 +2783,7 @@ async function updateState(){
     if (damages.length > -10) {
       // pick any ranged/combi mob that is alive (simple first version)
       const attacker = (s.mobs || []).find(m =>
-        Number(m.hp) > 0 && (m.attackType === "Ranged" || m.attackType === "Combi")
+        Number(m.hp) > 0 && (m.attackType != "Melee")
       );
 
       if (attacker) {
@@ -2542,7 +2812,8 @@ async function updateState(){
     const isWave  = String(s.phase || "") === "wavecompleted";
 
     if (!isGameOver && isWave){
-      showWaveOverlay(s.wave, s.nextWaveInTurns ?? null);
+      console.log("MS:"+s.restartInMs);
+      showWaveOverlay(s.wave, s.restartInMs ?? null);
       if (!wasWave && typeof showToast === "function"){
         showToast(`Wave ${Number(s.wave) || 0} cleared!`, "success", 1800);
       }
@@ -2636,10 +2907,12 @@ function showWaveOverlay(wave, nextInTurns){
   if (!el || !title || !sub) return;
 
   title.textContent = `WAVE ${Number(wave) || 0} CLEARED`;
-  sub.textContent = (nextInTurns != null)
-    ? `Next wave in ~${nextInTurns} turns…`
-    : `Next wave incoming…`;
-
+  if(nextInTurns != null){
+    const turnsleft= Number(nextInTurns) ;
+    sub.textContent = `Next wave in ~${nextInTurns} turns…`;
+  }else{
+    sub.textContent = `Next wave incoming soon…`;
+  }
   el.classList.remove("hidden");
   el.setAttribute("aria-hidden", "false");
 }
@@ -2932,15 +3205,33 @@ function handleMobAttackProjectile(mob){
   if (now - lastRangedFxAt < RANGED_FX_COOLDOWN_MS) return;
   
   lastRangedFxAt = now;
-  playSound("shoot");
 
   const atk = normKey(mob.attackType);
-  if (atk === "ranged" || atk === "combi") {
+  console.log("atk: "+atk);
+
+  if (atk === "ranged") {
     const mobWrap = document.querySelector(
       `.mobAbs[data-id="${mob.id}"]`
     );
     spawnRangedProjectile(mobWrap);
+    playSound("shoot");
   }
+  if (atk === "spider") {
+    const mobWrap = document.querySelector(
+      `.mobAbs[data-id="${mob.id}"]`
+    );
+    spawnWebProjectile(mobWrap);
+    //playSound("shoot");
+  }
+  if (atk === "insect") {
+    const mobWrap = document.querySelector(
+      `.mobAbs[data-id="${mob.id}"]`
+    );
+    spawnAcidSpit(mobWrap);
+    //playSound("shoot");
+  }
+
+
 }
 
 function getPlayerCardCenter(){
@@ -2963,11 +3254,339 @@ function isMezzed(m){
   return c === "mezzed";
 }
 
+function isMob(targetId){
+  if (!targetId) return false;
+  const id = String(targetId).trim();
+  if (!id) return false;
+
+  return (uiState.mobs || []).some(m => String(m.id) === id);
+}
+
+function isPlayer(targetId){
+  if (!targetId) return false;
+  const id = String(targetId).trim();
+  if (!id) return false;
+
+  return (uiState.party || []).some(p =>
+    String(p.id) === id ||
+    String(p.characterName || "") === id ||
+    String(p.playerName || "") === id
+  );
+}
 
 /* ======================================================================
    Helper functions (END)
    ====================================================================== */
+/* ======================================================================
+   FX functions (Begin)
+   ====================================================================== */
+// Ensure an FX layer exists
+function ensureFxLayer(){
+  let layer = document.getElementById("fxLayer");
+  if (!layer){
+    layer = document.createElement("div");
+    layer.id = "fxLayer";
+    document.body.appendChild(layer);
+  }
+  return layer;
+}
 
+function getElCenter(el){
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width/2, y: r.top + r.height/2 };
+}
+
+// You decide these selectors to match your DOM.
+// Common: player card has id="playerAbs" or class ".player-card"
+// Mob card has data-mobid="..." or similar.
+function getPlayerCardEl(){
+  // your player wrapper is .playerAbs (class), not #playerAbs
+  return document.querySelector(".playerAbs .mobCard")   // card
+      || document.querySelector(".playerAbs");           // fallback wrapper
+}
+
+function getMobCardElById(mobId){
+  // you store mob id on wrapper: wrap.dataset.id = mobId  -> data-id
+  // and on card: card.dataset.mobId = mobId -> data-mob-id
+  const id = CSS.escape(String(mobId));
+  return document.querySelector(`.mobAbs[data-id="${id}"] .mobCard`) // best: card
+      || document.querySelector(`.mobCard[data-mob-id="${id}"]`)     // card fallback
+      || document.querySelector(`.mobAbs[data-id="${id}"]`);         // wrapper fallback
+}
+
+function fxShoot(fromPt, toPt, opts={}){
+  const layer = ensureFxLayer();
+  const el = document.createElement("div");
+  el.className = "fx-bullet";
+
+  const dx = toPt.x - fromPt.x;
+  const dy = toPt.y - fromPt.y;
+  const len = Math.hypot(dx, dy);
+  const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  el.style.left = `${fromPt.x}px`;
+  el.style.top  = `${fromPt.y}px`;
+  el.style.width = `${Math.max(12, len)}px`;
+  el.style.transform = `translate(0, -50%) rotate(${ang}deg)`;
+
+  layer.appendChild(el);
+
+  // fade out quick
+  const dur = opts.duration ?? 180;
+  el.animate([{ opacity: 0.95 }, { opacity: 0 }], { duration: dur, easing: "ease-out", fill: "forwards" });
+
+  setTimeout(()=> el.remove(), dur + 30);
+}
+
+function fxFireball(fromPt, toPt, opts={}){
+  const layer = ensureFxLayer();
+  const ball = document.createElement("div");
+  ball.className = "fx-fireball";
+  layer.appendChild(ball);
+
+  const dx = toPt.x - fromPt.x;
+  const dy = toPt.y - fromPt.y;
+  const dist = Math.hypot(dx, dy);
+
+  // duration scales a bit with distance but stays reasonable
+  const base = opts.duration ?? 520;
+  const dur  = Math.min(900, Math.max(380, base + dist * 0.15));
+
+  // rotate the "trail" roughly opposite travel direction
+  const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  /* rotate whole fireball INCLUDING Schweif */
+  ball.style.transform =
+  `translate(${fromPt.x}px, ${fromPt.y}px) translate(-50%, -50%) rotate(${ang}deg)`;
+  
+  // rotate pseudo trail via inline update on ::after is not possible; use animation transform below:
+  // We'll just set a transform on the element itself + let ::after stay aligned visually.
+
+  const anim = ball.animate(
+    [
+      {
+        transform:
+          `translate(${fromPt.x}px, ${fromPt.y}px)
+          translate(-50%, -50%)
+          rotate(${ang}deg)
+          scale(0.9)`
+      },
+      {
+        transform:
+          `translate(${toPt.x}px, ${toPt.y}px)
+          translate(-50%, -50%)
+          rotate(${ang}deg)
+          scale(1.1)`
+      }
+    ],
+
+    { duration: dur, easing: "cubic-bezier(.2,.9,.2,1)", fill: "forwards" }
+  );
+
+  // small wobble for “magic”
+  const wob = ball.animate(
+    [
+      { filter: "drop-shadow(0 0 10px rgba(255,120,30,0.65))" },
+      { filter: "drop-shadow(0 0 16px rgba(255,120,30,0.95))" },
+      { filter: "drop-shadow(0 0 10px rgba(255,120,30,0.65))" }
+    ],
+    { duration: 220, iterations: Math.ceil(dur/220), easing: "ease-in-out" }
+  );
+
+  anim.onfinish = () => {
+    // impact puff
+    const impact = document.createElement("div");
+    impact.className = "fx-impact";
+    impact.style.left = `${toPt.x}px`;
+    impact.style.top  = `${toPt.y}px`;
+    layer.appendChild(impact);
+    setTimeout(()=> impact.remove(), 260);
+
+    wob.cancel();
+    ball.remove();
+  };
+}
+
+
+function spawnWebProjectile(fromEl){
+  if (!fromEl) return;
+
+  const layer = document.getElementById("fxLayer") || ensureFxLayer();
+  if (!layer) return;
+
+  const a = fromEl.getBoundingClientRect();
+
+  // start point near mob
+  const x1 = a.left + a.width * 0.75;
+  const y1 = a.top  + a.height * 0.35;
+
+  // end point = center of player card
+  const pc = getPlayerCardCenter();
+  const x2 = pc ? pc.x : (window.innerWidth * 0.5);
+  const y2 = pc ? pc.y : (window.innerHeight * 0.86);
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  const dur = Math.min(420, Math.max(220, dist * 0.35));
+
+  // strand
+  const strand = document.createElement("div");
+  strand.className = "fx-webstrand";
+  strand.style.left = x1 + "px";
+  strand.style.top  = y1 + "px";
+  strand.style.width = dist + "px";
+  strand.style.transform = `translate(0,-50%) rotate(${angle}deg)`;
+  layer.appendChild(strand);
+
+  // web ball
+  const ball = document.createElement("div");
+  ball.className = "fx-webball";
+  ball.style.left = x1 + "px";
+  ball.style.top  = y1 + "px";
+  layer.appendChild(ball);
+
+  // animate ball
+  ball.animate(
+    [{ left: x1+"px", top: y1+"px" }, { left: x2+"px", top: y2+"px" }],
+    { duration: dur, easing: "cubic-bezier(.2,.8,.2,1)" }
+  ).onfinish = () => {
+    ball.remove();
+
+    const splat = document.createElement("div");
+    splat.className = "fx-websplat";
+    splat.style.left = x2 + "px";
+    splat.style.top  = y2 + "px";
+    layer.appendChild(splat);
+    setTimeout(()=> splat.remove(), 560);
+  };
+
+  // fade strand out
+  strand.animate([{ opacity: 0.85 }, { opacity: 0 }], { duration: dur, easing: "ease-out" })
+    .onfinish = () => strand.remove();
+}
+
+function spawnAcidSpit(fromEl){
+  if (!fromEl) return;
+  const layer = document.getElementById("fxLayer") || ensureFxLayer();
+  if (!layer) return;
+
+  const a = fromEl.getBoundingClientRect();
+
+  // start near insect mouth area
+  const x1 = a.left + a.width * 0.70;
+  const y1 = a.top  + a.height * 0.40;
+
+  // end at player center
+  const pc = getPlayerCardCenter();
+  const x2 = pc ? pc.x : (window.innerWidth * 0.5);
+  const y2 = pc ? pc.y : (window.innerHeight * 0.86);
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  const dur = Math.min(520, Math.max(240, dist * 0.45));
+
+  // trail (thin, quick)
+  const trail = document.createElement("div");
+  trail.className = "fx-acidtrail";
+  trail.style.left = x1 + "px";
+  trail.style.top  = y1 + "px";
+  trail.style.width = dist + "px";
+  trail.style.transform = `translate(0,-50%) rotate(${angle}deg)`;
+  layer.appendChild(trail);
+
+  // glob
+  const glob = document.createElement("div");
+  glob.className = "fx-acidglob";
+  glob.style.left = x1 + "px";
+  glob.style.top  = y1 + "px";
+  layer.appendChild(glob);
+
+  // slightly arced travel: midpoint pushed upward a bit
+  const mx = (x1 + x2) * 0.5;
+  const my = (y1 + y2) * 0.5 - Math.min(60, dist * 0.15);
+
+  glob.animate(
+    [
+      { transform: "translate(-50%,-50%) scale(0.9)", offset: 0,   left: x1+"px", top: y1+"px" },
+      { transform: "translate(-50%,-50%) scale(1.1)", offset: 0.5, left: mx+"px", top: my+"px" },
+      { transform: "translate(-50%,-50%) scale(1.0)", offset: 1,   left: x2+"px", top: y2+"px" }
+    ],
+    { duration: dur, easing: "cubic-bezier(.2,.8,.2,1)" }
+  ).onfinish = () => {
+    glob.remove();
+
+    const splash = document.createElement("div");
+    splash.className = "fx-acidsplash";
+    splash.style.left = x2 + "px";
+    splash.style.top  = y2 + "px";
+    splash.style.transform = `translate(-50%,-50%) rotate(${(Math.random()*18-9).toFixed(1)}deg)`;
+    layer.appendChild(splash);
+    setTimeout(()=> splash.remove(), 600);
+  };
+
+  trail.animate([{ opacity: 0.9 }, { opacity: 0 }], { duration: dur, easing: "ease-out" })
+       .onfinish = () => trail.remove();
+}
+
+
+
+
+
+function playActionFx(actionId, targetMobId){
+  // do nothing if no target
+  if (!targetMobId) return;
+
+  const playerEl = getPlayerCardEl();
+  const mobEl    = getMobCardElById(targetMobId);
+  if (!playerEl || !mobEl) return;
+
+  const fromPt = getElCenter(playerEl);
+  const toPt   = getElCenter(mobEl);
+
+  // Map action -> FX
+  switch(String(actionId).toLowerCase()){
+    case "shoot":
+      fxShoot(toPt, fromPt, { duration: 160 });
+      break;
+
+    case "fireball":
+      fxFireball(fromPt, toPt, { duration: 520 });
+      break;
+
+    // add more later:
+    // case "heal":   fxHealBeam(fromPt, toPt); break;
+    // case "mezmerize": fxMez(fromPt, toPt); break;
+
+    default:
+      // fallback: subtle shoot line
+      fxShoot(fromPt, toPt, { duration: 140 });
+      break;
+  }
+}
+
+function onPlayerDidAction(actionId, target){
+  // Play local FX immediately (snappy)
+  playActionFx(actionId, target);
+
+  // Then do your network call as usual...
+  // postActionToServer(actionId, targetMobId);
+}
+
+window.testFx = function(){
+  const t = getActionTarget();
+  console.log("[testFx] target=", t, "playerEl=", !!getPlayerCardEl(), "mobEl=", !!getMobCardElById(t));
+  playActionFx("fireball", t);
+};
+
+/* ======================================================================
+   FX functions (END)
+   ====================================================================== */
 
 /* ======================================================================
    KEYBOARD SHORTCUTS (BEGIN)

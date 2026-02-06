@@ -346,6 +346,14 @@ bool Combatant::ShouldAttack()
             // Flexible, tactical
             return true;
 
+        case ECombatantAttackType::Spider:
+            // Safer, slightly weaker
+            return true; // old one ! Lane>=MAXLANES-1;
+
+        case ECombatantAttackType::Insect:
+            // Safer, slightly weaker
+            return true; // old one ! Lane>=MAXLANES-1;
+
         case ECombatantAttackType::Healer:
             // No damage – healing handled elsewhere
             return false;
@@ -395,8 +403,14 @@ std::string Combatant::GetAttackType() const
         case ECombatantAttackType::Ranged:  return "Ranged";
         case ECombatantAttackType::Melee:   return "Melee";
         case ECombatantAttackType::Combi:   return "Combi";
+        case ECombatantAttackType::Spider:  return "Spider";
+        case ECombatantAttackType::Insect:  return "Insect";
         case ECombatantAttackType::Healer:  return "Healer";
-        default:                            return "Unknown";
+        default:  
+          {
+            DaraLog("MOBTEMPLATE", "Unknown AttackType") ;
+            return "Unknown Atk";
+          }
     }
 }
 

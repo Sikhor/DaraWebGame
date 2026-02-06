@@ -94,9 +94,23 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
     std::lock_guard<std::mutex> lk(CacheMutex);
     if (playerName.empty()) return;
 
+    const bool wasEmpty = Players.empty();
+
     if (!Players.count(playerName))
         Players.emplace(playerName, std::make_shared<Combatant>(playerName, ECombatantType::Player, MAXHP, MAXENERGY, MAXMANA));
-        
+
+    // If this is the first player coming back, ensure we are not stuck in WaveCompleted
+    if (wasEmpty)
+    {
+        if (Phase == EGamePhase::WaveCompleted)
+        {
+            ResetWave();
+        }
+
+        // If you want: start fresh spawn budget when a run "restarts"
+        // (optional) if (MobToSpawnInWave <= 0) MobToSpawnInWave = std::max(1, Wave + 5);
+    }
+
     Cv.notify_all();
 }
 
@@ -271,8 +285,15 @@ void CombatDirector::RemovePlayer(const std::string& playerName)
     BufferedActions.erase(playerName);
     if (Players.empty())
     {
-        DaraLog("GAMESTATE", "All players logged out → resetting to Wave 1");
+        DaraLog("GAMESTATE", "All players logged out → resetting to Wave 0");
+        ResetWave();
+    }
 
+    Cv.notify_all();
+}
+
+void CombatDirector::ResetWave()
+{  
         // Clear combat state
         Mobs.clear();
         PendingActions.clear();
@@ -280,9 +301,9 @@ void CombatDirector::RemovePlayer(const std::string& playerName)
         Log.clear();
 
         // Reset wave + progression
-        Wave = 1;
+        Wave = 0;
         MobToSpawnInWave = 0;
-        WaveWaitTurns = 0;
+        WaveWaitTurns = 5;
 
         // Reset turn state
         CurrentTurnId = 0;
@@ -294,10 +315,8 @@ void CombatDirector::RemovePlayer(const std::string& playerName)
 
         // Optional: clear info message
         InfoMsg.clear();
-    }
-
-    Cv.notify_all();
 }
+
 EGamePhase CombatDirector::GetPhase()
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
@@ -379,7 +398,7 @@ bool CombatDirector::SubmitPlayerAction(const std::string& playerName,
         if (BufferedActions.count(playerName))
         {
             if (outError) *outError = "Already submitted for next turn (buffered)";
-            return false;
+            return true; // because we only send error to player if there is a real problem
         }
 
         BufferedActions.emplace(playerName, std::move(act));
@@ -391,7 +410,7 @@ bool CombatDirector::SubmitPlayerAction(const std::string& playerName,
     if (PendingActions.count(playerName))
     {
         if (outError) *outError = "Player already submitted action for this turn";
-        return false;
+        return true;  // because we only send error to player if there is a real problem
     }
 
     PendingActions.emplace(playerName, std::move(act));
@@ -440,6 +459,10 @@ CombatDirector::json CombatDirector::GetStateSnapshotJson(size_t lastLogLines) c
             ? std::chrono::duration_cast<std::chrono::milliseconds>(GameOverUntil - now).count()
             : 0;
         out["restartInMs"] = msLeft;
+    }
+    if (Phase == EGamePhase::WaveCompleted)
+    {
+        out["restartInMs"] = WaveWaitTurns;
     }
     else
     {
@@ -886,25 +909,29 @@ void CombatDirector::ResolveDeadMobs()
             RewardPlayersForMobDeath(playersSnap, *mob, mobName);
         }
     }
-
+ 
     // 3) IMPORTANT: wave completion check must run EVERY turn
     bool anyAlive = false;
     for (auto const& [id, mob] : Mobs)
     {
         if (mob && mob->IsAlive()) { anyAlive = true; break; }
     }
+    if(Players.empty()){
+        return;
+    }
 
     if (!anyAlive && MobToSpawnInWave <= 0)
     {
         NewWave(); // now it will be called each turn while waiting
     }
+   
 }
 
 
 void CombatDirector::NewWave()
 {
     DaraLog("TURN", "Wave over ... waiting "+std::to_string(WaveWaitTurns));
-    if (WaveWaitTurns <= 0) WaveWaitTurns = 5;
+    if (WaveWaitTurns <= 0) WaveWaitTurns = DARA_WAVECOMPLETED_PAUSE;
 
     Phase = EGamePhase::WaveCompleted;
     WaveWaitTurns--;
@@ -913,6 +940,7 @@ void CombatDirector::NewWave()
         Wave++;
         Phase = EGamePhase::Running;
         MobToSpawnInWave = Wave + static_cast<int>(GetRandomFloat(5.f,10.f));
+        WaveWaitTurns = DARA_WAVECOMPLETED_PAUSE;
     }
 }
 
@@ -1182,9 +1210,9 @@ json CombatDirector::GetUIStateSnapshotJsonLocked(const std::string playerName) 
             ? std::chrono::duration_cast<std::chrono::milliseconds>(GameOverUntil - now).count()
             : 0;
         uiJson["restartInMs"] = msLeft;
-    }
-    else
-    {
+    }else if(Phase==EGamePhase::WaveCompleted){
+        uiJson["restartInMs"] = WaveWaitTurns;
+    }else{
         uiJson["restartInMs"] = 0;
     }
 
