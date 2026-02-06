@@ -426,6 +426,60 @@
   --mobExtraScale: 0.00;
 }
 
+/*** end mob.css ***/
+/* begin mob death css ***/
+/* Mob death shrink + fade */
+.mob-card{
+  transform-origin: center bottom;
+  will-change: transform, opacity, max-height, margin, padding;
+}
+
+/* when mob is dead -> shrink away */
+.mob-card.is-dead{
+  animation: mobShrinkOut 650ms ease-in forwards;
+  overflow: hidden;            /* allows height collapse */
+  max-height: 220px;           /* set to >= your card height */
+}
+
+/* keep death image visible but shrink it too */
+.mob-card.is-dead .mob-avatar,
+.mob-card.is-dead img{
+  transition: transform 650ms ease-in, filter 650ms ease-in, opacity 650ms ease-in;
+  transform: scale(0.92);
+  opacity: 0.95;
+  filter: saturate(0.9);
+}
+
+@keyframes mobShrinkOut{
+  0%{
+    transform: scale(1);
+    opacity: 1;
+    max-height: 220px;
+    margin-top: var(--gap);
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  70%{
+    transform: scale(0.20);
+    opacity: 0.25;
+  }
+  100%{
+    transform: scale(0.05);
+    opacity: 0;
+    max-height: 0px;
+    margin-top: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .mob-card.is-dead{ animation: none; opacity: 0; }
+}
+
+/* end mob death css ***/
+
 /* Attack mode ****/
 .atk-badge{
   display:inline-flex; align-items:center; justify-content:center;
@@ -591,6 +645,79 @@
   from{ transform: translate(-50%, -50%) scale(0.6); opacity: 0.9; }
   to  { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
 }
+
+/* ===== Fireball Impact Player->Mob ===== */
+/* ===== FIREBALL IMPACT (bigger splat/explosion) ===== */
+.fx-impact-fireball{
+  position: absolute;
+  left: 0; top: 0;
+  width: 1px; height: 1px;
+  pointer-events: none;
+}
+
+/* core boom */
+.fx-impact-fireball .boom{
+  position: absolute;
+  left: 0; top: 0;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%) scale(0.5);
+  border-radius: 999px;
+  opacity: 0;
+  animation: fbBoom 320ms ease-out forwards;
+  background: radial-gradient(circle,
+    rgba(255,235,160,0.95) 0%,
+    rgba(255,140,40,0.75) 35%,
+    rgba(255,60,0,0.25) 60%,
+    rgba(255,60,0,0) 78%);
+  filter: drop-shadow(0 0 12px rgba(255,120,30,0.55));
+}
+
+/* ring */
+.fx-impact-fireball .ring{
+  position: absolute;
+  left: 0; top: 0;
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%) scale(0.35);
+  border-radius: 999px;
+  opacity: 0;
+  animation: fbRing 360ms ease-out forwards;
+  border: 2px solid rgba(255,180,90,0.85);
+}
+
+/* sparks */
+.fx-impact-fireball .spark{
+  position: absolute;
+  left: 0; top: 0;
+  width: 12px;
+  height: 2px;
+  transform: translate(-50%, -50%) rotate(var(--r)) translateX(0px);
+  transform-origin: left center;
+  border-radius: 999px;
+  opacity: 0;
+  background: rgba(255,220,120,0.95);
+  animation: fbSpark 260ms ease-out forwards;
+}
+
+@keyframes fbBoom{
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.35); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.35); }
+}
+
+@keyframes fbRing{
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.25); }
+  10%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.45); }
+}
+
+@keyframes fbSpark{
+  0%   { opacity: 0; transform: translate(-50%,-50%) rotate(var(--r)) translateX(0px) scaleX(0.6); }
+  10%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) rotate(var(--r)) translateX(26px) scaleX(1.1); }
+}
+
 
 
 /* ===== WEB PROJECTILE FX (Mob -> Player) ===== */
@@ -2621,6 +2748,7 @@ function detectMobDeaths(prev, next){
     });
 
     showLootToast(`${id} is killed!`);
+    markMobDeadAndRemove(id, DEAD_STAY_MS);
   };
 
   for (const [id, nextMob] of nextMap){
@@ -2643,6 +2771,22 @@ function detectMobDeaths(prev, next){
 /* ======================================================================
    DAMAGE + DEATH DETECTION (END)
    ====================================================================== */
+/* new death shrinking*/
+function markMobDeadAndRemove(mobId, delayMs){
+  const card = document.querySelector(`.mob-card[data-mob-id="${CSS.escape(String(mobId))}"]`);
+  if (!card) return;
+  if (card.dataset.deadStarted === "1") return;
+
+  card.dataset.deadStarted = "1";
+  card.classList.add("is-dead");
+
+  window.setTimeout(() => {
+    // only remove if it still exists (safe)
+    card.remove();
+  }, delayMs);
+}
+
+/* end new death shrinking*/
 
 document.getElementById("btnHelp")?.addEventListener("click", () => {
   window.open("help.html", "_blank", "noopener");
@@ -3395,17 +3539,33 @@ function fxFireball(fromPt, toPt, opts={}){
 
   anim.onfinish = () => {
     // impact puff
-    const impact = document.createElement("div");
-    impact.className = "fx-impact";
-    impact.style.left = `${toPt.x}px`;
-    impact.style.top  = `${toPt.y}px`;
-    layer.appendChild(impact);
-    setTimeout(()=> impact.remove(), 260);
+   spawnFireballImpact(layer, toPt.x, toPt.y);
 
     wob.cancel();
     ball.remove();
   };
 }
+
+function spawnFireballImpact(layer, x, y){
+  const host = document.createElement("div");
+  host.className = "fx-impact-fireball";
+  host.style.left = x + "px";
+  host.style.top  = y + "px";
+
+  host.innerHTML = `
+    <div class="boom"></div>
+    <div class="ring"></div>
+    ${Array.from({length: 8}).map((_,i)=>{
+      const deg = Math.round((360/8)*i + (Math.random()*18 - 9));
+      return `<div class="spark" style="--r:${deg}deg"></div>`;
+    }).join("")}
+  `;
+
+  layer.appendChild(host);
+  setTimeout(()=> host.remove(), 450);
+}
+
+
 
 
 function spawnWebProjectile(fromEl){
