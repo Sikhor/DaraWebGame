@@ -9,7 +9,8 @@
 enum class EDbJobType
 {
     LoadUserCharacters,
-    SaveCharacter
+    SaveCharacter,
+    SavePlayerCharacter
 };
 
 struct DbJob
@@ -17,14 +18,15 @@ struct DbJob
     EDbJobType type;
     std::string userEmail;
 
-    // for SaveCharacter:
-    std::string characterId;
+    // for SavePlayerCharacter:
+    std::string characterId= "unknown characterId";
     int level = 0;
     int xp = 0;
     int credits = 0;
     int potions = 0;
+    int highestWave= 0;
 
-    std::function<void(bool ok)> done; 
+    std::function<void(bool ok)> done={}; 
 };
 
 class DbJobQueue

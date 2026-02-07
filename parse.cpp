@@ -87,8 +87,13 @@ void ParseActionsFromAI(
         }
 
     }
+    // ATTENTION not sure what to do here for Players yet
+    for (auto& [playerId, player] : Players){
+        if (!player) continue;
 
-
+        // playerId : std::string
+        // player   : CombatantPtr
+    }
     //std::cout << "END OF ParseActionsFromAI\n";
 }
 

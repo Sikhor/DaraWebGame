@@ -27,8 +27,8 @@ struct MobRewards
 {
     int xpMin = 1, xpMax = 5;
     float creditsChance= 0.10f;
-    int creditsMin = -100, creditsMax = 10;
-    float lootChance = 0.10f; // 15%
+    int creditsMin = 1, creditsMax = 10;
+    float lootChance = 0.10f; // 10%
     // You can add loot tables etc.
 };
 

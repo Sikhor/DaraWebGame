@@ -402,24 +402,29 @@
     .scene::before, .fog, .fog.f2, .mobCard, .mobAbs{ animation:none !important; transition:none !important; }
   }
 
-  /* Mob Conditions */
- .mob-condition {
+ /* Mob Conditions (up to 3 icons) */
+.mob-conditions{
   position: absolute;
   left: 6px;
-  bottom: 8px;   /* slightly above HP bar */
-  width: 22px;
-  height: 22px;
-  z-index: 4;    /* above HP bar + image */
+  bottom: 8px;            /* slightly above HP bar */
+  z-index: 4;             /* above HP bar + image */
   pointer-events: none;
+
+  display: none;          /* hidden if no conditions */
+  gap: 4px;
+  align-items: center;
 }
 
-.mob-condition img {
-  width: 100%;
-  height: 100%;
+.mob-conditions img{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
   filter:
     drop-shadow(0 0 4px rgba(255,80,255,0.6))
     drop-shadow(0 0 8px rgba(120,0,255,0.35));
+  opacity: 0.95;
 }
+
   /* ===== BIGGER NON-NORMAL MOBS ===== */
 .mobAbs.isNonNormal{
   /* extra scale on top of your depthScale() */
@@ -1687,31 +1692,63 @@ const DEAD_STAY_MS = 2200;
 
 const mobDom = new Map();
 
-const MOB_CONDITIONS = {
-  None: null,
 
+/* ======================================================================
+   GLOBALS (END)
+   ====================================================================== */
+const MOB_CONDITIONS = {
   Mezzed: {
     icon: "BuffMezzed.png",
     title: "Mezzed",
     desc: "Cannot act or attack"
   },
 
-  Burning: {
-    icon: "icon-burning.png",
-    title: "Burning",
-    desc: "Takes fire damage over time"
+  Burned: {
+    icon: "BuffBurned.png",   // set to your real file
+    title: "Burned",
+    desc: "Takes fire damage over time and reduces defense"
   },
 
   Poisoned: {
-    icon: "icon-poisoned.png",
+    icon: "BuffPoisoned.png",  // set to your real file
     title: "Poisoned",
-    desc: "Takes Poison damage over time"
+    desc: "Takes poison damage over time and reduces defense"
+  },
+
+  Wounded: {
+    icon: "BuffWounded.png",   // optional
+    title: "Wounded",
+    desc: "Reduced effectiveness and reduces defense"
+  },
+
+  Defending: {
+    icon: "BuffDefending.png", // optional
+    title: "Defending",
+    desc: "Reduced damage taken"
+  },
+
+  Fleeing: {
+    icon: "BuffFleeing.png",   // optional
+    title: "Fleeing",
+    desc: "Trying to escape"
+  },
+
+  Incapacitated: {
+    icon: "BuffIncapacitated.png", // optional
+    title: "Incapacitated",
+    desc: "Cannot act"
   }
 };
-/* ======================================================================
-   GLOBALS (END)
-   ====================================================================== */
 
+const CONDITION_PRIORITY = [
+  "Mezzed",
+  "Burned",
+  "Poisoned",
+  "Wounded",
+  "Fleeing",
+  "Defending",
+  "Incapacitated"
+];
 
 /* ======================================================================
    AUTH + STORAGE (BEGIN)
@@ -2400,17 +2437,23 @@ function createMobDom(mobId, idx){
   card.dataset.mobId = mobId;     // so we can select the card fast
   card.classList.add("mob-card"); // optional helper class for querySelector
 
-  // --- Condition icon (top-right) ---
+  // --- Conditions (up to 3 icons, bottom-left) ---
   const condWrap = document.createElement("div");
-  condWrap.className = "mob-condition";
-  condWrap.style.display = "none"; // hidden by default
+  condWrap.className = "mob-conditions";
+  condWrap.style.display = "none";
 
-  const condImg = document.createElement("img");
-  condImg.alt = "condition";
-  condWrap.appendChild(condImg);
+  const condImgs = [];
+  for (let k = 0; k < 3; k++){
+    const im = document.createElement("img");
+    im.alt = "condition";
+    im.style.display = "none";
+    condWrap.appendChild(im);
+    condImgs.push(im);
+  }
 
-  // IMPORTANT: append to card (so it sits on top of the card)
+  // Append to card so it overlays the card
   card.appendChild(condWrap);
+
 
   /* end conditions */
 
@@ -2458,7 +2501,7 @@ function createMobDom(mobId, idx){
     updateEncounterMobs();
   };
 
-  const entry = { wrap, card, img, hpFill, targetTag, avatarFallback, condWrap, condImg };
+  const entry = { wrap, card, img, hpFill, targetTag, avatarFallback, condWrap, condImgs };
   mobDom.set(mobId, entry);
   return entry;
 } // (END createMobDom)
@@ -2541,24 +2584,51 @@ function updateEncounterMobs(){
 
     entry.wrap.style.zIndex = String(Math.floor(y01 * 1000));
 
-    /* Condition check */
-    const cond= getMobCondition(m);
-    if (cond && entry.condWrap && entry.condImg) {
-      entry.condWrap.style.display = "block";
-      entry.condWrap.title = `${cond.title}: ${cond.desc}`;
-
-      // Use the SAME base you use for other icons, because your mezz icon is in wp uploads
-      const condSrc = BUFF_IMG_BASE + cond.icon;
-      if (entry.condImg.getAttribute("src") !== condSrc) {
-        entry.condImg.src = condSrc;
+    /* Conditions (up to 3 icons) */
+    if (entry.condWrap && entry.condImgs){
+      if (getMobConditionsArray(m).length){
+        console.log("[COND]", m.id, "conditions=", m.conditions, "condition=", m.condition);
       }
-    } else if (entry.condWrap) {
-      entry.condWrap.style.display = "none";
-      if (entry.condImg) entry.condImg.removeAttribute("src");
-      entry.condWrap.title = "";
-    }
+      const top = getTopConditions(m, 3);
 
-    /* end Condition check */
+      if (top.length > 0){
+        entry.condWrap.style.display = "flex";
+
+        // Tooltip: show all conditions (even if >3)
+        const all = getMobConditionsArray(m);
+        entry.condWrap.title = all.map(c => {
+          const info = conditionInfo(c);
+          return `${info.title}: ${info.desc}`;
+        }).join("\n");
+
+        for (let k = 0; k < entry.condImgs.length; k++){
+          const im = entry.condImgs[k];
+          const cname = top[k];
+
+          if (!cname){
+            im.style.display = "none";
+            im.removeAttribute("src");
+            continue;
+          }
+
+          const info = conditionInfo(cname);
+          const src = BUFF_IMG_BASE + info.icon;
+
+          if (im.getAttribute("src") !== src) im.src = src;
+          im.style.display = "";
+        }
+      } else {
+        entry.condWrap.style.display = "none";
+        entry.condWrap.title = "";
+        for (const im of entry.condImgs){
+          im.style.display = "none";
+          im.removeAttribute("src");
+        }
+      }
+    }
+    /* end Conditions */
+
+
     const max = Number(m.max || m.hpMax || 1);
     const hp  = Number(m.hp || 0);
     const hpPct = max > 0 ? clamp01(hp / max) * 100 : 0;
@@ -3466,10 +3536,63 @@ function getPlayerCardCenter(){
   };
 }
 
-function isMezzed(m){
-  const c = String(m?.condition || "").trim().toLowerCase();
-  return c === "mezzed";
+
+/** conditions functions **********/
+function getMobConditionsArray(mob){
+  // New format: mob.conditions = ["Mezzed","Burned"]
+  const arr = mob?.conditions;
+  if (Array.isArray(arr)) return arr.filter(Boolean);
+
+  // Backward compat: mob.condition = "Mezzed"
+  const one = mob?.condition;
+  if (typeof one === "string" && one && one !== "None") return [one];
+
+  return [];
 }
+
+function hasCondition(mob, name){
+  const list = getMobConditionsArray(mob);
+  const n = String(name || "").trim().toLowerCase();
+  return list.some(c => String(c).trim().toLowerCase() === n);
+}
+
+// Use this everywhere (shooting, AI, etc.)
+function isMezzed(mob){
+  return hasCondition(mob, "Mezzed") || hasCondition(mob, "Incapacitated");
+}
+
+// returns up to N condition keys, ordered by priority
+function getTopConditions(mob, maxCount = 3){
+  const list = getMobConditionsArray(mob);
+  if (!list.length) return [];
+
+  // Normalize unique list (avoid duplicates like ["Mezzed","Mezzed"])
+  const set = new Set(list.map(c => String(c).trim()).filter(Boolean));
+  const unique = Array.from(set);
+
+  // Sort by priority first, then alphabetically as fallback
+  unique.sort((a,b) => {
+    const ia = CONDITION_PRIORITY.findIndex(x => x.toLowerCase() === a.toLowerCase());
+    const ib = CONDITION_PRIORITY.findIndex(x => x.toLowerCase() === b.toLowerCase());
+    const pa = ia === -1 ? 999 : ia;
+    const pb = ib === -1 ? 999 : ib;
+    if (pa !== pb) return pa - pb;
+    return a.localeCompare(b);
+  });
+
+  return unique.slice(0, Math.max(0, maxCount | 0));
+}
+
+// maps a condition string to display data
+function conditionInfo(condName){
+  const key = String(condName || "").trim();
+  return MOB_CONDITIONS[key] || {
+    icon: "icon-unknown.png",
+    title: key || "Unknown",
+    desc: "Unknown condition"
+  };
+}
+/* End Condition functions *****************/
 
 function isMob(targetId){
   if (!targetId) return false;
@@ -3491,25 +3614,9 @@ function isPlayer(targetId){
   );
 }
 
+
 /* ======================================================================
    Helper functions (END)
-   ====================================================================== */
-/* ======================================================================
-   Condition functions (BEGIN)
-   ====================================================================== */
-function getMobCondition(mob) {
-  if (!mob || mob.condition === "None" || !mob.condition) {
-    return null;
-  }
-
-  return MOB_CONDITIONS[mob.condition] || {
-    icon: "icon-unknown.png",
-    title: mob.condition,
-    desc: "Unknown condition"
-  };
-}
-/* ======================================================================
-   Condition functions (END)
    ====================================================================== */
 
 /* ======================================================================

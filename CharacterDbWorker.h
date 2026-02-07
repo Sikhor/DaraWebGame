@@ -12,9 +12,11 @@ public:
     void Stop();
 
     void RequestLoadUser(const std::string& email);
-    void RequestSaveCharacter(const std::string& email,
+    void RequestSaveCharacter(const std::string& characterId,
+                              int level, int xp, int credits, int potions, int highestWave);
+    void RequestSavePlayerCharacter(const std::string& email,
                               const std::string& characterId,
-                              int level, int xp, int credits, int potions);
+                              int level, int xp, int credits, int potions, int highestWave);
     bool LoadUserBlocking(const std::string& email, int timeoutMs);
 
 private:

@@ -26,15 +26,27 @@ void CharacterDbWorker::RequestLoadUser(const std::string& email)
     q_.Push(DbJob{EDbJobType::LoadUserCharacters, email});
 }
 
-void CharacterDbWorker::RequestSaveCharacter(const std::string& email,
-                            const std::string& characterId,
-                            int level,int xp,int credits,int potions)
+void CharacterDbWorker::RequestSaveCharacter(const std::string& characterId,
+                              int level, int xp, int credits, int potions, int highestWave)
 {
     DbJob j;
     j.type = EDbJobType::SaveCharacter;
+    j.characterId = characterId;
+    j.level=level; j.xp=xp; j.credits=credits; j.potions=potions;
+    j.highestWave= highestWave;
+    q_.Push(std::move(j));
+
+}
+void CharacterDbWorker::RequestSavePlayerCharacter(const std::string& email,
+                            const std::string& characterId,
+                            int level,int xp,int credits,int potions, int highestWave)
+{
+    DbJob j;
+    j.type = EDbJobType::SavePlayerCharacter;
     j.userEmail = email;
     j.characterId = characterId;
     j.level=level; j.xp=xp; j.credits=credits; j.potions=potions;
+    j.highestWave= highestWave;
     q_.Push(std::move(j));
 }
 
@@ -54,14 +66,23 @@ void CharacterDbWorker::Run()
                 DaraLog("DB", "Loaded characters for " + job.userEmail);
                 if (job.done) job.done(true);
             }
-            else if (job.type == EDbJobType::SaveCharacter)
+            else if (job.type == EDbJobType::SavePlayerCharacter)
+            {
+                // You currently have UpdateCharacter(int characterId, ...)
+                // but your cache uses string characterId. Convert:
+                if (job.characterId.empty() || !std::isdigit((unsigned char)job.characterId[0]))
+                    throw std::runtime_error("SavePlayerCharacter: characterId not numeric: " + job.characterId);
+                int dbId = std::stoi(job.characterId); // works only if characterId is numeric string
+                UpdateCharacter(dbId, job.level, job.xp, job.credits, job.potions, job.highestWave);
+                DaraLog("DB", "Saved characterId=" + job.characterId);
+            } else if (job.type == EDbJobType::SaveCharacter)
             {
                 // You currently have UpdateCharacter(int characterId, ...)
                 // but your cache uses string characterId. Convert:
                 if (job.characterId.empty() || !std::isdigit((unsigned char)job.characterId[0]))
                     throw std::runtime_error("SaveCharacter: characterId not numeric: " + job.characterId);
                 int dbId = std::stoi(job.characterId); // works only if characterId is numeric string
-                UpdateCharacter(dbId, job.level, job.xp, job.credits, job.potions);
+                UpdateCharacter(dbId, job.level, job.xp, job.credits, job.potions, job.highestWave);
                 DaraLog("DB", "Saved characterId=" + job.characterId);
             }
         }

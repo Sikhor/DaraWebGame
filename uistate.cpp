@@ -1,6 +1,6 @@
 // uistate.cpp
 #include "uistate.h"
-
+#include "ServerOptions.h"
 #include <algorithm>
 #include <vector>
 
@@ -100,7 +100,11 @@ UIState::json UIState::MobToJson(const Combatant& c)
 
     // center-of-cell mapping
     float x = (c.GetSlot() + 0.5f) / MAXSLOTS;
-    if (!c.IsMezzed()) x += jitter;
+    if (!c.IsMezzed()) {
+        if(g_options.noMobJitter==false){
+            x += jitter;
+        }
+    }
     // center-of-cell mapping
     float y = std::clamp((c.GetLane() + 0.5f) / MAXLANES, 0.2f,0.8f);
 
@@ -124,7 +128,7 @@ UIState::json UIState::MobToJson(const Combatant& c)
     out["avatarId"] = c.GetAvatarId();
     out["difficulty"]= GetStringOr(j, "difficulty", c.GetDifficulty());
     out["attackType"]= GetStringOr(j, "attackType", c.GetAttackType());
-    out["condition"]= GetStringOr(j, "condition", c.GetCondition());
+    out["conditions"]=  c.GetConditionsJson();
 
     return out;
 }
@@ -156,6 +160,7 @@ UIState::json UIState::PartyMemberToJson(const Combatant& c)
 
     // Optional avatar id if you support it (for mob images by id)
     out["avatarId"] = c.GetAvatarId();
+    out["conditions"]=  c.GetConditionsJson();
 
     return out;
 }

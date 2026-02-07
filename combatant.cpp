@@ -10,7 +10,6 @@ float GetRandomFloat(float min, float max)
 }
 void ApplyRandomCost(float& current, float normal, float deviation)
 {
-    float value= current;
     current-= GetRandomFloat(normal-deviation, normal+deviation);
     if(current <0.f) current=0.f;
 
@@ -96,6 +95,10 @@ void Combatant::RegenTurnMob()
     DefenseModifier-=1.f;
     DamageModifier-=1.f;
     MezzCounter-=1;
+    if(BurnedCounter>0){
+        ApplyDamage(DAMAGE_VALUE_BURNED);
+    }
+    BurnedCounter-=1;
     CheckStats();
 }
 
@@ -109,19 +112,23 @@ void Combatant::RegenTurn()
     DefenseModifier-=1.f;
     DamageModifier-=1.f;
     MezzCounter-=1;
+    BurnedCounter-=1;
     CheckStats();
 }
 
 void Combatant::CheckStats()
 {
-    HP= std::clamp(HP, 0.f, MAXHP);
-    Mana= std::clamp(Mana, 0.f, MAXMANA);
-    Energy= std::clamp(Energy, 0.f, MAXENERGY);
+    HP= std::clamp(HP, 0.f, MaxHP);
+    Mana= std::clamp(Mana, 0.f, MaxMana);
+    Energy= std::clamp(Energy, 0.f, MaxEnergy);
     BaseDefense= std::clamp(BaseDefense, 0.f, 100000.f);
     BaseDamage= std::clamp(BaseDamage, 0.f, 100000.f);
     MezzCounter= std::clamp(MezzCounter, 0, MEZZTURNS);
+    BurnedCounter= std::clamp(BurnedCounter, 0, BURNEDTURNS);
     DamageModifier= std::clamp(DamageModifier, 0.f, 1000000.f);
     DefenseModifier= std::clamp(DefenseModifier, 0.f, 1000000.f);
+    if(BurnedCounter>0) AddCondition(ECondition::Burned);
+    if(MezzCounter>0) AddCondition(ECondition::Mezzed);
 }
 
 std::string Combatant::GetName() const
@@ -175,6 +182,7 @@ float Combatant::AttackFireball(CombatantPtr target)
         dmg = GetRandomDamage();
         ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
         DaraLog("COMBAT", "Player: "+GetName()+ " attacks fireball with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
+        target->ReceiveBurned();
         dmg-= target->GetCurrentDefense();
         target->ApplyDamage(dmg);
     }
@@ -217,6 +225,11 @@ void Combatant::ReceiveMezz()
 {
     MezzCounter= MEZZTURNS;
 }
+void Combatant::ReceiveBurned()
+{
+    BurnedCounter= BURNEDTURNS;
+}
+
 
 void Combatant::Heal(CombatantPtr target)
 {
@@ -268,6 +281,7 @@ void Combatant::ApplyDamage(float dmg)
         HP = 0.f;
         AvatarId= DARA_DEAD_AVATAR_PLAYER;
     }
+    CheckStats();
 }
 
 void Combatant::ApplyHeal(float amount)
@@ -458,6 +472,7 @@ void Combatant::Debug()
       << ", MeleeManaMin=" << MeleeManaMin
       << ", PotionAmount=" << PotionAmount
       << ", MezzCounter=" << MezzCounter
+      << ", MezzCounter=" << BurnedCounter
 
       << ", Conditions=" << ConditionsToString(Conditions)
       << "}";
@@ -504,6 +519,7 @@ void Combatant::DebugShort()
       << ", MeleeManaMin=" << MeleeManaMin
       << ", PotionAmount=" << PotionAmount
       << ", MezzCounter=" << MezzCounter
+      << ", BurnedCounter=" << BurnedCounter
 
       << ", Conditions=" << ConditionsToString(Conditions)
       << "}";
@@ -525,23 +541,45 @@ void Combatant::AddXP(int amount)
 void Combatant::LevelUp()
 {
     Level+=1;
-    BaseDamage+=2;
-    BaseDefense+=2;
-    MaxHP+=20;
-    MaxEnergy+=20;
-    MaxMana+=20;
+    InitLevel(Level);
 }
 
 void Combatant::InitLevel(int level)
 {
     Level= level;
-    HP= MAXHP*(1+Level*0.2);
-    MaxHP= MAXHP*(1+Level*0.2);
-    Energy= MAXENERGY*(1+Level*0.2);
-    MaxEnergy= MAXENERGY*(1+Level*0.2);
-    Mana= MAXMANA*(1+Level*0.2);
-    MaxMana= MAXMANA*(1+Level*0.2);
-    BaseDamage=STAT_BASEDAMAGE_PLAYER+(Level*2);
-    BaseDefense=STAT_BASEDEFENSE_PLAYER+(Level*2);
+    // Level 2 = Base *1.4  Level 3=Base*1.6 ...
+    HP= STAT_BASE_MAX_HP*(1+Level*0.2);
+    MaxHP= STAT_BASE_MAX_HP*(1+Level*0.2);
+    Energy= STAT_BASE_MAX_ENERGY*(1+Level*0.2);
+    MaxEnergy= STAT_BASE_MAX_ENERGY*(1+Level*0.2);
+    Mana= STAT_BASE_MAX_MANA*(1+Level*0.2);
+    MaxMana= STAT_BASE_MAX_MANA*(1+Level*0.2);
+    BaseDamage=STAT_BASE_DAMAGE_PLAYER*(1+Level*0.2);
+    BaseDefense=STAT_BASE_DEFENSE_PLAYER*(1+Level*0.2);
 
+}
+
+float Combatant::GetCurrentDefense() const
+{
+    float CurrentDefense= BaseDefense+DefenseModifier;;
+    if(BurnedCounter>0){
+        CurrentDefense-= DEBUFF_VALUE_BURNED;
+        CurrentDefense= std::clamp(CurrentDefense, 0.f, 10000000.f);
+    }
+    DaraLog("COMBAT", GetName()+ " current Defense: "+std::to_string(CurrentDefense));
+    return CurrentDefense;
+}
+
+json Combatant::GetConditionsJson() const 
+{
+    json arr = json::array();
+    for (const auto& c : Conditions)
+        arr.push_back(ToString(c));
+    return arr;
+}
+
+void Combatant::AddCondition(ECondition c)
+{
+    if (c == ECondition::None) return;
+    Conditions.insert(c);
 }

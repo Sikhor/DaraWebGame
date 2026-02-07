@@ -5,8 +5,10 @@
 #include "uistate.h"
 #include "MobTemplateStore.h"
 #include "CharacterRepository.h"
+#include "CharacterDbWorker.h"
 
 extern MobTemplateStore g_mobTemplates;
+extern CharacterDbWorker g_dbWorker;
 
 static int RandInt(std::mt19937& rng, int a, int b)
 {
@@ -97,18 +99,12 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
     const bool wasEmpty = Players.empty();
 
     if (!Players.count(playerName))
-        Players.emplace(playerName, std::make_shared<Combatant>(playerName, ECombatantType::Player, MAXHP, MAXENERGY, MAXMANA));
+        Players.emplace(playerName, std::make_shared<Combatant>(playerName, ECombatantType::Player, STAT_BASE_MAX_HP, STAT_BASE_MAX_ENERGY, STAT_BASE_MAX_MANA));
 
     // If this is the first player coming back, ensure we are not stuck in WaveCompleted
     if (wasEmpty)
     {
-        if (Phase == EGamePhase::WaveCompleted)
-        {
-            ResetWave();
-        }
-
-        // If you want: start fresh spawn budget when a run "restarts"
-        // (optional) if (MobToSpawnInWave <= 0) MobToSpawnInWave = std::max(1, Wave + 5);
+        DaraLog("PHASE", "Battlefield was empty why should we set WaveCompleted... we do NOT!");
     }
 
     Cv.notify_all();
@@ -301,8 +297,8 @@ void CombatDirector::ResetWave()
         Log.clear();
 
         // Reset wave + progression
-        Wave = 0;
-        MobToSpawnInWave = 0;
+        Wave = 1;
+        MobToSpawnInWave = 5;
         WaveWaitTurns = 5;
 
         // Reset turn state
@@ -808,6 +804,8 @@ void CombatDirector::MaybeGiveLoot(std::mt19937& rng, Combatant& player, const s
     // Example: 1 random “token”
     // Replace with your loot table logic
     (void)mobName;
+    (void)rng;
+
     player.AddPotion(1);
     // player.AddItem("SomeLootId", 1);
 }
@@ -815,6 +813,7 @@ void CombatDirector::MaybeGiveLoot(std::mt19937& rng, Combatant& player, const s
 MobRewards CombatDirector::GetMobRewards(const Combatant& mob) const
 {
     MobRewards r;
+    (void) mob;
     // Tune by difficulty/level/etc:
     // if (mob.GetDifficulty() == Boss) { ... }
     return r;
@@ -841,6 +840,11 @@ void CombatDirector::RewardPlayersForMobDeath(
         const int xp = RandInt(rng, r.xpMin, r.xpMax);
         const int credits = RandInt(rng, r.creditsMin, r.creditsMax);
 
+        int CurrentLevel= p.GetLevel();
+        int CurrentXP= p.GetXP();
+        int CurrentPotions= p.GetPotionAmount();
+        int CurrentCredits= p.GetCredits();
+
         if(p.GetDifficulty()=="Normal"){
             p.AddXP(xp);
         }else{
@@ -851,6 +855,11 @@ void CombatDirector::RewardPlayersForMobDeath(
 
         if (Rand01(rng) < r.lootChance)
             MaybeGiveLoot(rng, p, mobName);
+        // only save if something changed or XP  has changed by 20 %
+        if (p.GetLevel()>CurrentLevel || p.GetXP()>CurrentXP*1.2 || p.GetPotionAmount()>CurrentPotions || p.GetCredits()>CurrentCredits){
+            g_dbWorker.RequestSaveCharacter(p.GetId(), p.GetLevel(), p.GetXP(), p.GetCredits(), p.GetPotionAmount(), Wave);
+        }
+
     }
 }
 
@@ -1189,9 +1198,9 @@ json CombatDirector::GetUIStateSnapshotJsonLocked(const std::string playerName) 
     // If you have: Running / GameOverPause / maybe other phases
     const bool isGameOver = (Phase == EGamePhase::GameOverPause);
 
-    uiJson["turnId"] = CurrentTurnId;                       // optional, but handy
+    uiJson["turnId"] = CurrentTurnId;            // optional, but handy
     uiJson["wave"] = Wave;                       // shall be something for client
-    uiJson["waveMobsLeft"] = MobToSpawnInWave;                       // shall be something for client
+    uiJson["waveMobsLeft"] = MobToSpawnInWave;   // shall be something for client
     // Game Over handling
     if (Phase==EGamePhase::WaveCompleted){
         uiJson["phase"] = "wavecompleted";
@@ -1238,6 +1247,7 @@ bool CombatDirector::CheckGameOverLocked(std::string& outReason)
         return false;
 
     outReason = "All players are dead";
+    ResetWave();
 
     // If we just entered game over, start the pause timer
     if (Phase != EGamePhase::GameOverPause)

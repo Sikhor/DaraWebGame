@@ -31,6 +31,7 @@ struct CharacterRecord
     std::string storeTime; // "YYYY-MM-DD HH:MM:SS"
 };
 
+[[maybe_unused]]
 static Character RecordToCharacter(const CharacterRecord& r)
 {
     Character c;
@@ -57,7 +58,7 @@ int CreateCharacter(const std::string& userId,
                     const std::string& characterClass,
                     const std::string& avatar);
 
-void UpdateCharacter(int characterId, int level, int xp, int credits, int potions);
+void UpdateCharacter(int characterId, int level, int xp, int credits, int potions, int highestWave);
 bool RemoveCharacter(std::string userKey, std::string characterId);
 
 

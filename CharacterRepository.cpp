@@ -160,7 +160,8 @@ void UpdateCharacter(
     int level,
     int xp,
     int credits,
-    int potions
+    int potions,
+    int highestWave
 )
 {
     auto con = CreateDbConnection();
@@ -173,6 +174,7 @@ void UpdateCharacter(
                     XP = ?,
                     Credits = ?,
                     Potions = ?,
+                    highestWave= GREATEST(highestWave, ?),
                     StoreTime = CURRENT_TIMESTAMP
                 WHERE CharacterId = ?
             )"
@@ -183,8 +185,10 @@ void UpdateCharacter(
     stmt->setInt(2, xp);
     stmt->setInt(3, credits);
     stmt->setInt(4, potions);
-    stmt->setInt(5, characterId);
+    stmt->setInt(5, highestWave);
+    stmt->setInt(6, characterId);
 
+    DaraLog("DB", "Called to Save CharacterId: "+std::to_string(characterId));
     stmt->executeUpdate();
 }
 
@@ -284,9 +288,10 @@ std::vector<CharacterRecord> GetCharactersForUser(const std::string& userMail)
 
 void CommitCacheToDB()
 {
+    // ATTENTION This function does not seem to be used yet and highestWave is just 0 here
     auto dirty = CollectDirtyCharacters();
     for (auto& d : dirty){
-            g_dbWorker.RequestSaveCharacter(d.email, d.characterId, d.level, d.xp, d.credits, d.potions);
+            g_dbWorker.RequestSavePlayerCharacter(d.email, d.characterId, d.level, d.xp, d.credits, d.potions, 0);
     }
 }
 

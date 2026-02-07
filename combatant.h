@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <random>
+#include <unordered_set>
 #include "json.hpp"
 #include "DaraConfig.h"
 
@@ -14,22 +15,26 @@ class Combatant;                         // forward declare
 using CombatantPtr = std::shared_ptr<Combatant>;
 
 // Combatant Values
-inline constexpr float MAXMANA= 100.f;
-inline constexpr float MAXENERGY= 100.f;
-inline constexpr float MAXHP=   900.f;
 inline constexpr float SPELLCOST= 10.f;
 inline constexpr float MELEECOST= 10.f;
 inline constexpr float DEVIATION= 5.f;
-inline constexpr float STAT_BASEDAMAGE_PLAYER= 50.f;  
-inline constexpr float STAT_BASEDEFENSE_PLAYER= 2.f;  
+inline constexpr float STAT_BASE_MAX_HP=   900.f;
+inline constexpr float STAT_BASE_MAX_ENERGY= 100.f;
+inline constexpr float STAT_BASE_MAX_MANA= 100.f;
+inline constexpr float STAT_BASE_DAMAGE_PLAYER= 50.f;  
+inline constexpr float STAT_BASE_DEFENSE_PLAYER= 2.f;  
 
 inline constexpr int INITIALPOTIONS= 10;  
 inline constexpr int MEZZTURNS= 100;  
+inline constexpr int BURNEDTURNS= 5;  
+
+inline constexpr float DEBUFF_VALUE_BURNED= 10000000.f;
+inline constexpr float DAMAGE_VALUE_BURNED= 10.f;
 
 inline constexpr int MAXSLOTS=6;
 inline constexpr int MAXLANES=10;
 
-inline constexpr float MOBSPEED= 0.5f;
+inline constexpr float STAT_MOB_SPEED= 0.5f;
 
 inline constexpr int XPPERLEVEL= 100;  
 
@@ -63,7 +68,7 @@ enum class ECondition
 {
     None,
     Wounded,
-    Burning,
+    Burned,
     Poisoned,
     Mezzed,
     Defending,
@@ -113,7 +118,7 @@ static constexpr std::string_view ToString(ECondition c)
     switch (c) {
         case ECondition::None:          return "None";
         case ECondition::Wounded:       return "Wounded";
-        case ECondition::Burning:       return "Burning";
+        case ECondition::Burned:        return "Burned";
         case ECondition::Poisoned:      return "Poisoned";
         case ECondition::Mezzed:        return "Mezzed";
         case ECondition::Defending:     return "Defending";
@@ -123,15 +128,23 @@ static constexpr std::string_view ToString(ECondition c)
     }
 }
 
-static inline std::string ConditionsToString(const std::vector<ECondition>& conds)
+static inline std::string ConditionsToString(
+    const std::unordered_set<ECondition>& conds)
 {
-    if (conds.empty()) return "[]";
+    if (conds.empty())
+        return "[]";
+
     std::ostringstream oss;
     oss << "[";
-    for (size_t i = 0; i < conds.size(); ++i) {
-        if (i) oss << ",";
-        oss << ToString(conds[i]);
+
+    bool first = true;
+    for (const auto& c : conds)
+    {
+        if (!first) oss << ",";
+        first = false;
+        oss << ToString(c);
     }
+
     oss << "]";
     return oss.str();
 }
@@ -161,21 +174,21 @@ protected:
     bool Active=true;
     std::string AvatarId="MSAgent-Soldorn";
     std::string MobClass="MSAgent-Soldorn";
-    float BaseDamage=STAT_BASEDAMAGE_PLAYER;
+    float BaseDamage=STAT_BASE_DAMAGE_PLAYER;
     float DamageModifier= 0.f;
-    float BaseDefense=STAT_BASEDEFENSE_PLAYER;
+    float BaseDefense=STAT_BASE_DEFENSE_PLAYER;
     float DefenseModifier= 0.f;
 
-    float Speed= MOBSPEED;
+    float Speed= STAT_MOB_SPEED;
     float CurrentField= 0.f;
 
-    float HP = MAXHP;
-    float Energy = MAXENERGY;
-    float Mana = MAXMANA;
+    float HP = STAT_BASE_MAX_HP;
+    float Energy = STAT_BASE_MAX_ENERGY;
+    float Mana = STAT_BASE_MAX_MANA;
 
-    float MaxHP = MAXHP;
-    float MaxEnergy = MAXENERGY;
-    float MaxMana = MAXMANA;
+    float MaxHP = STAT_BASE_MAX_HP;
+    float MaxEnergy = STAT_BASE_MAX_ENERGY;
+    float MaxMana = STAT_BASE_MAX_MANA;
 
     float HPPercentage = 100.f;
     float EnergyPercentage = 100.f;
@@ -185,6 +198,8 @@ protected:
     float MeleeManaMin = MELEECOST;
     int PotionAmount= INITIALPOTIONS;
     int MezzCounter= 0;
+    int BurnedCounter= 0;
+    std::unordered_set<ECondition> Conditions;
 
     int Level=0;
     int XP=0;
@@ -197,11 +212,15 @@ protected:
     ECombatantType Type = ECombatantType::Mob;
     ECombatantDifficulty Difficulty= ECombatantDifficulty::Normal;
     ECombatantAttackType AttackType= ECombatantAttackType::Melee;
-    std::vector<ECondition> Conditions;
 
     void CheckStats();
     float GetRandomDamage();
     void LevelUp();
+
+    bool HasCondition(ECondition c) const {return Conditions.contains(c);}
+    void AddCondition(ECondition c);
+    void RemoveCondition(ECondition c){Conditions.erase(c);}
+    void ClearConditions(){Conditions.clear();}
 
 public:
     Combatant(const std::string& name, ECombatantType type);
@@ -230,7 +249,7 @@ public:
     void InitCredits(int credits){Credits= credits;}
     void InitPotions(int potions){PotionAmount= potions;}
 
-
+    std::string GetId() const {return Id;}
     int GetHP() const;
     int GetMana() const;
     int GetEnergy() const;
@@ -241,7 +260,7 @@ public:
     int GetPotionAmount() const {return PotionAmount;}
     float GetBaseDefense() const{return BaseDefense;}
     float GetBaseDamage() const{return BaseDamage;}
-    float GetCurrentDefense() const{return BaseDefense+DefenseModifier;}
+    float GetCurrentDefense() const;
     float GetCurrentDamage() const{return BaseDamage+DamageModifier;}
 
     // level, xp and credits
@@ -271,7 +290,8 @@ public:
     bool ShouldMove();
     bool ShouldAttack();
     bool IsMezzed() const {return MezzCounter>0;}
-    std::string GetCondition() const {return IsMezzed()? "Mezzed" : "None" ;};
+    bool IsBurned() const {return BurnedCounter>0;}
+    json GetConditionsJson() const;
     void Debug();
     void DebugShort();
 
@@ -288,6 +308,7 @@ public:
     void ApplyDamage(float dmg);
     void ApplyHeal(float amount);
     void ReceiveMezz();
+    void ReceiveBurned();
 
     float GetHPPct() const;
     float GetManaPct() const;

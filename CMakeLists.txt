@@ -55,6 +55,7 @@ add_executable(DaraWebGameServer
     combatant.cpp
     combatlog.cpp
     CombatDirector.cpp
+    Wave.cpp
     uistate.cpp
     auth.cpp
     sessions.cpp
@@ -63,6 +64,7 @@ add_executable(DaraWebGameServer
     CharacterRepository.cpp
     CharacterDbWorker.cpp
     DbJobQueue.cpp
+    ServerOptions.cpp
 )
 
 target_include_directories(DaraWebGameServer PRIVATE

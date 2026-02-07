@@ -154,7 +154,7 @@ ECombatantAttackType MobTemplateStore::ParseAttackType(const std::string& s)
     {
         DaraLog("ERROR", e.what());
     }
-
+    return ECombatantAttackType::Melee;
 }
 
 ECombatantDifficulty MobTemplateStore::ParseDifficulty(const std::string& s)
@@ -174,5 +174,5 @@ ECombatantDifficulty MobTemplateStore::ParseDifficulty(const std::string& s)
     {
         DaraLog("ERROR", e.what());
     }
-
+    return ECombatantDifficulty::Normal;
 }

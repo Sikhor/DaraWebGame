@@ -18,7 +18,11 @@
 #include "character.h"
 #include "CharacterRepository.h"
 #include "CharacterDbWorker.h"
+#include "ServerOptions.h"
 
+ServerOptions ParseCommandLine(int argc, char* argv[]);
+
+ServerOptions g_options;
 CombatDirector* g_combatDirector = nullptr;
 MobTemplateStore g_mobTemplates;
 
@@ -427,7 +431,7 @@ void LogoutByToken(const std::string& token)
     RemoveSession(token);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     g_combatDirector = new CombatDirector("DefaultGame");
     httplib::Server server;
@@ -511,7 +515,7 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
     json out = g_combatDirector->GetUIStateSnapshotJsonLocked(playerName);
     if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
     if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["party"].dump(2) <<std::endl;
-    if(DARA_DEBUG_FULLSTATE) std::cout << "/state reply: " << out.dump(2) <<std::endl;
+    if(DARA_DEBUG_FULLSTATE || g_options.showFullState) std::cout << "/state reply: " << out.dump(2) <<std::endl;
 
     res.set_content(out.dump(), "application/json");
 
@@ -759,6 +763,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     if (!found) {
         res.status = 404;
         res.set_content(R"({"status":"error","message":"Character not found"})", "application/json");
+        DaraLog("ALARM", "Possible hacker trying to get character from other user ? Character: "+characterId+" User: "+session.eMail);
         return;
     }
 
@@ -904,6 +909,7 @@ server.Post("/characters/delete", [](const httplib::Request& req, httplib::Respo
     res.set_content(out.dump(), "application/json");
 });
 
+    g_options = ParseCommandLine(argc, argv);
 
     SetPostLoginHook(PostLoginInit);
     InitializeMobStore();
@@ -911,8 +917,8 @@ server.Post("/characters/delete", [](const httplib::Request& req, httplib::Respo
     g_dbWorker.Start();
 
     InitialActions();
-    DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(WEBSERVER_PORT)+"  e.g. /action");
-    server.listen("0.0.0.0", WEBSERVER_PORT);
+    DaraLog("SERVER", "REST API on http://0.0.0.0:"+ std::to_string(g_options.port)+"  e.g. /action");
+    server.listen("0.0.0.0", g_options.port);
 
     g_dbWorker.Stop();
 
