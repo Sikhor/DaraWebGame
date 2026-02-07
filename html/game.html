@@ -402,7 +402,24 @@
     .scene::before, .fog, .fog.f2, .mobCard, .mobAbs{ animation:none !important; transition:none !important; }
   }
 
-  /* Non normal mobs */
+  /* Mob Conditions */
+ .mob-condition {
+  position: absolute;
+  left: 6px;
+  bottom: 8px;   /* slightly above HP bar */
+  width: 22px;
+  height: 22px;
+  z-index: 4;    /* above HP bar + image */
+  pointer-events: none;
+}
+
+.mob-condition img {
+  width: 100%;
+  height: 100%;
+  filter:
+    drop-shadow(0 0 4px rgba(255,80,255,0.6))
+    drop-shadow(0 0 8px rgba(120,0,255,0.35));
+}
   /* ===== BIGGER NON-NORMAL MOBS ===== */
 .mobAbs.isNonNormal{
   /* extra scale on top of your depthScale() */
@@ -1646,6 +1663,14 @@
 /* ======================================================================
    GLOBALS (BEGIN)
    ====================================================================== */
+const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
+const AVATAR_IMG_BASE = IMG_BASE;
+const BUFF_IMG_BASE= IMG_BASE;
+const SOUND_BASE = IMG_BASE;
+
+const IMG_EXT = ".png";
+
+
 let ENABLE_SHAKE = false;
 let ENABLE_HIT_FLASH = false;
 let SIZE_BOSS= 0.35;
@@ -1661,6 +1686,28 @@ const deadFx = new Map();
 const DEAD_STAY_MS = 2200;
 
 const mobDom = new Map();
+
+const MOB_CONDITIONS = {
+  None: null,
+
+  Mezzed: {
+    icon: "BuffMezzed.png",
+    title: "Mezzed",
+    desc: "Cannot act or attack"
+  },
+
+  Burning: {
+    icon: "icon-burning.png",
+    title: "Burning",
+    desc: "Takes fire damage over time"
+  },
+
+  Poisoned: {
+    icon: "icon-poisoned.png",
+    title: "Poisoned",
+    desc: "Takes Poison damage over time"
+  }
+};
 /* ======================================================================
    GLOBALS (END)
    ====================================================================== */
@@ -1799,9 +1846,6 @@ const LOGOUT_URL = "/api/v001/darawebgame/auth/logout";
 /* ======================================================================
    MEDIA + ACTIONS (BEGIN)
    ====================================================================== */
-const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
-const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
-const IMG_EXT = ".png";
 
 const ACTION_COSTS = {
   attack:     { res: "en", cost: 10 },
@@ -1832,7 +1876,6 @@ const MEDIA = {
   }
 };
 
-const SOUND_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
 const ACTION_SOUNDS = {
   attack:   new Audio(SOUND_BASE+"Attack.wav"),
   fireball: new Audio(SOUND_BASE+"Fireball.wav"),
@@ -2357,6 +2400,20 @@ function createMobDom(mobId, idx){
   card.dataset.mobId = mobId;     // so we can select the card fast
   card.classList.add("mob-card"); // optional helper class for querySelector
 
+  // --- Condition icon (top-right) ---
+  const condWrap = document.createElement("div");
+  condWrap.className = "mob-condition";
+  condWrap.style.display = "none"; // hidden by default
+
+  const condImg = document.createElement("img");
+  condImg.alt = "condition";
+  condWrap.appendChild(condImg);
+
+  // IMPORTANT: append to card (so it sits on top of the card)
+  card.appendChild(condWrap);
+
+  /* end conditions */
+
   const mobInner = document.createElement("div");
   mobInner.className = "mob";
 
@@ -2401,7 +2458,7 @@ function createMobDom(mobId, idx){
     updateEncounterMobs();
   };
 
-  const entry = { wrap, card, img, hpFill, targetTag, avatarFallback };
+  const entry = { wrap, card, img, hpFill, targetTag, avatarFallback, condWrap, condImg };
   mobDom.set(mobId, entry);
   return entry;
 } // (END createMobDom)
@@ -2484,6 +2541,24 @@ function updateEncounterMobs(){
 
     entry.wrap.style.zIndex = String(Math.floor(y01 * 1000));
 
+    /* Condition check */
+    const cond= getMobCondition(m);
+    if (cond && entry.condWrap && entry.condImg) {
+      entry.condWrap.style.display = "block";
+      entry.condWrap.title = `${cond.title}: ${cond.desc}`;
+
+      // Use the SAME base you use for other icons, because your mezz icon is in wp uploads
+      const condSrc = BUFF_IMG_BASE + cond.icon;
+      if (entry.condImg.getAttribute("src") !== condSrc) {
+        entry.condImg.src = condSrc;
+      }
+    } else if (entry.condWrap) {
+      entry.condWrap.style.display = "none";
+      if (entry.condImg) entry.condImg.removeAttribute("src");
+      entry.condWrap.title = "";
+    }
+
+    /* end Condition check */
     const max = Number(m.max || m.hpMax || 1);
     const hp  = Number(m.hp || 0);
     const hpPct = max > 0 ? clamp01(hp / max) * 100 : 0;
@@ -2956,7 +3031,6 @@ async function updateState(){
     const isWave  = String(s.phase || "") === "wavecompleted";
 
     if (!isGameOver && isWave){
-      console.log("MS:"+s.restartInMs);
       showWaveOverlay(s.wave, s.restartInMs ?? null);
       if (!wasWave && typeof showToast === "function"){
         showToast(`Wave ${Number(s.wave) || 0} cleared!`, "success", 1800);
@@ -3351,7 +3425,6 @@ function handleMobAttackProjectile(mob){
   lastRangedFxAt = now;
 
   const atk = normKey(mob.attackType);
-  console.log("atk: "+atk);
 
   if (atk === "ranged") {
     const mobWrap = document.querySelector(
@@ -3421,6 +3494,24 @@ function isPlayer(targetId){
 /* ======================================================================
    Helper functions (END)
    ====================================================================== */
+/* ======================================================================
+   Condition functions (BEGIN)
+   ====================================================================== */
+function getMobCondition(mob) {
+  if (!mob || mob.condition === "None" || !mob.condition) {
+    return null;
+  }
+
+  return MOB_CONDITIONS[mob.condition] || {
+    icon: "icon-unknown.png",
+    title: mob.condition,
+    desc: "Unknown condition"
+  };
+}
+/* ======================================================================
+   Condition functions (END)
+   ====================================================================== */
+
 /* ======================================================================
    FX functions (Begin)
    ====================================================================== */
