@@ -28,6 +28,7 @@ struct CharacterRecord
     int xp = 0;
     int credits = 0;
     int potions = 0;
+    int highestWave= 0;
     std::string storeTime; // "YYYY-MM-DD HH:MM:SS"
 };
 
@@ -60,6 +61,58 @@ int CreateCharacter(const std::string& userId,
 
 void UpdateCharacter(int characterId, int level, int xp, int credits, int potions, int highestWave);
 bool RemoveCharacter(std::string userKey, std::string characterId);
+
+
+/* LeaderBoards */
+struct BestEntry
+{
+    int characterId = 0;
+    std::string characterName;
+    std::string userEmail;
+    std::string avatar;
+    int value = 0;              // the metric value for the category
+    int rank = 0;               // 1..N (rank in that list)
+};
+
+struct MyPlace
+{
+    int characterId = 0;
+    std::string characterName;
+    std::string avatar;
+
+    // weekly ranks
+    int rankWaveWeek = 0;
+    int rankLevelWeek = 0;
+    int rankCreditsWeek = 0;
+    int rankPotionsWeek = 0;
+
+    // overall ranks
+    int rankWaveAll = 0;
+    int rankLevelAll = 0;
+    int rankCreditsAll = 0;
+    int rankPotionsAll = 0;
+};
+
+struct BestListsResult
+{
+    // top 1-3 weekly
+    std::vector<BestEntry> topWaveWeek;
+    std::vector<BestEntry> topLevelWeek;
+    std::vector<BestEntry> topCreditsWeek;
+    std::vector<BestEntry> topPotionsWeek;
+
+    // top 1-3 overall
+    std::vector<BestEntry> topWaveAll;
+    std::vector<BestEntry> topLevelAll;
+    std::vector<BestEntry> topCreditsAll;
+    std::vector<BestEntry> topPotionsAll;
+
+    // ranks for the user’s chars
+    std::vector<MyPlace> myPlaces;
+};
+
+BestListsResult DbGetBestListsAndMyPlaces(const std::string& userEmail);
+json GetLeaderBoardsJson(const std::string eMail, int &status);
 
 
 

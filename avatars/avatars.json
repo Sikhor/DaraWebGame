@@ -1,0 +1,547 @@
+{
+  "version": 1,
+  "baseUrl": "https://gameinfo.daraempire.com/game-res/avatars",
+  "count": 108,
+  "avatars": [
+    {
+      "key": "standard/AxiomCircuitCore.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/AxiomCircuitCore.png"
+    },
+    {
+      "key": "standard/AxiomSpecterVoid.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/AxiomSpecterVoid.png"
+    },
+    {
+      "key": "standard/HelioCipherArc.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/HelioCipherArc.png"
+    },
+    {
+      "key": "standard/HelioSpecterMkIII.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/HelioSpecterMkIII.png"
+    },
+    {
+      "key": "standard/JunoCircuitArc.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/JunoCircuitArc.png"
+    },
+    {
+      "key": "standard/JunoVectorOne.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/JunoVectorOne.png"
+    },
+    {
+      "key": "standard/NyxNexusMkII.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/NyxNexusMkII.png"
+    },
+    {
+      "key": "standard/NyxStriderMkIII.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/NyxStriderMkIII.png"
+    },
+    {
+      "key": "standard/OrionEchoOne.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/OrionEchoOne.png"
+    },
+    {
+      "key": "standard/SolCipherOne.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/SolCipherOne.png"
+    },
+    {
+      "key": "standard/SolPulseVII.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/SolPulseVII.png"
+    },
+    {
+      "key": "standard/SolStriderVII.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/SolStriderVII.png"
+    },
+    {
+      "key": "standard/VexEchoPrime.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/VexEchoPrime.png"
+    },
+    {
+      "key": "standard/VexSpecterRune.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/VexSpecterRune.png"
+    },
+    {
+      "key": "standard/ZephyrCircuitRune.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/ZephyrCircuitRune.png"
+    },
+    {
+      "key": "standard/ZephyrSentinelPrime.png",
+      "tier": "standard",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/standard/ZephyrSentinelPrime.png"
+    },
+    {
+      "key": "premium/ArdenCatalystOne.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ArdenCatalystOne.png"
+    },
+    {
+      "key": "premium/ArdenSpecterSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ArdenSpecterSigma.png"
+    },
+    {
+      "key": "premium/AstraCircuitNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AstraCircuitNine.png"
+    },
+    {
+      "key": "premium/AstraLancerSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AstraLancerSigma.png"
+    },
+    {
+      "key": "premium/AstraRookArc.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AstraRookArc.png"
+    },
+    {
+      "key": "premium/AstraSpecterDelta.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AstraSpecterDelta.png"
+    },
+    {
+      "key": "premium/AxiomMirageNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AxiomMirageNine.png"
+    },
+    {
+      "key": "premium/AxiomNomadVII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AxiomNomadVII.png"
+    },
+    {
+      "key": "premium/AxiomSpecterKappa.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AxiomSpecterKappa.png"
+    },
+    {
+      "key": "premium/AxiomVanguardMkII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/AxiomVanguardMkII.png"
+    },
+    {
+      "key": "premium/CyraEchoNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/CyraEchoNine.png"
+    },
+    {
+      "key": "premium/CyraLancerNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/CyraLancerNine.png"
+    },
+    {
+      "key": "premium/DaxCatalystDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/DaxCatalystDrake.png"
+    },
+    {
+      "key": "premium/DaxCircuitDelta.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/DaxCircuitDelta.png"
+    },
+    {
+      "key": "premium/DaxNexusSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/DaxNexusSigma.png"
+    },
+    {
+      "key": "premium/DriftFalconZero.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/DriftFalconZero.png"
+    },
+    {
+      "key": "premium/DriftVanguardPrime.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/DriftVanguardPrime.png"
+    },
+    {
+      "key": "premium/EonCatalystOne.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/EonCatalystOne.png"
+    },
+    {
+      "key": "premium/EonCircuitKappa.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/EonCircuitKappa.png"
+    },
+    {
+      "key": "premium/EonLancerSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/EonLancerSigma.png"
+    },
+    {
+      "key": "premium/EonVanguardVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/EonVanguardVoid.png"
+    },
+    {
+      "key": "premium/HelioLancerVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/HelioLancerVoid.png"
+    },
+    {
+      "key": "premium/JunoCatalystZero.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/JunoCatalystZero.png"
+    },
+    {
+      "key": "premium/JunoFalconArc.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/JunoFalconArc.png"
+    },
+    {
+      "key": "premium/JunoMirageOne.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/JunoMirageOne.png"
+    },
+    {
+      "key": "premium/JunoVanguardSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/JunoVanguardSigma.png"
+    },
+    {
+      "key": "premium/KairoCircuitSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoCircuitSigma.png"
+    },
+    {
+      "key": "premium/KairoHarbingerNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoHarbingerNine.png"
+    },
+    {
+      "key": "premium/KairoPhantomCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoPhantomCore.png"
+    },
+    {
+      "key": "premium/KairoStriderRune.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoStriderRune.png"
+    },
+    {
+      "key": "premium/KairoStriderSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoStriderSigma.png"
+    },
+    {
+      "key": "premium/KairoVectorZero.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoVectorZero.png"
+    },
+    {
+      "key": "premium/KairoWardenOne.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KairoWardenOne.png"
+    },
+    {
+      "key": "premium/KestrelFalconVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KestrelFalconVoid.png"
+    },
+    {
+      "key": "premium/KestrelMirageZero.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KestrelMirageZero.png"
+    },
+    {
+      "key": "premium/KestrelPulseKappa.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KestrelPulseKappa.png"
+    },
+    {
+      "key": "premium/KestrelWardenCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/KestrelWardenCore.png"
+    },
+    {
+      "key": "premium/LyraCipherDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/LyraCipherDrake.png"
+    },
+    {
+      "key": "premium/LyraCircuitZero.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/LyraCircuitZero.png"
+    },
+    {
+      "key": "premium/LyraHarbingerPrime.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/LyraHarbingerPrime.png"
+    },
+    {
+      "key": "premium/LyraLancerDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/LyraLancerDrake.png"
+    },
+    {
+      "key": "premium/LyraSpecterRune.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/LyraSpecterRune.png"
+    },
+    {
+      "key": "premium/MiraCircuitDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/MiraCircuitDrake.png"
+    },
+    {
+      "key": "premium/MiraFalconOne.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/MiraFalconOne.png"
+    },
+    {
+      "key": "premium/MiraRookSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/MiraRookSigma.png"
+    },
+    {
+      "key": "premium/NovaFalconMkII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaFalconMkII.png"
+    },
+    {
+      "key": "premium/NovaLancerKappa.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaLancerKappa.png"
+    },
+    {
+      "key": "premium/NovaMirageDelta.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaMirageDelta.png"
+    },
+    {
+      "key": "premium/NovaPhantomCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaPhantomCore.png"
+    },
+    {
+      "key": "premium/NovaRaptorIX.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaRaptorIX.png"
+    },
+    {
+      "key": "premium/NovaSentinelNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaSentinelNine.png"
+    },
+    {
+      "key": "premium/NovaSpecterKappa.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/NovaSpecterKappa.png"
+    },
+    {
+      "key": "premium/OrionMirageDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/OrionMirageDrake.png"
+    },
+    {
+      "key": "premium/OrionPhantomNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/OrionPhantomNine.png"
+    },
+    {
+      "key": "premium/QuantaCatalystVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaCatalystVoid.png"
+    },
+    {
+      "key": "premium/QuantaCipherArc.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaCipherArc.png"
+    },
+    {
+      "key": "premium/QuantaCircuitVII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaCircuitVII.png"
+    },
+    {
+      "key": "premium/QuantaEchoDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaEchoDrake.png"
+    },
+    {
+      "key": "premium/QuantaFalconNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaFalconNine.png"
+    },
+    {
+      "key": "premium/QuantaRaptorDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaRaptorDrake.png"
+    },
+    {
+      "key": "premium/QuantaRaptorIX.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/QuantaRaptorIX.png"
+    },
+    {
+      "key": "premium/SableCatalystPrime.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SableCatalystPrime.png"
+    },
+    {
+      "key": "premium/SableCircuitVII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SableCircuitVII.png"
+    },
+    {
+      "key": "premium/SableFalconNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SableFalconNine.png"
+    },
+    {
+      "key": "premium/SablePulseDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SablePulseDrake.png"
+    },
+    {
+      "key": "premium/SableRaptorIX.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SableRaptorIX.png"
+    },
+    {
+      "key": "premium/SolHarbingerArc.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SolHarbingerArc.png"
+    },
+    {
+      "key": "premium/SolNomadRune.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SolNomadRune.png"
+    },
+    {
+      "key": "premium/SolPhantomVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/SolPhantomVoid.png"
+    },
+    {
+      "key": "premium/VantaCipherVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaCipherVoid.png"
+    },
+    {
+      "key": "premium/VantaMirageVII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaMirageVII.png"
+    },
+    {
+      "key": "premium/VantaPulseArc.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaPulseArc.png"
+    },
+    {
+      "key": "premium/VantaRookVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaRookVoid.png"
+    },
+    {
+      "key": "premium/VantaSentinelDrake.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaSentinelDrake.png"
+    },
+    {
+      "key": "premium/VantaStriderMkIII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaStriderMkIII.png"
+    },
+    {
+      "key": "premium/VantaVanguardCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VantaVanguardCore.png"
+    },
+    {
+      "key": "premium/VegaMirageVoid.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaMirageVoid.png"
+    },
+    {
+      "key": "premium/VegaNexusCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaNexusCore.png"
+    },
+    {
+      "key": "premium/VegaPhantomCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaPhantomCore.png"
+    },
+    {
+      "key": "premium/VegaSpecterNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaSpecterNine.png"
+    },
+    {
+      "key": "premium/VegaSpecterOne.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaSpecterOne.png"
+    },
+    {
+      "key": "premium/VegaStriderCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaStriderCore.png"
+    },
+    {
+      "key": "premium/VegaVanguardKappa.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VegaVanguardKappa.png"
+    },
+    {
+      "key": "premium/VexNexusDelta.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VexNexusDelta.png"
+    },
+    {
+      "key": "premium/VexShardMkIII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/VexShardMkIII.png"
+    },
+    {
+      "key": "premium/ZaraEchoVII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZaraEchoVII.png"
+    },
+    {
+      "key": "premium/ZaraRookSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZaraRookSigma.png"
+    },
+    {
+      "key": "premium/ZaraSentinelNine.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZaraSentinelNine.png"
+    },
+    {
+      "key": "premium/ZaraShardCore.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZaraShardCore.png"
+    },
+    {
+      "key": "premium/ZephyrMirageRune.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZephyrMirageRune.png"
+    },
+    {
+      "key": "premium/ZephyrPhantomMkII.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZephyrPhantomMkII.png"
+    },
+    {
+      "key": "premium/ZephyrVanguardSigma.png",
+      "tier": "premium",
+      "url": "https://gameinfo.daraempire.com/game-res/avatars/premium/ZephyrVanguardSigma.png"
+    }
+  ]
+}

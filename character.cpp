@@ -127,6 +127,7 @@ json SerializeCharactersLockedForUser(const std::string& userKey)
 
 
 // helper: ISO timestamp
+[[maybe_unused]]
 static std::string NowIso()
 {
     std::time_t t = std::time(nullptr);
@@ -142,6 +143,7 @@ static std::string NowIso()
 }
 
 // helper: fake uuid-like string (good enough for tests)
+[[maybe_unused]]
 static std::string MakeTestId(const std::string& prefix, int n)
 {
     return prefix + "-" + std::to_string(n);

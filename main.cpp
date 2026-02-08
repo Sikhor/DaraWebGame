@@ -20,6 +20,7 @@
 #include "CharacterDbWorker.h"
 #include "ServerOptions.h"
 
+
 ServerOptions ParseCommandLine(int argc, char* argv[]);
 
 ServerOptions g_options;
@@ -655,6 +656,41 @@ server.Options("/characters/delete", [](const httplib::Request&, httplib::Respon
     res.status = 204;
 });
 
+// IMPORTANT: use ONE consistent path. Pick "/leaderboards".
+server.Options("/leaderboards", [](const httplib::Request&, httplib::Response& res){
+    AddCorsHeadersAuth(res);
+    res.status = 204;
+});
+
+server.Get("/leaderboards", [](const httplib::Request& req, httplib::Response& res)
+{
+    AddCorsHeadersAuth(res);
+
+    Session session;
+    std::string err;
+    if (!GetSessionFromRequest(req, session, &err)) {
+        res.status = 401;
+        res.set_content((json{{"status","error"},{"message",err}}).dump(), "application/json");
+        return;
+    }
+
+    int status=200;
+    json result= GetLeaderBoardsJson(session.eMail, status);
+
+    if(status!=200){
+        DaraLog("LEADERBOARDS", "Error: "+result.dump(2));
+    }
+    
+    if(g_options.showFullState==true){
+        DaraLog("LEADERBOARDS", "Result: "+result.dump(2));
+    }
+    
+    res.set_content(result.dump(), "application/json");
+    res.status= status;
+
+
+}); // end leaderboards
+
 server.Get("/characters", [](const httplib::Request& req, httplib::Response& res)
 {
     AddCorsHeadersAuth(res);
@@ -819,7 +855,7 @@ server.Post("/characters/create", [](const httplib::Request& req, httplib::Respo
     // Validate request fields
     const std::string charactername  = body.value("characterName", "unknown");
     const std::string characterclass = body.value("characterClass", "Agent");
-    const std::string characteravatar= body.value("avatar", "MSAgent-Soldorn");
+    const std::string characteravatar= body.value("avatar", "standard/AxiomCircuitCore.png");
 
     if (charactername.empty() || characterclass.empty())
         throw std::runtime_error("Missing characterName or characterClass");

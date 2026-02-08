@@ -27,6 +27,7 @@ struct Character
     int xp = 0;
     int credits = 0;
     int potions = 0;
+    int highestWave= 0;
     std::string createdAtIso;   // optional
     bool dirty= false;
     uint64_t dirtySinceMs = 0; // or time_point

@@ -241,6 +241,7 @@ std::vector<CharacterRecord> GetCharactersForUser(const std::string& userMail)
                     XP,
                     Credits,
                     Potions,
+                    highestWave,
                     StoreTime
                 FROM Characters
                 WHERE UserEmail = ?
@@ -270,6 +271,7 @@ std::vector<CharacterRecord> GetCharactersForUser(const std::string& userMail)
         c.xp             = rs->getInt("XP");
         c.credits        = rs->getInt("Credits");
         c.potions        = rs->getInt("Potions");
+        c.highestWave = rs->getInt("highestWave");
 
         // StoreTime can be NULL if you ever insert NULL explicitly; your schema defaults to CURRENT_TIMESTAMP,
         // so normally it's always present.
@@ -334,4 +336,253 @@ std::optional<Character> CreateCharacterForUserAndCache(
     }
 
     return ch; // return the created character to caller
+}
+
+
+/** BEGIN Leaderboards */
+static std::vector<BestEntry> QueryTopN(sql::Connection* con, const std::string& metricCol, int topN, bool weekly)
+{
+    // metricCol must be one of: "highestWave", "Level", "Credits", "Potions"
+    // We do RANK() over the chosen metric.
+    // weekly uses StoreTime >= NOW() - INTERVAL 7 DAY
+
+    std::string sqlQuery =
+        "SELECT CharacterId, CharacterName, UserEmail, Avatar, val, rnk FROM ("
+        "  SELECT "
+        "    CharacterId, CharacterName, UserEmail, Avatar, "
+        "    " + metricCol + " AS val, "
+        "    RANK() OVER (ORDER BY " + metricCol + " DESC, CharacterId ASC) AS rnk "
+        "  FROM Characters ";
+
+    if (weekly)
+        sqlQuery += "  WHERE StoreTime >= (NOW() - INTERVAL 7 DAY) ";
+
+    sqlQuery +=
+        ") t "
+        "WHERE rnk <= ? "
+        "ORDER BY rnk ASC, CharacterId ASC;";
+
+    std::unique_ptr<sql::PreparedStatement> stmt(con->prepareStatement(sqlQuery));
+    stmt->setInt(1, topN);
+
+    std::unique_ptr<sql::ResultSet> rs(stmt->executeQuery());
+
+    std::vector<BestEntry> out;
+    out.reserve(topN);
+
+    while (rs->next())
+    {
+        BestEntry e;
+        e.characterId   = rs->getInt("CharacterId");
+        e.characterName = rs->getString("CharacterName");
+        e.userEmail     = rs->getString("UserEmail");
+        e.avatar        = rs->getString("Avatar");
+        e.value         = rs->getInt("val");
+        e.rank          = rs->getInt("rnk");
+        out.push_back(std::move(e));
+    }
+    return out;
+}
+
+
+
+static std::vector<MyPlace> QueryMyPlaces(sql::Connection* con, const std::string& userEmail)
+{
+    // We compute ranks for EACH metric using window functions.
+    // For weekly we rank only rows in the last 7 days.
+    // For overall we rank over all rows.
+
+    // Weekly ranks CTE
+    const char* q =
+        R"(
+        WITH
+        weekly AS (
+            SELECT
+                CharacterId,
+                CharacterName,
+                Avatar,
+                RANK() OVER (ORDER BY highestWave DESC, CharacterId ASC) AS rWave,
+                RANK() OVER (ORDER BY Level       DESC, CharacterId ASC) AS rLevel,
+                RANK() OVER (ORDER BY Credits     DESC, CharacterId ASC) AS rCredits,
+                RANK() OVER (ORDER BY Potions     DESC, CharacterId ASC) AS rPotions
+            FROM Characters
+            WHERE StoreTime >= (NOW() - INTERVAL 7 DAY)
+        ),
+        alltime AS (
+            SELECT
+                CharacterId,
+                RANK() OVER (ORDER BY highestWave DESC, CharacterId ASC) AS rWave,
+                RANK() OVER (ORDER BY Level       DESC, CharacterId ASC) AS rLevel,
+                RANK() OVER (ORDER BY Credits     DESC, CharacterId ASC) AS rCredits,
+                RANK() OVER (ORDER BY Potions     DESC, CharacterId ASC) AS rPotions
+            FROM Characters
+        )
+        SELECT
+            c.CharacterId,
+            c.CharacterName,
+            c.Avatar,
+
+            COALESCE(w.rWave,    0) AS rankWaveWeek,
+            COALESCE(w.rLevel,   0) AS rankLevelWeek,
+            COALESCE(w.rCredits, 0) AS rankCreditsWeek,
+            COALESCE(w.rPotions, 0) AS rankPotionsWeek,
+
+            a.rWave    AS rankWaveAll,
+            a.rLevel   AS rankLevelAll,
+            a.rCredits AS rankCreditsAll,
+            a.rPotions AS rankPotionsAll
+
+        FROM Characters c
+        LEFT JOIN weekly  w ON w.CharacterId = c.CharacterId
+        JOIN      alltime a ON a.CharacterId = c.CharacterId
+        WHERE c.UserEmail = ?
+        ORDER BY c.CharacterId DESC;
+        )";
+
+    std::unique_ptr<sql::PreparedStatement> stmt(con->prepareStatement(q));
+    stmt->setString(1, userEmail);
+
+    std::unique_ptr<sql::ResultSet> rs(stmt->executeQuery());
+
+    std::vector<MyPlace> out;
+    while (rs->next())
+    {
+        MyPlace p;
+        p.characterId   = rs->getInt("CharacterId");
+        p.characterName = rs->getString("CharacterName");
+        p.avatar        = rs->getString("Avatar");
+
+        p.rankWaveWeek    = rs->getInt("rankWaveWeek");
+        p.rankLevelWeek   = rs->getInt("rankLevelWeek");
+        p.rankCreditsWeek = rs->getInt("rankCreditsWeek");
+        p.rankPotionsWeek = rs->getInt("rankPotionsWeek");
+
+        p.rankWaveAll     = rs->getInt("rankWaveAll");
+        p.rankLevelAll    = rs->getInt("rankLevelAll");
+        p.rankCreditsAll  = rs->getInt("rankCreditsAll");
+        p.rankPotionsAll  = rs->getInt("rankPotionsAll");
+
+        out.push_back(std::move(p));
+    }
+    return out;
+}
+
+
+BestListsResult DbGetBestListsAndMyPlaces(const std::string& userEmail)
+{
+    auto con = CreateDbConnection();
+    BestListsResult r;
+
+    // weekly top 1-3
+    r.topWaveWeek    = QueryTopN(con.get(), "highestWave", 3, true);
+    r.topLevelWeek   = QueryTopN(con.get(), "Level",       3, true);
+    r.topCreditsWeek = QueryTopN(con.get(), "Credits",     3, true);
+    r.topPotionsWeek = QueryTopN(con.get(), "Potions",     3, true);
+
+    // overall top 1-3
+    r.topWaveAll     = QueryTopN(con.get(), "highestWave", 3, false);
+    r.topLevelAll    = QueryTopN(con.get(), "Level",       3, false);
+    r.topCreditsAll  = QueryTopN(con.get(), "Credits",     3, false);
+    r.topPotionsAll  = QueryTopN(con.get(), "Potions",     3, false);
+
+    // user ranks
+    r.myPlaces = QueryMyPlaces(con.get(), userEmail);
+
+    return r;
+}
+
+// Helper to convert your result structs to JSON.
+// Put these static helpers near your route code (or in a cpp file).
+static json BestEntryToJson(const BestEntry& e)
+{
+    return json{
+        {"characterId",   e.characterId},
+        {"characterName", e.characterName},
+        {"userEmail",     e.userEmail},
+        {"avatar",        e.avatar},
+        {"value",         e.value},
+        {"rank",          e.rank}
+    };
+}
+
+static json MyPlaceToJson(const MyPlace& p)
+{
+    return json{
+        {"characterId",   p.characterId},
+        {"characterName", p.characterName},
+        {"avatar",        p.avatar},
+
+        {"rankWaveWeek",     p.rankWaveWeek},
+        {"rankLevelWeek",    p.rankLevelWeek},
+        {"rankCreditsWeek",  p.rankCreditsWeek},
+        {"rankPotionsWeek",  p.rankPotionsWeek},
+
+        {"rankWaveAll",      p.rankWaveAll},
+        {"rankLevelAll",     p.rankLevelAll},
+        {"rankCreditsAll",   p.rankCreditsAll},
+        {"rankPotionsAll",   p.rankPotionsAll}
+    };
+}
+
+
+json GetLeaderBoardsJson(const std::string eMail, int &status)
+{
+    try
+    {
+        // Use the right field name from your Session struct:
+        // In your logs you used session.eMail (note capital M).
+        const std::string userEmail = eMail;
+
+        BestListsResult r = DbGetBestListsAndMyPlaces(userEmail);
+
+        auto vecToJson = [](const std::vector<BestEntry>& v){
+            json arr = json::array();
+            for (const auto& e : v) arr.push_back(BestEntryToJson(e));
+            return arr;
+        };
+
+        json out;
+        out["status"] = "ok";
+
+        out["weekly"] = {
+            {"highestWave",    vecToJson(r.topWaveWeek)},
+            {"highestLevel",   vecToJson(r.topLevelWeek)},
+            {"highestCredits", vecToJson(r.topCreditsWeek)},
+            {"highestPotions", vecToJson(r.topPotionsWeek)}
+        };
+
+        out["overall"] = {
+            {"highestWave",    vecToJson(r.topWaveAll)},
+            {"highestLevel",   vecToJson(r.topLevelAll)},
+            {"highestCredits", vecToJson(r.topCreditsAll)},
+            {"highestPotions", vecToJson(r.topPotionsAll)}
+        };
+
+        out["myPlaces"] = json::array();
+        for (const auto& p : r.myPlaces) out["myPlaces"].push_back(MyPlaceToJson(p));
+
+        status = 200;
+        return out;
+    }
+    catch (const sql::SQLException& e)
+    {
+        DaraLog("LEADERBOARDS", std::string("SQLException: ") + e.what()
+            + " code=" + std::to_string(e.getErrorCode())
+            + " state=" + e.getSQLStateCStr());
+
+        status = 500;
+        return (json{
+            {"status","error"},
+            {"message","DB error while loading leaderboards"}
+        }); 
+    }
+    catch (const std::exception& e)
+    {
+        DaraLog("LEADERBOARDS", std::string("Exception: ") + e.what());
+        status = 500;
+        return(json{
+            {"status","error"},
+            {"message","Server error while loading leaderboards"}
+        });
+    }
 }

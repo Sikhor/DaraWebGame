@@ -342,6 +342,273 @@
   .google-login-wrap{ margin-top: 4px; }
   .reset-login-btn{ margin-top: 10px; padding: 10px 12px; }
 }
+  /* Leaderboards avatar */
+.best-avatar{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(120,140,200,0.25);
+  background: rgba(122,167,255,0.14);
+  flex: 0 0 auto;
+  background-size: cover;
+  background-position: center;
+}
+
+.best-leftRow{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-width:0;
+}
+
+ /* ===== BEGIN BEST LISTS OVERLAY (COMPACT) ===== */
+#bestOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+
+  /* allow background to stay fixed while panel is centered */
+  align-items: center;
+  justify-content: center;
+
+  /* IMPORTANT: no page-scroll; panel handles its own scroll */
+  overflow: hidden;
+}
+
+/* Make the panel never exceed viewport height */
+#bestOverlay .login-content{
+  width: calc(100% - 32px);
+  max-width: 720px;
+  max-height: min(92dvh, 920px);
+  overflow: hidden; /* we scroll inside the body area */
+}
+
+/* Header row with controls */
+.best-toprow{
+  display:flex;
+  flex-direction: column;
+  gap:10px;
+  margin: 8px 0 12px;
+  text-align:left;
+}
+
+.best-controls{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items:center;
+  justify-content: space-between;
+}
+
+.best-seg{
+  display:inline-flex;
+  gap:6px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(120,140,200,0.20);
+  background: rgba(0,0,0,0.18);
+}
+
+.best-tab{
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(120,140,200,0.18);
+  background: rgba(10,14,20,0.45);
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.best-tab.active{
+  background: rgba(122,167,255,0.18);
+  border-color: rgba(122,167,255,0.35);
+}
+
+/* Scrollable content area inside the panel */
+.best-body{
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(min(92dvh, 920px) - 260px); /* keep header + buttons visible */
+  padding-right: 2px;
+}
+
+.best-card{
+  border-radius: 12px;
+  border: 1px solid rgba(120,140,200,0.18);
+  background: rgba(8,12,20,0.55);
+  padding: 10px;
+  text-align:left;
+  margin-bottom: 10px;
+}
+
+.best-card h3{
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 0.2px;
+  display:flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.best-badge{
+  font-size: 11px;
+  color:#d4e0ff;
+  border:1px solid rgba(120,140,200,0.25);
+  background: rgba(20,30,50,0.45);
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.best-list{
+  display:grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.best-row{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(120,140,200,0.12);
+  background: rgba(0,0,0,0.18);
+}
+
+.best-left{
+  min-width:0;
+  display:flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.best-title{
+  font-size: 13px;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width: 360px;
+}
+
+.best-sub{
+  font-size: 12px;
+  color:#9aa6b2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width: 360px;
+}
+
+.best-val{
+  font-size: 13px;
+  color:#e6e6e6;
+  white-space:nowrap;
+}
+
+.best-my{
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(122,167,255,0.12);
+}
+
+.best-muted{
+  color:#9aa6b2;
+  font-size: 12px;
+}
+
+.best-error{
+  border: 1px solid rgba(255,80,80,0.35);
+  background: rgba(80,20,20,0.35);
+  color: #ffd6d6;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+}
+/* ===== END BEST LISTS OVERLAY (COMPACT) ===== */
+
+/* ===== AVATAR PICKER ===== */
+.av-body{
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(min(92dvh, 920px) - 240px);
+  padding-right: 2px;
+  text-align: left;
+}
+
+.av-section{ margin-top: 10px; }
+.av-title{ font-weight: 700; margin: 6px 0; }
+.av-subtitle{ color: #9aa6b2; font-size: 12px; margin-bottom: 6px; }
+
+.av-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+}
+
+.av-card{
+  position: relative;
+  border: 1px solid rgba(120,140,200,0.18);
+  background: rgba(8,12,20,0.55);
+  border-radius: 10px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.av-card:hover{
+  border-color: rgba(122,167,255,0.35);
+}
+
+.av-card.locked{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.av-card.selected{
+  border-color: rgba(122,167,255,0.55);
+  box-shadow: 0 0 0 2px rgba(122,167,255,0.12) inset;
+}
+
+.av-img{
+  width: 100%;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  background: rgba(0,0,0,0.25);
+}
+
+.av-tier{
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(120,140,200,0.25);
+  background: rgba(10,14,20,0.85);
+  color: #e6e6e6;
+}
+
+.av-lock{
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(120,140,200,0.25);
+  background: rgba(10,14,20,0.85);
+  color: #e6e6e6;
+}
+/* Avatar picker end */
+
   </style>
 </head>
 
@@ -457,12 +724,21 @@
       </div>
     </div>
 
+    <div class="char-actions-row">
+      <button id="btnBestLists" class="reset-login-btn" type="button" style="margin-top:0;">
+        Best Lists (Weekly / Overall)
+      </button>
+    </div>
+
     <!-- Character list -->
     <div id="charList" style="text-align:left; display:grid; gap:10px; margin-bottom: 10px;"></div>
 
     <!-- Create new character -->
     <div style="text-align:left; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; margin-top: 10px;">
       <div style="font-size: 12px; color:#9aa6b2; margin-bottom: 6px;">Create new Agent</div>
+      <button id="btnPickAvatar" class="reset-login-btn" type="button" style="margin-top:10px;">
+        Pick Avatar (Standard / Premium)
+      </button>
       <input id="newCharName" type="text" placeholder="CharacterName (e.g. Arikara-296)"
              style="width:100%; height:42px; border-radius:10px; border:1px solid #2a3340;
                     background: rgba(10,14,20,0.6); color:#e6e6e6; padding:0 12px; outline:none;" />
@@ -476,6 +752,95 @@
     </button>
   </div>
 </div>
+<!-- End Character list overlay -->
+
+<!-- ================= BEST LISTS OVERLAY (COMPACT) ================= -->
+<div id="bestOverlay">
+  <div class="login-bg"></div>
+  <div class="login-overlay"></div>
+
+  <div class="login-content">
+    <img
+      src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/AttentionSignal-300x300.png"
+      alt="Leaderboards"
+      class="login-icon"
+      style="filter: drop-shadow(0 0 10px rgba(255,200,120,0.20));"
+    />
+
+    <h1 style="margin-bottom:6px;">Best Agents</h1>
+
+    <div class="best-toprow">
+      <div class="best-controls">
+        <!-- Period toggle -->
+        <div class="best-seg" id="bestPeriodSeg">
+          <button class="best-tab active" type="button" data-period="weekly">Weekly</button>
+          <button class="best-tab" type="button" data-period="overall">Overall</button>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex; gap:10px;">
+          <button id="btnBestRefresh" class="char-btn" type="button">Refresh</button>
+          <button id="btnBestClose" class="char-btn" type="button">Back</button>
+        </div>
+      </div>
+
+      <!-- Metric toggle -->
+      <div class="best-seg" id="bestMetricSeg">
+        <button class="best-tab active" type="button" data-metric="highestWave">Wave</button>
+        <button class="best-tab" type="button" data-metric="highestLevel">Level</button>
+        <button class="best-tab" type="button" data-metric="highestCredits">Credits</button>
+        <button class="best-tab" type="button" data-metric="highestPotions">Potions</button>
+      </div>
+
+      <div class="best-muted" id="bestSubtitle">
+        Showing Top 1–3 + your characters’ ranks
+      </div>
+    </div>
+
+    <div id="bestHost" class="best-body"></div>
+
+    <div style="margin-top:10px;" class="best-muted">
+      Weekly uses character <code>StoreTime</code> (last 7 days). Overall uses all time.
+    </div>
+  </div>
+</div>
+<!-- ================= END BEST LISTS OVERLAY (COMPACT) ================= -->
+
+<!-- ================= AVATAR PICKER OVERLAY ================= -->
+<div id="avatarOverlay" style="display:none;">
+  <div class="login-bg"></div>
+  <div class="login-overlay"></div>
+
+  <div class="login-content" style="max-width: 820px;">
+    <img
+      src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/AttentionSignal-300x300.png"
+      alt="Avatars"
+      class="login-icon"
+      style="filter: drop-shadow(0 0 10px rgba(122,167,255,0.25));"
+    />
+    <h1 style="margin-bottom:6px;">Choose Avatar</h1>
+
+    <div style="display:flex; gap:10px; justify-content:space-between; align-items:center; margin: 10px 0 10px;">
+      <div style="font-size:12px; color:#9aa6b2;">
+        Standard: free. Premium: donors only.
+        <span id="avatarPremiumState" style="color:#fff; margin-left:8px;"></span>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button id="btnAvatarRefresh" class="char-btn" type="button">Refresh</button>
+        <button id="btnAvatarClose" class="char-btn" type="button">Back</button>
+      </div>
+    </div>
+
+    <div id="avatarPickerHost" class="av-body"></div>
+
+    <div id="avatarSelectedOut" class="best-muted" style="margin-top:10px;">
+      Selected: (none)
+    </div>
+  </div>
+</div>
+<!-- ================= END AVATAR PICKER OVERLAY ================= -->
+
 
   <script>
      // ---------- GOOGLE BUTTON RENDER ----------
@@ -649,7 +1014,7 @@
     const r = await fetch("/api/v001/darawebgame/characters/create", {
       method: "POST",
       headers: { "Content-Type":"application/json", ...authHeader() },
-      body: JSON.stringify({ characterName })
+      body: JSON.stringify({ characterName, avatarKey: g_selectedAvatarKey })
     });
     const j = await r.json().catch(()=> ({}));
     if (!r.ok) throw new Error(j.message || "Create failed");
@@ -682,7 +1047,17 @@
     }
   }
   
-  const AVATARURL="https://gameinfo.daraempire.com/wp-content/uploads/";
+  const AVATAR_BASE_URL="https://gameinfo.daraempire.com/game-res/avatars";
+  
+  function avatarKeyToUrl(avatarKey){
+    const k = String(avatarKey || "").trim();
+    if (!k) return "";
+    if (k.startsWith("http")) return k;
+    // avatarKey like "standard/Name.png" or "premium/Name.png"
+    return AVATAR_BASE_URL.replace(/\/+$/,"") + "/" + k;
+  }
+
+
   // --- render character list ---
   function renderCharacterList(chars){
     const host = document.getElementById("charList");
@@ -705,11 +1080,7 @@
       const cname = c.characterName ?? c.name ?? "Unknown";
       
       const avatarKey = String(c.avatar || c.Avatar || "").trim(); // accept avatar or Avatar
-      const avatarUrl = avatarKey
-        ? (avatarKey.startsWith("http")
-            ? avatarKey
-            : (AVATARURL + encodeURIComponent(avatarKey) + ".png"))
-        : "";
+      const avatarUrl = avatarKeyToUrl(c.avatarKey || c.avatar || c.Avatar);
 
 
       div.innerHTML = `
@@ -919,6 +1290,470 @@
   /***********************
    * END Character Select 
    */
+
+   /***********************
+   * BEGIN Best Lists
+   */
+
+   function avatarToUrl(avatarKey){
+    const k = String(avatarKey || "").trim();
+    if (!k) return "";
+    if (k.startsWith("http")) return k;
+    return AVATARURL + encodeURIComponent(k) + ".png";
+  }
+
+  function showBestOverlay(){
+    document.getElementById("bestOverlay").style.display = "flex";
+    // keep charOverlay hidden while bestOverlay is open
+    document.getElementById("charOverlay").style.display = "none";
+  }
+
+  function hideBestOverlay(){
+    document.getElementById("bestOverlay").style.display = "none";
+    document.getElementById("charOverlay").style.display = "flex";
+  }
+
+  function fmtRank(n){
+    if (!n || n <= 0) return "—";
+    return "#" + n;
+  }
+
+
+
+
+  // Expecting backend response shape:
+  // {
+  //   weekly: {
+  //     highestWave: { top:[{characterId, characterName, userEmail, value}], my:[{characterId, rank, value}] },
+  //     highestLevel: { ... },
+  //     highestCredits: { ... },
+  //     highestPotions: { ... }
+  //   },
+  //   overall: { ... same ... }
+  // }
+  async function apiGetLeaderboards(){
+    const r = await fetch("/api/v001/darawebgame/leaderboards", {
+      headers: { ...authHeader() }
+    });
+
+    // If you haven't implemented it yet, you'll likely get 404/501
+    if (!r.ok){
+      const txt = await r.text().catch(()=> "");
+      throw new Error(`Leaderboards endpoint not available (${r.status}). ${txt ? "Details: " + txt : ""}`);
+    }
+    return r.json();
+  }
+
+  let g_lbData = null;
+  let g_bestPeriod = "weekly";       // "weekly" | "overall"
+  let g_bestMetric = "highestWave";  // one of your metric keys
+
+
+  function metricLabel(key){
+    switch(key){
+      case "highestWave":   return "Highest Wave";
+      case "highestLevel":  return "Highest Level";
+      case "highestCredits":return "Highest Credits";
+      case "highestPotions":return "Highest Potions";
+      default: return key;
+    }
+  }
+
+  function renderMetricCard(title, periodName, metricKey, metricData){
+    const top = Array.isArray(metricData?.top) ? metricData.top : [];
+    const my  = Array.isArray(metricData?.my)  ? metricData.my  : [];
+
+    // Build quick lookup for "my ranks" by characterId
+    const myById = new Map();
+    for (const m of my){
+      myById.set(String(m.characterId), m);
+    }
+
+    // Use your local cache so we can show "which of my characters" has which rank.
+    const myChars = Array.isArray(g_charCache) ? g_charCache : [];
+
+    const wrap = document.createElement("div");
+    wrap.className = "best-card";
+
+    wrap.innerHTML = `
+      <h3>
+        <span>${escapeHtml(title)}</span>
+        <span class="best-badge">${escapeHtml(periodName)}</span>
+      </h3>
+      <div class="best-muted" style="margin-bottom:8px;">
+        Top 1–3 globally + ranks for your characters (if ranked)
+      </div>
+      <div class="best-muted" style="margin-bottom:6px;">Top 3</div>
+      <ul class="best-list" data-top></ul>
+
+      <div class="best-muted" style="margin:10px 0 6px;">Your ranks</div>
+      <ul class="best-list" data-my></ul>
+    `;
+
+    const ulTop = wrap.querySelector("[data-top]");
+    const ulMy  = wrap.querySelector("[data-my]");
+
+    // Top list
+    if (top.length === 0){
+      const li = document.createElement("div");
+      li.className = "best-muted";
+      li.textContent = "No data.";
+      ulTop.appendChild(li);
+    } else {
+      top.slice(0,3).forEach((t, idx) => {
+        const li = document.createElement("li");
+        li.className = "best-row";
+
+        const aurl = avatarToUrl(t.avatar);
+        li.innerHTML = `
+          <div class="best-leftRow">
+            <div class="best-avatar" style="${
+              aurl ? `background-image:url('${aurl}');` : ""
+            }"></div>
+
+            <div class="best-left">
+              <div class="best-title">${idx+1}. ${escapeHtml(t.characterName || "Unknown")}</div>
+              <div class="best-sub">ID ${escapeHtml(String(t.characterId ?? ""))}</div>
+            </div>
+          </div>
+
+          <div class="best-val">${escapeHtml(String(t.value ?? "—"))}</div>
+        `;
+
+        ulTop.appendChild(li);
+      });
+    }
+
+    // My ranks list (show all my chars + their rank/value if present)
+    if (myChars.length === 0){
+      const li = document.createElement("div");
+      li.className = "best-muted";
+      li.textContent = "No local characters loaded.";
+      ulMy.appendChild(li);
+    } else {
+      for (const c of myChars){
+        const cid = String(c.characterId ?? c.id ?? "");
+        const cname = String(c.characterName ?? c.name ?? "Unknown");
+        const mine = myById.get(cid);
+
+        const rank = mine?.rank;
+        const val  = mine?.value;
+        const showRight = (val === undefined || val === null) ? fmtRank(rank) : String(val);
+
+        // avatar from local character cache (or backend myPlaces if you prefer)
+        const aurl = avatarToUrl(c.avatar || c.Avatar || mine?.avatar);
+
+        const row = document.createElement("li");
+        row.className = "best-row" + (rank ? " best-my" : "");
+
+        row.innerHTML = `
+          <div class="best-leftRow">
+            <div class="best-avatar" style="${aurl ? `background-image:url('${aurl}');` : ""}"></div>
+            <div class="best-left">
+              <div class="best-title">${escapeHtml(cname)} <span class="best-muted">(${fmtRank(rank)})</span></div>
+              <div class="best-sub">ID ${escapeHtml(cid)}</div>
+            </div>
+          </div>
+          <div class="best-val">${escapeHtml(showRight)}</div>
+        `;
+
+        ulMy.appendChild(row);
+      }
+
+    }
+
+    return wrap;
+  }
+
+  function setActiveTab(segEl, attr, value){
+    const btns = segEl.querySelectorAll(".best-tab");
+    btns.forEach(b => b.classList.toggle("active", b.getAttribute(attr) === value));
+  }
+
+  function renderBestView(){
+    const host = document.getElementById("bestHost");
+    host.innerHTML = "";
+
+    if (!g_lbData){
+      host.innerHTML = `<div class="best-card"><div class="best-muted">No data loaded.</div></div>`;
+      return;
+    }
+
+    const periodTitle = (g_bestPeriod === "weekly") ? "Weekly (last 7 days)" : "Overall";
+    const metricTitle = metricLabel(g_bestMetric);
+
+    // reuse your existing card builder (top3 + my ranks)
+    const card = renderMetricCard(metricTitle, periodTitle, g_bestMetric, g_lbData?.[g_bestPeriod]?.[g_bestMetric]);
+    host.appendChild(card);
+
+    // subtitle
+    const subtitle = document.getElementById("bestSubtitle");
+    if (subtitle){
+      subtitle.textContent = `${periodTitle} • ${metricTitle} — Top 1–3 + your characters’ ranks`;
+    }
+  }
+
+  function normalizeLeaderboards(serverData){
+    const out = { weekly:{}, overall:{} };
+
+    const metrics = ["highestWave","highestLevel","highestCredits","highestPotions"];
+
+    // helper: get "top list" array safely
+    const topList = (period, metric) => {
+      const arr = serverData?.[period]?.[metric];
+      return Array.isArray(arr) ? arr : [];
+    };
+
+    // helper: build "my list" from myPlaces
+    const buildMy = (period, metric) => {
+      const places = Array.isArray(serverData?.myPlaces) ? serverData.myPlaces : [];
+
+      // pick correct rank field from myPlaces
+      const rankField =
+        (metric === "highestWave")    ? (period === "weekly" ? "rankWaveWeek"    : "rankWaveAll") :
+        (metric === "highestLevel")   ? (period === "weekly" ? "rankLevelWeek"   : "rankLevelAll") :
+        (metric === "highestCredits") ? (period === "weekly" ? "rankCreditsWeek" : "rankCreditsAll") :
+        (metric === "highestPotions") ? (period === "weekly" ? "rankPotionsWeek" : "rankPotionsAll") :
+        null;
+
+      // Your backend myPlaces currently doesn't include the metric "value".
+      // We'll still show rank, and show value as "—" unless you add it server-side.
+      return places.map(p => ({
+        characterId: p.characterId,
+        rank: p?.[rankField] ?? null,
+        value: p.value ?? "—",              // keep placeholder
+        characterName: p.characterName,
+        avatar: p.avatar
+      }));
+    };
+
+    for (const period of ["weekly","overall"]){
+      for (const m of metrics){
+        out[period][m] = {
+          top: topList(period, m),
+          my: buildMy(period, m)
+        };
+      }
+    }
+
+    return out;
+  }
+
+
+  async function openBestLists(forceFetch=false){
+    showBestOverlay();
+
+    const host = document.getElementById("bestHost");
+    host.innerHTML = `<div class="best-card"><div class="best-muted">Loading…</div></div>`;
+
+    try{
+      if (!g_lbData || forceFetch){
+        const raw = await apiGetLeaderboards();
+        g_lbData = normalizeLeaderboards(raw);
+      }
+      renderBestView(); // <-- ALWAYS render
+    }catch(e){
+      host.innerHTML = `
+        <div class="best-error">
+          <div style="font-weight:bold; margin-bottom:6px;">Could not load leaderboards</div>
+          <div>${escapeHtml(e.message || "Unknown error")}</div>
+        </div>
+      `;
+    }
+  }
+
+
+
+ document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("btnBestLists");
+    if (btn) btn.addEventListener("click", () => openBestLists(false));
+
+    const close = document.getElementById("btnBestClose");
+    if (close) close.addEventListener("click", hideBestOverlay);
+
+    const refresh = document.getElementById("btnBestRefresh");
+    if (refresh) refresh.addEventListener("click", () => openBestLists(true));
+
+    // Period tabs
+    const periodSeg = document.getElementById("bestPeriodSeg");
+    if (periodSeg){
+      periodSeg.addEventListener("click", (ev) => {
+        const b = ev.target.closest("button[data-period]");
+        if (!b) return;
+        g_bestPeriod = b.getAttribute("data-period");
+        setActiveTab(periodSeg, "data-period", g_bestPeriod);
+        renderBestView();
+      });
+    }
+
+    // Metric tabs
+    const metricSeg = document.getElementById("bestMetricSeg");
+    if (metricSeg){
+      metricSeg.addEventListener("click", (ev) => {
+        const b = ev.target.closest("button[data-metric]");
+        if (!b) return;
+        g_bestMetric = b.getAttribute("data-metric");
+        setActiveTab(metricSeg, "data-metric", g_bestMetric);
+        renderBestView();
+      });
+    }
+  });
+
+  /***********************
+   * END Best Lists
+   */
+/* ================= AVATAR PICKER (STANDARD/PREMIUM) ================= */
+
+const AVATAR_INDEX_URL = "https://gameinfo.daraempire.com/game-res/avatars/avatars.json";
+
+// selected avatar key to use for creation
+let g_selectedAvatarKey = "";
+
+// in-memory cache
+let g_avatarIndex = null;
+
+// set this based on /me response or login response (you can wire later)
+let g_isPremiumUser = false;
+
+function showAvatarOverlay(){
+  document.getElementById("avatarOverlay").style.display = "flex";
+  document.getElementById("charOverlay").style.display = "none";
+  updatePremiumStateLabel();
+}
+
+function hideAvatarOverlay(){
+  document.getElementById("avatarOverlay").style.display = "none";
+  document.getElementById("charOverlay").style.display = "flex";
+}
+
+function updatePremiumStateLabel(){
+  const el = document.getElementById("avatarPremiumState");
+  if (!el) return;
+  el.textContent = g_isPremiumUser ? "(premium: unlocked)" : "(premium: locked)";
+}
+
+async function loadAvatarIndex(force=false){
+  if (g_avatarIndex && !force) return g_avatarIndex;
+  const r = await fetch(AVATAR_INDEX_URL, { cache: "no-store" });
+  if (!r.ok) throw new Error("Failed to load avatars.json: " + r.status);
+  const j = await r.json();
+  if (!j || !Array.isArray(j.avatars)) throw new Error("avatars.json invalid");
+  g_avatarIndex = j;
+  return j;
+}
+
+function escapeAttr(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderAvatarPicker(indexJson){
+  const host = document.getElementById("avatarPickerHost");
+  if (!host) return;
+
+  const baseUrl = String(indexJson.baseUrl || "").replace(/\/+$/, "");
+  const all = indexJson.avatars || [];
+
+  const standard = all.filter(a => a.tier === "standard");
+  const premium  = all.filter(a => a.tier === "premium");
+
+  function avatarUrl(a){
+    // safest: baseUrl + key. If baseUrl missing, fallback to a.url.
+    if (baseUrl && a.key) return baseUrl + "/" + a.key;
+    return a.url || "";
+  }
+
+  function card(a){
+    const key = String(a.key || "");
+    const tier = String(a.tier || "standard");
+    const locked = (tier === "premium" && !g_isPremiumUser);
+    const selected = (key && key === g_selectedAvatarKey);
+
+    const url = avatarUrl(a);
+    return `
+      <button class="av-card ${locked ? "locked" : ""} ${selected ? "selected" : ""}"
+              data-key="${escapeAttr(key)}"
+              data-tier="${escapeAttr(tier)}"
+              ${locked ? 'disabled title="Premium avatar (donors)"' : 'title="Select avatar"'}>
+        <img class="av-img" src="${escapeAttr(url)}" alt="${escapeAttr(key)}"
+             onerror="this.style.opacity=0.2;" />
+        <div class="av-tier">${escapeHtml(tier.toUpperCase())}</div>
+        ${locked ? '<div class="av-lock">LOCK</div>' : ""}
+      </button>
+    `;
+  }
+
+  host.innerHTML = `
+    <div class="av-section">
+      <div class="av-title">Standard</div>
+      <div class="av-grid">${standard.map(card).join("")}</div>
+    </div>
+
+    <div class="av-section">
+      <div class="av-title">Premium</div>
+      <div class="av-subtitle">${g_isPremiumUser ? "Unlocked" : "Donate to unlock"}</div>
+      <div class="av-grid">${premium.map(card).join("")}</div>
+    </div>
+  `;
+
+  host.querySelectorAll(".av-card").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.getAttribute("data-key") || "";
+      const tier = btn.getAttribute("data-tier") || "standard";
+      g_selectedAvatarKey = key;
+
+      const out = document.getElementById("avatarSelectedOut");
+      if (out) out.textContent = "Selected: " + key + " (" + tier + ")";
+
+      // re-render to show selected border
+      renderAvatarPicker(indexJson);
+      // close picker automatically (optional). Comment out if you want it to stay open.
+      hideAvatarOverlay();
+    });
+  });
+
+  const out = document.getElementById("avatarSelectedOut");
+  if (out) out.textContent = g_selectedAvatarKey ? ("Selected: " + g_selectedAvatarKey) : "Selected: (none)";
+}
+
+/* Wire buttons */
+document.addEventListener("DOMContentLoaded", () => {
+  const btnPick = document.getElementById("btnPickAvatar");
+  if (btnPick){
+    btnPick.addEventListener("click", async () => {
+      showAvatarOverlay();
+      const host = document.getElementById("avatarPickerHost");
+      if (host) host.innerHTML = '<div class="best-card"><div class="best-muted">Loading...</div></div>';
+
+      try{
+        const idx = await loadAvatarIndex(false);
+        renderAvatarPicker(idx);
+      }catch(e){
+        if (host) host.innerHTML = '<div class="best-error">Avatar list failed to load: ' + escapeHtml(e.message) + '</div>';
+      }
+    });
+  }
+
+  const btnClose = document.getElementById("btnAvatarClose");
+  if (btnClose) btnClose.addEventListener("click", hideAvatarOverlay);
+
+  const btnRefresh = document.getElementById("btnAvatarRefresh");
+  if (btnRefresh){
+    btnRefresh.addEventListener("click", async () => {
+      const host = document.getElementById("avatarPickerHost");
+      if (host) host.innerHTML = '<div class="best-card"><div class="best-muted">Loading...</div></div>';
+      try{
+        const idx = await loadAvatarIndex(true);
+        renderAvatarPicker(idx);
+      }catch(e){
+        if (host) host.innerHTML = '<div class="best-error">Avatar list failed to load: ' + escapeHtml(e.message) + '</div>';
+      }
+    });
+  }
+});
+/* ================= END AVATAR PICKER (STANDARD/PREMIUM) ================= */
 
   </script>
 
