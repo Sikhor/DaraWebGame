@@ -607,7 +607,101 @@
   background: rgba(10,14,20,0.85);
   color: #e6e6e6;
 }
+.newchar-row{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.avatar-mini-btn{
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(120,140,200,0.25);
+  background: rgba(8,12,20,0.55);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.avatar-mini-btn:active{ transform: translateY(1px); }
+
+.avatar-mini-prev{
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: rgba(122,167,255,0.14);
+  background-size: cover;
+  background-position: center;
+}
+
+.avatar-mini-btn{
+  position: relative; /* IMPORTANT for overlay positioning */
+  overflow: hidden;   /* keeps overlay inside rounded corners */
+}
+
+.avatar-mini-hint{
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+  pointer-events: none; /* click goes through to button */
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.7));
+}
+
+/* when avatar selected -> hide hint icon */
+.avatar-mini-btn.has-avatar .avatar-mini-hint{
+  display: none;
+}
+
+
+
+#avatarOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: none;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#avatarOverlay .login-content{
+  max-height: min(92dvh, 920px);
+  overflow: hidden;
+}
+
+
 /* Avatar picker end */
+/* help and imprint buttons */
+.help-imprint-bar {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.ui-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #2a3340;
+  background: rgba(20,25,35,0.9);
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.ui-btn:hover {
+  background: rgba(40,50,70,0.95);
+}
+
+.ui-btn.imprint {
+  opacity: 0.85;
+}
+/* end help and imprint buttons */
+
 
   </style>
 </head>
@@ -685,9 +779,10 @@
       <button id="btnResetLogin" class="reset-login-btn" type="button">
         Use other account
       </button>
-      <button class="reset-login-btn" type="button" onclick="openHelp()">
-        Help
-      </button>
+      <div class="help-imprint-bar">
+        <button class="ui-btn" onclick="openHelp()">Help</button>
+        <button class="ui-btn imprint" onclick="openImprint()">Legal notice</button>
+      </div>
     </div>
 
 
@@ -724,26 +819,37 @@
       </div>
     </div>
 
-    <div class="char-actions-row">
-      <button id="btnBestLists" class="reset-login-btn" type="button" style="margin-top:0;">
-        Best Lists (Weekly / Overall)
-      </button>
-    </div>
-
     <!-- Character list -->
     <div id="charList" style="text-align:left; display:grid; gap:10px; margin-bottom: 10px;"></div>
 
     <!-- Create new character -->
     <div style="text-align:left; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; margin-top: 10px;">
       <div style="font-size: 12px; color:#9aa6b2; margin-bottom: 6px;">Create new Agent</div>
-      <button id="btnPickAvatar" class="reset-login-btn" type="button" style="margin-top:10px;">
-        Pick Avatar (Standard / Premium)
-      </button>
-      <input id="newCharName" type="text" placeholder="CharacterName (e.g. Arikara-296)"
-             style="width:100%; height:42px; border-radius:10px; border:1px solid #2a3340;
-                    background: rgba(10,14,20,0.6); color:#e6e6e6; padding:0 12px; outline:none;" />
-      <button id="btnCreateChar" class="reset-login-btn" type="button" style="margin-top:10px;">
-        Create Agent
+      <div class="newchar-row" style="margin-top:10px;">
+        <button id="btnPickAvatar" class="avatar-mini-btn" type="button" title="Pick Avatar">
+          <div id="newCharAvatarPreview" class="avatar-mini-prev"></div>
+
+          <!-- overlay icon (hidden once avatar selected) -->
+          <img id="avatarPickHintIcon"
+              class="avatar-mini-hint"
+              src="https://gameinfo.daraempire.com/game-res/avatars/standard/VexEchoPrime.png"
+              alt="Pick avatar">
+        </button>
+
+        <input id="newCharName"
+              type="text"
+              placeholder="CharacterName (e.g. Arikara-296)"
+              maxlength="20"
+              style="flex:1; height:64px; border-radius:10px; border:1px solid #2a3340;
+                      background: rgba(10,14,20,0.6); color:#e6e6e6; padding:0 12px; outline:none;" />
+        <button id="btnCreateChar" class="reset-login-btn" type="button" style="margin-top:0;flex:1;height:64px;">
+          Create Agent
+        </button>
+      </div>
+    </div>
+    <div class="char-actions-row">
+      <button id="btnBestLists" class="reset-login-btn" type="button" style="margin-top:10px;">
+        Best Lists (Weekly / Overall)
       </button>
     </div>
 
@@ -885,22 +991,10 @@
       }
     });
 
-    // Helper functions
-    function openHelp(){
-      window.open("help.html", "_blank", "noopener");
-    }
-    // end helper functions
-
     // ---------- SHOW GAME UI ----------
     function goToGame() {
     // optional: damit man nicht per "Back" wieder im eingeloggten Zustand landet
       window.location.replace("game.html");
-    }
-
-    // ---------- AUTH STATE ----------
-    function showLogin() {
-      document.getElementById("loginOverlay").style.display = "flex";
-      renderGoogleButton();
     }
 
     // ---------- RESET / SWITCH ACCOUNT ----------
@@ -925,24 +1019,6 @@
       showLogin();
     }
 
-    // ---------- GOOGLE CALLBACK (must be global name for data-callback) ----------
-    async function onGoogleCredential(response) {
-      const r = await fetch("/api/v001/darawebgame/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: response.credential })
-      });
-
-      const j = await r.json();
-      if (!r.ok) {
-        alert(j.message || "Login failed");
-        return;
-      }
-
-      localStorage.setItem("sessionToken", j.token);
-      localStorage.setItem("playerName", j.playerName || "Unknown Agent");
-      showCharacterSelect();
-    }
 
     // ---------- INIT ----------
     document.addEventListener("DOMContentLoaded", () => {
@@ -971,6 +1047,8 @@
         });
 
         if (r.ok) {
+          const me = await r.json().catch(()=> ({}));
+          //g_isPremiumUser = !!me.isPremium;   // do not send it here.. only on characters respnse
           loadAndShowCharacters();
         } else {
           showLogin();
@@ -978,6 +1056,7 @@
       })();
     });
 
+  updateAvatarMiniButtonState();
 
   /***********************
    * BEGIN Character Select 
@@ -1046,8 +1125,6 @@
       throw new Error(j.message || "Select failed");
     }
   }
-  
-  const AVATAR_BASE_URL="https://gameinfo.daraempire.com/game-res/avatars";
   
   function avatarKeyToUrl(avatarKey){
     const k = String(avatarKey || "").trim();
@@ -1239,7 +1316,7 @@
         const newChar = {
           characterId: created.characterId,
           characterName: created.characterName || name,
-          avatar: created.avatar || ""
+          avatarKey: created.avatarKey || g_selectedAvatarKey || created.avatar || ""
         };
 
         // Add to cache (avoid duplicates if user double-clicked / retries)
@@ -1295,11 +1372,8 @@
    * BEGIN Best Lists
    */
 
-   function avatarToUrl(avatarKey){
-    const k = String(avatarKey || "").trim();
-    if (!k) return "";
-    if (k.startsWith("http")) return k;
-    return AVATARURL + encodeURIComponent(k) + ".png";
+  function avatarToUrl(avatarKey){
+      return avatarKeyToUrl(avatarKey);
   }
 
   function showBestOverlay(){
@@ -1605,6 +1679,8 @@
 /* ================= AVATAR PICKER (STANDARD/PREMIUM) ================= */
 
 const AVATAR_INDEX_URL = "https://gameinfo.daraempire.com/game-res/avatars/avatars.json";
+const AVATAR_BASE_URL="https://gameinfo.daraempire.com/game-res/avatars";
+  
 
 // selected avatar key to use for creation
 let g_selectedAvatarKey = "";
@@ -1704,6 +1780,16 @@ function renderAvatarPicker(indexJson){
       const tier = btn.getAttribute("data-tier") || "standard";
       g_selectedAvatarKey = key;
 
+      // update preview in create character row
+      const prev = document.getElementById("newCharAvatarPreview");
+      if (prev){
+        const idx = g_avatarIndex;
+        const baseUrl = String(idx?.baseUrl || AVATAR_BASE_URL).replace(/\/+$/, "");
+        const url = (baseUrl && key) ? (baseUrl + "/" + key) : "";
+        prev.style.backgroundImage = url ? `url('${url}')` : "";
+        updateAvatarMiniButtonState();
+      }
+
       const out = document.getElementById("avatarSelectedOut");
       if (out) out.textContent = "Selected: " + key + " (" + tier + ")";
 
@@ -1755,6 +1841,33 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 /* ================= END AVATAR PICKER (STANDARD/PREMIUM) ================= */
 
+function openHelp(){
+  // hook this into your help overlay, modal, or chat later
+  window.open(
+    "https://gameinfo.daraempire.com/ui/help.html",
+    "_blank",
+    "noopener"
+  );
+}
+
+function openImprint(){
+  window.open(
+    "https://gameinfo.daraempire.com/legal-notice-imprint/",
+    "_blank",
+    "noopener"
+  );
+}
+
+function updateAvatarMiniButtonState(){
+  const btn = document.getElementById("btnPickAvatar");
+  const prev = document.getElementById("newCharAvatarPreview");
+  if (!btn || !prev) return;
+
+  const bg = (prev.style.backgroundImage || "").trim();
+  const hasAvatar = bg && bg !== "none";
+
+  btn.classList.toggle("has-avatar", !!hasAvatar);
+}
   </script>
 
 </body>

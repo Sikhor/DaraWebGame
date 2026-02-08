@@ -1669,7 +1669,7 @@
    GLOBALS (BEGIN)
    ====================================================================== */
 const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
-const AVATAR_IMG_BASE = IMG_BASE;
+const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/game-res/avatars";
 const BUFF_IMG_BASE= IMG_BASE;
 const SOUND_BASE = IMG_BASE;
 
@@ -2229,8 +2229,9 @@ function mobImageUrl(mobId){
 
 function playerImageUrl(avatarId){
   if (!avatarId) return "";
-  const safe = avatarId.replace(/[^a-zA-Z0-9_-]/g, "");
-  return AVATAR_IMG_BASE + safe + IMG_EXT;
+  const safe= avatarId;
+  // console.log("AvatarUrl: "+AVATAR_IMG_BASE +"/"+ safe);
+  return AVATAR_IMG_BASE +"/"+ safe;
 } // (END playerImageUrl)
 /* ======================================================================
    UI STATE + BASIC HELPERS (END)

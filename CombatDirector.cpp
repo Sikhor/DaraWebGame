@@ -100,6 +100,7 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
 
     if (!Players.count(playerName))
         Players.emplace(playerName, std::make_shared<Combatant>(playerName, ECombatantType::Player, STAT_BASE_MAX_HP, STAT_BASE_MAX_ENERGY, STAT_BASE_MAX_MANA));
+    DaraLog("LOGIN", "Player "+ playerName+ " logged in");
 
     // If this is the first player coming back, ensure we are not stuck in WaveCompleted
     if (wasEmpty)
@@ -144,6 +145,7 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character 
         p->InitXP(selectedCharacter.xp);
         p->InitCredits(selectedCharacter.credits);
         p->InitPotions(selectedCharacter.potions);
+        p->SetAvatarId(selectedCharacter.avatar);
 
         // Choose what key to store under:
         // Option A: key by playerName (display name)

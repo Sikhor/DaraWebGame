@@ -48,6 +48,10 @@ ServerOptions ParseCommandLine(int argc, char* argv[])
         {
             opt.showFullState = true;
         }
+        else if (arg == "--showleaderboards")
+        {
+            opt.showLeaderBoards = true;
+        }
         else if (arg == "--help")
         {
             std::cout <<
@@ -59,7 +63,8 @@ ServerOptions ParseCommandLine(int argc, char* argv[])
                 "  --dev                 (not implemented) Enable dev mode\n"
                 "  --no-persistence      (not implemented) Disable DB persistence\n"
                 "  --no-mobjitter        Mobs x pos will not be random each turn\n"
-                "  --showfullstate    Each turn and player the full state reply will be sent\n"
+                "  --showfullstate       Each turn and player the full state reply will be sent\n"
+                "  --showleaderboards    Each leaderboard request will show full json for leaderboard\n"
                 "  --help                Show this help\n";
             std::exit(0);
         }

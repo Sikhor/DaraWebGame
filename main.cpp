@@ -107,7 +107,7 @@ std::string NewPlayer(const std::string& userName,
     // Your join logic:
     g_combatDirector->AddOrUpdatePlayer(displayName, character);
 
-    DaraLog("LOGIN", "Created character :" + displayName + " for "+ userName);
+    DaraLog("LOGIN", "Created character :" + displayName + " for "+ userName + " Avatar: "+character.avatar);
 
     // Optional: welcome narrative / combatlog
     //CombatLogState.PushPlayerLog(playerName, "You arrive on Dara III.", "talk");
@@ -681,7 +681,7 @@ server.Get("/leaderboards", [](const httplib::Request& req, httplib::Response& r
         DaraLog("LEADERBOARDS", "Error: "+result.dump(2));
     }
     
-    if(g_options.showFullState==true){
+    if(g_options.showLeaderBoards){
         DaraLog("LEADERBOARDS", "Result: "+result.dump(2));
     }
     
@@ -712,6 +712,7 @@ server.Get("/characters", [](const httplib::Request& req, httplib::Response& res
         g_dbWorker.RequestLoadUser(userKey);
         out["charactersLoading"] = true;
         out["characters"] = json::array();
+        out["isPremium"] = true;
     } else {
         out["charactersLoading"] = false;
         out["characters"] = SerializeCharactersForUser(userKey);
@@ -855,7 +856,7 @@ server.Post("/characters/create", [](const httplib::Request& req, httplib::Respo
     // Validate request fields
     const std::string charactername  = body.value("characterName", "unknown");
     const std::string characterclass = body.value("characterClass", "Agent");
-    const std::string characteravatar= body.value("avatar", "standard/AxiomCircuitCore.png");
+    const std::string characteravatar= body.value("avatarKey", "standard/AxiomCircuitCore.png");
 
     if (charactername.empty() || characterclass.empty())
         throw std::runtime_error("Missing characterName or characterClass");

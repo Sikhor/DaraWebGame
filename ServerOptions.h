@@ -11,6 +11,7 @@ struct ServerOptions
     bool noPersistence  = false;
     bool noMobJitter    = false;
     bool showFullState  = false;
+    bool showLeaderBoards = false;
     std::string config  = "server.json";
 };
 

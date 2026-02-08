@@ -224,7 +224,8 @@ protected:
 
 public:
     Combatant(const std::string& name, ECombatantType type);
-    Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana, std::string mobClass="MSAgent-Soldorn", int lane=0, int slot=0);
+    Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana, 
+                std::string mobClass="MSAgent-Soldorn", int lane=0, int slot=0);
     Combatant(){Combatant("unknown",ECombatantType::Player);}
     void InitFromMobTemplate(
         const std::string& mobClass,
