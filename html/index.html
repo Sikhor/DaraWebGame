@@ -505,6 +505,7 @@
   overflow:hidden;
   text-overflow:ellipsis;
   max-width: 360px;
+  visibility: hidden;
 }
 
 .best-val{
@@ -849,7 +850,7 @@
     </div>
     <div class="char-actions-row">
       <button id="btnBestLists" class="reset-login-btn" type="button" style="margin-top:10px;">
-        Best Lists (Weekly / Overall)
+        Leaderboards (Weekly / Overall)
       </button>
     </div>
 
@@ -873,7 +874,7 @@
       style="filter: drop-shadow(0 0 10px rgba(255,200,120,0.20));"
     />
 
-    <h1 style="margin-bottom:6px;">Best Agents</h1>
+    <h1 style="margin-bottom:6px;">Agent Leaderboard</h1>
 
     <div class="best-toprow">
       <div class="best-controls">
@@ -1154,6 +1155,8 @@
       const lvl = (c.level ?? 1);
       const cls = (c.className ?? "Operative");
       const cid = c.characterId ?? c.id ?? "";
+      const potions= c.potions ?? "";
+      const credits= c.credits ?? "";
       const cname = c.characterName ?? c.name ?? "Unknown";
       
       const avatarKey = String(c.avatar || c.Avatar || "").trim(); // accept avatar or Avatar
@@ -1169,7 +1172,7 @@
         }"></div>
           <div class="char-meta">
             <p class="char-name">${escapeHtml(cname)}</p>
-            <p class="char-sub">Level ${lvl} • ${escapeHtml(cls)} • ID ${escapeHtml(String(cid))}</p>
+            <p class="char-sub">Level ${lvl} • ${escapeHtml(cls)} • Credits ${escapeHtml(String(credits))} • Potions ${escapeHtml(String(potions))}</p>
           </div>
         </div>
         <div style="display:flex; gap:6px;">

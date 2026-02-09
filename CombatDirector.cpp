@@ -934,6 +934,8 @@ void CombatDirector::ResolveDeadMobs()
     if (!anyAlive && MobToSpawnInWave <= 0)
     {
         NewWave(); // now it will be called each turn while waiting
+    }else{
+        DaraLog("WAVE", "Wave: "+ std::to_string(Wave)+" MobtoSpawnInWave:" +std::to_string(MobToSpawnInWave)+ " anyAlive:"+std::to_string(anyAlive));
     }
    
 }

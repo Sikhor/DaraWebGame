@@ -234,9 +234,9 @@ void Combatant::ReceiveBurned()
 void Combatant::Heal(CombatantPtr target)
 {
     if(!IsAlive())return;
-    float healamount = 0.f;
+    float healamount = 100.f;
     if (Mana > SPELLCOST) {
-        healamount = GetRandomDamage();
+        //healamount = GetRandomDamage();
         ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
         target->ApplyHeal(healamount);
     }
