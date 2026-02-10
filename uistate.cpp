@@ -95,25 +95,8 @@ UIState::json UIState::MobToJson(const Combatant& c)
     // out["lane"] = j.value("lane", c.GetLane());
     // out["slot"] = j.value("slot", c.GetSlot());
 
-    float variation = 0.1f; // 10%
-    float jitter = GetRandomFloat(-variation, variation);
-
-    // center-of-cell mapping
-    float x = (c.GetSlot() + 0.5f) / MAXSLOTS;
-    if (!c.IsMezzed()) {
-        if(g_options.noMobJitter==false){
-            x += jitter;
-        }
-    }
-    // center-of-cell mapping
-    float y = std::clamp((c.GetLane() + 0.5f) / MAXLANES, 0.2f,0.8f);
-
-    // optional safety clamp
-    x = std::clamp(x, 0.0f, 1.0f);
-    y = std::clamp(y, 0.0f, 1.0f);
-
-    out["x"] = x;
-    out["y"] = y;
+    out["x"] = c.GetX();
+    out["y"] = c.GetY();
 
     // HP/max: your JS expects {hp, max}
     out["hp"]  = j.value("hp", c.GetHP());

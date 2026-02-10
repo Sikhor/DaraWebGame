@@ -512,8 +512,10 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
     }
     // DAS ist jetzt deine Player-Identität
     const std::string& playerName = session.playerName;
+    const std::string& characterId = session.characterId;
+    const std::string& characterName = session.characterName;
 
-    json out = g_combatDirector->GetUIStateSnapshotJsonLocked(playerName);
+    json out = g_combatDirector->GetUIStateSnapshotJsonLocked(playerName, characterId, characterName);
     if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
     if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["party"].dump(2) <<std::endl;
     if(DARA_DEBUG_FULLSTATE || g_options.showFullState) std::cout << "/state reply: " << out.dump(2) <<std::endl;
@@ -793,7 +795,10 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
         if (it != g_charsByUser.end()) {
             auto& vec = it->second;
             Character* c = FindCharacterLocked(vec, characterId);
-            if (c) { chosen = *c; found = true; }
+            if (c) { 
+                chosen = *c; 
+                found = true; 
+            }
         }
     }
 
@@ -804,9 +809,6 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
         return;
     }
 
-    // Persist selection in session
-    session.characterId = chosen.characterId;
-    session.characterName = chosen.characterName;
 
     // IMPORTANT: you must update your session store for this token.
     UpdateSessionByToken(token, session);
@@ -818,6 +820,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     json out;
     out["status"] = "ok";
     out["selectedCharacterId"] = chosen.characterId;
+    out["characterName"]= chosen.characterName;
     out["character"] = SerializeSelectedCharacterLockedForUser(session.eMail, chosen.characterId);
 
 

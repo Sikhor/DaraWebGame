@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -9,100 +9,492 @@
 
   <style>
     :root{
+      --bg0:#05070b;
+      --bg1:rgba(10,14,20,.86);
+      --bg2:rgba(0,0,0,.28);
       --border:#2a3340;
-      --bg:rgba(10,14,20,.9);
+
       --text:#e6e6e6;
       --muted:#9aa6b2;
+      --accent:#6ee7ff;
+      --accent2:#a78bfa;
+
+      --radius:14px;
+      --radius2:18px;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+      --shadow2: 0 12px 24px rgba(0,0,0,.35);
+
+      --maxW: 1060px;
+      --gap: 12px;
+
+      --glass: linear-gradient(180deg, rgba(18,22,40,.72), rgba(8,10,16,.55));
+      --glass2: linear-gradient(180deg, rgba(0,0,0,.30), rgba(0,0,0,.16));
     }
-    body{
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+   body{
       margin:0;
-      background:#05070b;
       color:var(--text);
-      font-family:Arial,sans-serif;
-      padding:env(safe-area-inset-top) env(safe-area-inset-right)
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      padding: env(safe-area-inset-top) env(safe-area-inset-right)
               env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow-x:hidden;
+
+      /* Scene background */
+      background:
+        /* dark overlay to keep text readable */
+        linear-gradient(180deg, rgba(5,7,11,.78), rgba(5,7,11,.86)),
+        /* subtle vignetting */
+        radial-gradient(900px 520px at 50% 10%, rgba(0,0,0,.10), transparent 60%),
+        radial-gradient(900px 520px at 50% 120%, rgba(0,0,0,.45), transparent 60%),
+        /* your image */
+        url("https://gameinfo.daraempire.com/wp-content/uploads/2024/12/Battle-at-Delco-Towers-2.png");
+
+      background-repeat: no-repeat;
+      background-position: center top;
+      background-size: cover;
+      background-attachment: fixed; /* nice on desktop */
     }
+
+    a { color: inherit; text-decoration: none; }
     .wrap{
-      max-width:960px;
-      margin:0 auto;
-      padding:16px 14px 28px;
+      max-width: var(--maxW);
+      margin: 0 auto;
+      padding: 16px 14px 40px;
     }
+
+    /* ---------- TOPBAR ---------- */
     .topbar{
       display:flex;
       gap:10px;
-      margin-bottom:12px;
+      align-items:center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .navLeft{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
     }
     .pill{
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:rgba(12,16,30,.7);
-      color:var(--text);
-      text-decoration:none;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:9px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(80,100,160,.25);
+      background: rgba(12,16,30,.55);
+      box-shadow: 0 10px 18px rgba(0,0,0,.22);
+      color: var(--text);
       cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
     }
+    .pill:hover{
+      transform: translateY(-1px);
+      border-color: rgba(110,231,255,.30);
+      background: rgba(16,22,44,.62);
+    }
+    .badge{
+      font-size:12px;
+      color: #c6f0ff;
+      border: 1px solid rgba(110,231,255,.25);
+      background: rgba(20,30,60,.25);
+      padding: 4px 9px;
+      border-radius: 999px;
+      letter-spacing:.2px;
+      white-space: nowrap;
+    }
+
+    /* ---------- HERO ---------- */
+    .hero{
+      position: relative;
+      border-radius: var(--radius2);
+      border: 1px solid rgba(110,231,255,.18);
+      background: var(--glass);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      padding: 18px;
+    }
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:
+        radial-gradient(800px 520px at 10% 0%, rgba(110,231,255,.12), transparent 50%),
+        radial-gradient(700px 520px at 90% 20%, rgba(167,139,250,.10), transparent 50%),
+        linear-gradient(180deg, rgba(255,255,255,.06), transparent 35%);
+      pointer-events:none;
+    }
+    .heroGrid{
+      position:relative;
+      display:grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    @media (max-width: 900px){
+      .heroGrid{ grid-template-columns: 1fr; }
+    }
+
     .title{
-      font-size:22px;
-      margin:10px 0 6px;
+      font-size: 30px;
+      line-height: 1.12;
+      margin: 0 0 6px;
+      letter-spacing: .3px;
     }
-    .sub{
-      color:var(--muted);
-      margin-bottom:16px;
+    .subtitle{
+      color: var(--muted);
+      margin: 0 0 12px;
+      max-width: 70ch;
+      line-height: 1.5;
+    }
+
+    .ctaRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border:1px solid rgba(110,231,255,.18);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      box-shadow: var(--shadow2);
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(110,231,255,.35);
+      background: rgba(0,0,0,.32);
+    }
+    .btn.primary{
+      border-color: rgba(110,231,255,.30);
+      background: linear-gradient(180deg, rgba(110,231,255,.14), rgba(0,0,0,.28));
+    }
+    .btn .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(110,231,255,.10);
+    }
+
+    /* ---------- HERO SIDE PANEL ---------- */
+    .sidePanel{
+      position:relative;
+      border-radius: var(--radius);
+      border: 1px solid rgba(80,100,160,.20);
+      background: rgba(0,0,0,.22);
+      padding: 12px;
+      overflow:hidden;
+    }
+    .sidePanel h3{
+      margin:0 0 8px;
+      font-size: 13px;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: #cfe9ff;
+    }
+    .miniGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 420px){
+      .miniGrid{ grid-template-columns: 1fr; }
+    }
+    .miniCard{
+      border-radius: 12px;
+      border: 1px solid rgba(120,140,200,.18);
+      background: rgba(0,0,0,.18);
+      padding: 10px;
+    }
+    .miniCard .k{
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .miniCard .v{
+      font-size: 14px;
+      line-height: 1.25;
+    }
+    .miniCard .v strong{
+      color:#eaffff;
+      font-weight: 650;
+    }
+
+    /* ---------- SECTION LAYOUT ---------- */
+    .section{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .panel{
+      border-radius: var(--radius2);
+      border: 1px solid rgba(80,100,160,.18);
+      background: rgba(0,0,0,.20);
+      box-shadow: 0 10px 22px rgba(0,0,0,.28);
+      overflow: hidden;
+    }
+    .panelHeader{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(80,100,160,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 80%);
+    }
+    .panelHeader h2{
+      margin:0;
+      font-size: 16px;
+      letter-spacing: .4px;
+    }
+    .panelHeader p{
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+      max-width: 90ch;
+    }
+    .panelBody{
+      padding: 14px;
+    }
+
+    /* ---------- RICH TEXT ---------- */
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    @media (max-width: 900px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+
+    .callout{
+      border-radius: var(--radius);
+      border: 1px solid rgba(110,231,255,.18);
+      background: linear-gradient(180deg, rgba(110,231,255,.08), rgba(0,0,0,.20));
+      padding: 12px;
+    }
+    .callout .head{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom: 8px;
+    }
+    .callout .head .icon{
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(110,231,255,.20);
+      background: rgba(0,0,0,.28);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 10px 16px rgba(0,0,0,.25);
+      flex-shrink:0;
+    }
+    .callout .head .icon span{
+      font-weight: 800;
+      color: #c6f0ff;
+      letter-spacing: .6px;
+    }
+    .callout h3{
+      margin:0;
+      font-size: 14px;
+      letter-spacing: .3px;
+    }
+    .callout p{
+      margin: 8px 0 0;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .muted { color: var(--muted); }
+
+    /* ---------- STEPS ---------- */
+    .steps{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .step{
+      display:flex;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(120,140,200,.16);
+      background: rgba(0,0,0,.18);
+    }
+    .step .num{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      border: 1px solid rgba(167,139,250,.25);
+      background: rgba(167,139,250,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 750;
+      color: #efeaff;
+      flex-shrink:0;
+    }
+    .step h4{
+      margin: 0 0 4px;
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+    .step p{
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* ---------- INLINE “PICTURE IN TEXT” ---------- */
+    .inlineSpell{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 3px 8px 3px 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(110,231,255,.18);
+      background: rgba(0,0,0,.20);
+      vertical-align: middle;
+      margin: 0 2px;
+      white-space: nowrap;
+    }
+    .inlineSpell img{
+      width: 22px; height: 22px;
+      border-radius: 7px;
+      border: 1px solid rgba(120,140,200,.22);
+      background: #000;
+    }
+    .inlineSpell b{
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: .2px;
+      color: #eaffff;
+    }
+
+    /* ---------- SPELL LIST ---------- */
+    .toolsRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
     }
     input[type="search"]{
       width:100%;
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.35);
-      color:var(--text);
-      margin-bottom:14px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(80,100,160,.22);
+      background: rgba(0,0,0,.28);
+      color: var(--text);
+      outline:none;
+      transition: border-color .12s ease, background .12s ease;
+    }
+    input[type="search"]:focus{
+      border-color: rgba(110,231,255,.32);
+      background: rgba(0,0,0,.32);
+    }
+
+    .spellGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (min-width: 900px){
+      .spellGrid{ grid-template-columns: 1fr 1fr; }
     }
     .spell{
       display:flex;
-      gap:12px;
-      border:1px solid rgba(80,100,160,.18);
-      background:rgba(0,0,0,.25);
-      border-radius:12px;
-      padding:10px;
-      margin-bottom:10px;
+      gap: 12px;
+      border: 1px solid rgba(80,100,160,.18);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 86px;
     }
     .spell img{
-      width:48px;
-      height:48px;
-      border-radius:8px;
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
       background:#000;
-      border:1px solid rgba(120,140,200,.25);
+      border:1px solid rgba(120,140,200,.22);
       flex-shrink:0;
+      box-shadow: 0 10px 16px rgba(0,0,0,.25);
     }
     .spell h3{
-      margin:0;
-      font-size:15px;
-      letter-spacing:.3px;
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: .25px;
     }
     .cost{
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:4px;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 3px 0 6px;
     }
     .desc{
-      line-height:1.35;
-      font-size:14px;
+      line-height: 1.45;
+      font-size: 13.5px;
+      color: #dbe7f2;
     }
     .tags{
-      margin-top:6px;
+      margin-top: 8px;
       display:flex;
       flex-wrap:wrap;
       gap:6px;
     }
     .tag{
-      font-size:12px;
-      padding:2px 8px;
-      border-radius:999px;
-      border:1px solid rgba(120,160,220,.25);
-      background:rgba(20,30,60,.25);
-      color:#c6f0ff;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(120,160,220,.22);
+      background: rgba(20,30,60,.22);
+      color: #c6f0ff;
+      letter-spacing: .2px;
     }
+
+    /* ---------- FOOTER ---------- */
+    .footer{
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align:center;
+      padding: 10px 0 0;
+    }
+
+    /* ---------- SMALL UX ---------- */
+    .anchorRow{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(80,100,160,.20);
+      background: rgba(0,0,0,.18);
+      color: #d7e6f3;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .chip:hover{
+      transform: translateY(-1px);
+      border-color: rgba(110,231,255,.28);
+    }
+
+    /* smooth anchor scrolling */
+    html { scroll-behavior: smooth; }
   </style>
 </head>
 
@@ -110,37 +502,290 @@
 <div class="wrap">
 
   <div class="topbar">
-    <a class="pill" href="index.html">← Login</a>
-    <a class="pill" href="game.html">↩ Game</a>
+    <div class="navLeft">
+      <a class="pill" href="index.html" title="Back to Login">← Login</a>
+      <a class="pill" href="game.html" title="Back to Game">↩ Game</a>
+      <span class="badge">Marina Station • Defense Protocol</span>
+    </div>
+    <a class="pill" href="#spells" title="Jump to Spells">Spells ↓</a>
   </div>
-  <div class="title">Dara Empire - Last Stand</div>
-      <div class="sub">Agent, the Marina Station is under siege — and you are the last line of defense.
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="heroGrid">
+      <div>
+        <h1 class="title">Dara Empire – Last Stand</h1>
+        <p class="subtitle">
+          Agent, Marina Station is under siege. Hostile forces advance without pause — and you are the last line of defense.
+          Your mission is simple to say, brutal to finish:
+          <span style="color:#eaffff;font-weight:650;">hold the station at all costs.</span>
+        </p>
+
+        <div class="anchorRow">
+          <a class="chip" href="#basics">⚡ Combat Basics</a>
+          <a class="chip" href="#teamplay">🤝 Team Play</a>
+          <a class="chip" href="#control">🌀 Crowd Control</a>
+          <a class="chip" href="#spells">📖 Spell Reference</a>
+        </div>
+
+        <div class="ctaRow">
+          <a class="btn primary" href="game.html"><span class="dot"></span>Return to Battle</a>
+          <a class="btn" href="#spells">Open Spellbook</a>
+        </div>
       </div>
-      <div class="sub">Hostile forces will advance relentlessly. Your mission is simple to state, but brutal to execute: hold the station at all costs.</div>
 
+      <div class="sidePanel">
+        <h3>Quick Loadout</h3>
+        <div class="miniGrid">
+          <div class="miniCard">
+            <div class="k">Targeting</div>
+            <div class="v">Click a <strong>mob</strong> to lock target.</div>
+          </div>
+          <div class="miniCard">
+            <div class="k">Hotkeys</div>
+            <div class="v">Use <strong>1–9</strong> for fast actions.</div>
+          </div>
+          <div class="miniCard">
+            <div class="k">Priority</div>
+            <div class="v"><strong>Mez</strong> threats, then focus fire.</div>
+          </div>
+          <div class="miniCard">
+            <div class="k">Multiplayer</div>
+            <div class="v">Allies may <strong>join anytime</strong>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <div class="sub">To engage the enemy, click directly on a mob to target it. Once locked, unleash your abilities — shooting, skills, and tactical actions — using hotkeys 1–9 for fast execution. Speed and precision matter. Hesitation gets people killed.</div>
+  <!-- CONTENT -->
+  <div class="section">
 
-    <div class="sub">This is a multiplayer battlefield.</div>
-    <div class="sub">You are not alone — and you won’t always stay that way. New Agents can join the fight at any moment, turning the tide when things look darkest. Coordinate, adapt, and cover each other’s weaknesses.</div>
+    <!-- BASICS -->
+    <div id="basics" class="panel">
+      <div class="panelHeader">
+        <h2>Combat Basics</h2>
+        <p>
+          The station corridors are tight, the enemy is fast, and your time is always limited.
+          Fight smart: lock targets quickly, use hotkeys, and keep pressure where it matters.
+        </p>
+      </div>
+      <div class="panelBody">
+        <div class="grid2">
+          <div class="callout">
+            <div class="head">
+              <div class="icon"><span>01</span></div>
+              <h3>Acquire a target</h3>
+            </div>
+            <p>
+              Click directly on a mob to target it. Once locked, you can use actions immediately —
+              especially
+              <span class="inlineSpell">
+                <img id="inline_shoot_1" alt="Shoot">
+                <b>Shoot</b>
+              </span>
+              and
+              <span class="inlineSpell">
+                <img id="inline_attack_1" alt="Attack">
+                <b>Attack</b>
+              </span>
+              .
+            </p>
+            <p class="muted" style="margin-top:8px;">
+              Tip: If you lose track, re-click the mob. Don’t “hunt” for UI — hunt the target.
+            </p>
+          </div>
 
-    <div class="sub">Crowd control saves lives.</div>
-    <div class="sub">Do not underestimate the Mezz command. A mezzed enemy is a neutralized threat — buying precious seconds, stopping incoming damage, and giving your team room to recover or focus fire. Used well, mezz can decide the outcome of the entire defense.</div>
+          <div class="callout">
+            <div class="head">
+              <div class="icon"><span>02</span></div>
+              <h3>Execute fast</h3>
+            </div>
+            <p>
+              Your core actions are designed for speed. Use <b>hotkeys 1–9</b> to fire abilities instantly.
+              When things get chaotic, the Agent who acts first often wins.
+            </p>
+            <p class="muted" style="margin-top:8px;">
+              If you’re low on resources, rotate in
+              <span class="inlineSpell">
+                <img id="inline_defend_1" alt="Defend">
+                <b>Defend</b>
+              </span>
+              to buy time.
+            </p>
+          </div>
+        </div>
 
-    <div class="sub">Stand your ground.</div>
-    <div class="sub">Control the battlefield.</div>
-    <div class="sub">Protect the Marina Station.</div>
+        <div style="height:12px"></div>
 
-    <div class="sub">The station holds — if you do.</div>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <div>
+              <h4>Lock a mob</h4>
+              <p>Click an enemy to select it. Your next action will apply to that target.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <div>
+              <h4>Strike with purpose</h4>
+              <p>Open with damage or control depending on threat level (boss, caster, fast mover).</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <div>
+              <h4>Stabilize the line</h4>
+              <p>Use healing and defense if allies are pressured. Keep the station alive, not your ego.</p>
+            </div>
+          </div>
+        </div>
 
+      </div>
+    </div>
 
-  <div class="title">Dara – Spells & Actions</div>
-  <div class="sub">Reference for abilities, costs, and effects.</div>
+    <!-- TEAMPLAY -->
+    <div id="teamplay" class="panel">
+      <div class="panelHeader">
+        <h2>Team Play</h2>
+        <p>
+          This is a multiplayer battlefield. Reinforcements can arrive at any moment — and your best defense is coordination.
+          Help arriving Agents get oriented quickly: call targets, call crowd control, and keep the team alive.
+        </p>
+      </div>
+      <div class="panelBody">
+        <div class="grid2">
+          <div class="callout">
+            <div class="head">
+              <div class="icon"><span>⚑</span></div>
+              <h3>Focus fire</h3>
+            </div>
+            <p>
+              Pick one threat and delete it. A half-dead mob still deals full damage.
+              Combine
+              <span class="inlineSpell">
+                <img id="inline_fireball_1" alt="Fireball">
+                <b>Fireball</b>
+              </span>
+              with team pressure to collapse the enemy push.
+            </p>
+          </div>
 
-  <input id="q" type="search" placeholder="Search spells…" />
+          <div class="callout">
+            <div class="head">
+              <div class="icon"><span>✚</span></div>
+              <h3>Keep allies standing</h3>
+            </div>
+            <p>
+              When someone drops, seconds matter. Use
+              <span class="inlineSpell">
+                <img id="inline_heal_1" alt="Heal">
+                <b>Heal</b>
+              </span>
+              to stabilize and
+              <span class="inlineSpell">
+                <img id="inline_revive_1" alt="Revive">
+                <b>Revive</b>
+              </span>
+              to bring them back into the fight.
+            </p>
+            <p class="muted" style="margin-top:8px;">
+              A revived ally is fragile — protect them briefly so they can re-engage.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div id="list"></div>
+    <!-- CONTROL -->
+    <div id="control" class="panel">
+      <div class="panelHeader">
+        <h2>Crowd Control</h2>
+        <p>
+          Crowd control saves lives. Done right, it stops incoming damage, creates breathing room, and turns a wipe into a win.
+          If you learn only one “advanced” move: learn mezz.
+        </p>
+      </div>
+      <div class="panelBody">
+        <div class="grid2">
+          <div class="callout">
+            <div class="head">
+              <div class="icon"><span>🌀</span></div>
+              <h3>Mezmerize is your panic button</h3>
+            </div>
+            <p>
+              Use
+              <span class="inlineSpell">
+                <img id="inline_mez_1" alt="Mezmerize">
+                <b>Mezmerize</b>
+              </span>
+              to neutralize a target temporarily. A mezzed enemy is a paused threat —
+              it buys seconds for healing, repositioning, or deleting something more dangerous.
+            </p>
+            <p class="muted" style="margin-top:8px;">
+              Use mez on the biggest threat you’re not focusing right now.
+            </p>
+          </div>
 
+          <div class="callout">
+            <div class="head">
+              <div class="icon"><span>⎋</span></div>
+              <h3>Extraction protocols</h3>
+            </div>
+            <p>
+              If it all collapses, you still have options.
+              <span class="inlineSpell">
+                <img id="inline_evac_1" alt="Evac">
+                <b>Evac</b>
+              </span>
+              is the emergency lever. Use it when survival is impossible and regrouping is the only play.
+            </p>
+            <p class="muted" style="margin-top:8px;">
+              Evac is not “giving up.” It’s saving the mission when the line is broken.
+            </p>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="callout">
+          <div class="head">
+            <div class="icon"><span>★</span></div>
+            <h3>Final orders</h3>
+          </div>
+          <p style="margin:0;">
+            Stand your ground. Control the battlefield. Protect the Marina Station.
+          </p>
+          <p class="muted" style="margin:8px 0 0;">
+            The station holds — if you do.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPELLS -->
+    <div id="spells" class="panel">
+      <div class="panelHeader">
+        <h2>Spellbook & Actions</h2>
+        <p>
+          Quick reference for abilities, costs, and effects. Search by name, tag (e.g. “cc”, “heal”), or description.
+        </p>
+      </div>
+      <div class="panelBody">
+        <div class="toolsRow">
+          <input id="q" type="search" placeholder="Search spells… (e.g. mezz, heal, ranged, defense)" />
+        </div>
+
+        <div id="list" class="spellGrid"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Dara Empire • Help Console • “Last Stand” defense protocol
+    </div>
+
+  </div>
 </div>
 
 <script>
@@ -161,28 +806,46 @@ const MEDIA = {
   }
 };
 
-/* ---------- SPELL DATA ---------- */
+/* ---------- SPELL DATA (tweaked text to be clearer + more “gamey”) ---------- */
 const SPELLS = [
-  { id:"attack", name:"Attack", cost:"Energy 10", desc:"Basic melee attack dealing reliable damage.", tags:["melee","damage"] },
-  { id:"defend", name:"Defend", cost:"Energy 10", desc:"Raises defenses and reduces incoming damage.", tags:["defense","buff"] },
-  { id:"fireball", name:"Fireball", cost:"Mana 10", desc:"Ranged fire spell. May apply Burning.", tags:["fire","ranged","damage"] },
-  { id:"mezmerize", name:"Mezmerize", cost:"Mana 10", desc:"Attempts to disable a target temporarily.", tags:["cc","control"] },
-  { id:"heal", name:"Heal", cost:"Mana 10", desc:"Restores HP to a friendly target.", tags:["heal","support"] },
-  { id:"revive", name:"Revive", cost:"Energy 10", desc:"Revives a fallen ally with low HP.", tags:["support"] },
-  { id:"evac", name:"Evac", cost:"Cost 0", desc:"Emergency extraction from combat.", tags:["escape"] },
-  { id:"talk", name:"Talk", cost:"Cost 0", desc:"Non-combat interaction.", tags:["social"] },
-  { id:"usepotion", name:"Use Potion", cost:"Cost 0", desc:"Consumes one potion to restore resources.", tags:["consumable"] },
-  { id:"shoot", name:"Shoot", cost:"Energy 10", desc:"Ranged physical attack.", tags:["ranged","damage"] }
+  { id:"attack", name:"Attack", cost:"Energy 10", desc:"Close-range strike. Reliable damage when you’re in position.", tags:["melee","damage"] },
+  { id:"shoot", name:"Shoot", cost:"Energy 10", desc:"Ranged physical shot. Fast pressure from a safer distance.", tags:["ranged","damage"] },
+  { id:"defend", name:"Defend", cost:"Energy 10", desc:"Brace and harden armor. Reduces incoming damage for a short time.", tags:["defense","buff"] },
+  { id:"fireball", name:"Fireball", cost:"Mana 10", desc:"Ranged fire burst. Strong single-target damage; may apply Burning.", tags:["fire","ranged","damage"] },
+  { id:"mezmerize", name:"Mezmerize", cost:"Mana 10", desc:"Crowd control. Temporarily disables a target to stop its threat.", tags:["cc","control"] },
+  { id:"heal", name:"Heal", cost:"Mana 10", desc:"Restore HP to an ally. Keeps the line stable under pressure.", tags:["heal","support"] },
+  { id:"revive", name:"Revive", cost:"Energy 10", desc:"Bring back a fallen ally with low HP. Protect them while they recover.", tags:["support","recovery"] },
+  { id:"usepotion", name:"Use Potion", cost:"Cost 0", desc:"Consume one potion to restore resources. Use between spikes of damage.", tags:["consumable","utility"] },
+  { id:"talk", name:"Talk", cost:"Cost 0", desc:"Non-combat interaction. Use for NPC/dialog actions when available.", tags:["social","utility"] },
+  { id:"evac", name:"Evac", cost:"Cost 0", desc:"Emergency extraction. Use when the defense line is collapsing.", tags:["escape","utility"] }
 ];
 
 const list = document.getElementById("list");
 const q = document.getElementById("q");
 
+/* ---------- Inline “pictures within text” wiring ---------- */
+function setInline(id, key){
+  const img = document.getElementById(id);
+  if(!img) return;
+  img.src = MEDIA.images[key] || MEDIA.images.dead;
+}
+setInline("inline_shoot_1","shoot");
+setInline("inline_attack_1","attack");
+setInline("inline_defend_1","defend");
+setInline("inline_fireball_1","fireball");
+setInline("inline_heal_1","heal");
+setInline("inline_revive_1","revive");
+setInline("inline_mez_1","mezmerize");
+setInline("inline_evac_1","evac");
+
+/* ---------- Render spells ---------- */
 function render(filter=""){
   list.innerHTML="";
-  const f = filter.toLowerCase();
+  const f = (filter||"").trim().toLowerCase();
+
+  // keep stable order but allow tag/name match
   SPELLS.forEach(s=>{
-    const blob = (s.id+s.name+s.desc+s.cost+(s.tags||[]).join(" ")).toLowerCase();
+    const blob = (s.id+" "+s.name+" "+s.desc+" "+s.cost+" "+(s.tags||[]).join(" ")).toLowerCase();
     if(f && !blob.includes(f)) return;
 
     const el = document.createElement("div");
@@ -199,6 +862,19 @@ function render(filter=""){
       </div>`;
     list.appendChild(el);
   });
+
+  if(!list.children.length){
+    const empty = document.createElement("div");
+    empty.className = "spell";
+    empty.innerHTML = `
+      <img src="${MEDIA.images.dead}" alt="No results">
+      <div>
+        <h3>No matches</h3>
+        <div class="cost">Try: mezz, heal, damage, defense, utility</div>
+        <div class="desc">Search checks names, tags, costs, and descriptions.</div>
+      </div>`;
+    list.appendChild(empty);
+  }
 }
 
 q.addEventListener("input", ()=>render(q.value));
@@ -206,3 +882,4 @@ render();
 </script>
 </body>
 </html>
+

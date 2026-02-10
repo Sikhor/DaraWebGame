@@ -1,0 +1,10 @@
+pls fill in the following values for the mobs
+1.) speed should be 1+(wave/3) minimum 1.5 at Normal difficulty
+2.) speed should be wave/6 minimum 0.5 at Boss difficulty
+3.) maxHP should be a 20+(wave*10) at normal mobs
+4.) maxHP should be  100+(wave*10) at boss mobs
+5.) baseDamage should be 5+wave at normal mobs
+6.) baseDamage should be 10+(4*wave) at boss mobs
+7.) baseDefense should be like wave at normal mobs
+8.) baseDefense should be wave*10 at boss mobs
+

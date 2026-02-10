@@ -1,0 +1,48 @@
+/* small.css */
+/* =========================
+   COMPACT TOPBAR (PHONES)
+   ========================= */
+@media (max-width: 932px){
+
+  :root{
+    --topbarH: 40px;
+    --gap: 6px;
+
+    --uiFont: 12px;
+    --uiFontSmall: 11px;
+    --uiFontTiny: 10px;
+    --actionTipFont: 9px; /* keep */
+
+  }
+
+  .panelHeader{
+    padding: 6px 8px;
+  }
+
+  /* topbar compact stays */
+  .topbar{
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .title{
+    font-size: 13px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  #turnBadge,
+  #gameBadge{
+    display: none;
+  }
+
+  .badge{
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .btnTop{
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+}

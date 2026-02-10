@@ -273,6 +273,20 @@
       cursor: pointer;
     }
 
+    .dara-btn{
+      width: auto;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #2a3340;
+      background: rgba(10,14,20,0.6);
+      color: #e6e6e6;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+
+
     .reset-login-btn:active{
       transform: translateY(1px);
     }
@@ -615,8 +629,8 @@
 }
 
 .avatar-mini-btn{
-  width: 64px;
-  height: 64px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border-radius: 10px;
   border: 1px solid rgba(120,140,200,0.25);
@@ -815,7 +829,7 @@
       <div class="chat-msg control">
         <img class="chat-avatar" src="https://gameinfo.daraempire.com/wp-content/uploads/2026/01/MSAgent-Christi-300x300.jpg">
         <div class="chat-body">
-          Logged in as: <span id="whoAmI" style="color:#fff"></span>
+          Choose from your Agent reservoir ...<span id="whoAmI" style="color:#fff"></span>
         </div>
       </div>
     </div>
@@ -841,22 +855,28 @@
               type="text"
               placeholder="CharacterName (e.g. Arikara-296)"
               maxlength="20"
-              style="flex:1; height:64px; border-radius:10px; border:1px solid #2a3340;
+              style="flex:1; height:42px; border-radius:10px; border:1px solid #2a3340;
                       background: rgba(10,14,20,0.6); color:#e6e6e6; padding:0 12px; outline:none;" />
-        <button id="btnCreateChar" class="reset-login-btn" type="button" style="margin-top:0;flex:1;height:64px;">
+        <button id="btnCreateChar" class="reset-login-btn" type="button" style="margin-top:0;flex:1;height:42px;">
           Create Agent
         </button>
       </div>
     </div>
     <div class="char-actions-row">
-      <button id="btnBestLists" class="reset-login-btn" type="button" style="margin-top:10px;">
-        Leaderboards (Weekly / Overall)
+      <button id="btnBestLists" class="dara-btn" type="button" style="margin-top:10px;">
+        Leaderboards
+      </button>
+      <button id="btnHelp2" class="dara-btn" type="button" onclick="openHelp()" style="margin-top:10px;">
+        Help
+      </button>
+      <button id="btnImprint2" class="dara-btn" type="button" onclick="openImprint()" style="margin-top:10px;">
+        Legal Notice
+      </button>
+      <button id="btnBackToLogin" class="dara-btn" type="button" style="margin-top:10px;">
+        Logout
       </button>
     </div>
 
-    <button id="btnBackToLogin" class="reset-login-btn" type="button" style="margin-top:10px;">
-      Logout / Switch account
-    </button>
   </div>
 </div>
 <!-- End Character list overlay -->
@@ -1269,7 +1289,8 @@
     showCharacterSelect();
 
     const who = document.getElementById("whoAmI");
-    who.textContent = localStorage.getItem("playerName") || "Unknown";
+    // not needed atm as not working 
+    // who.textContent = localStorage.getItem("playerName") || "Unknown";
 
     try{
       const data = await apiGetCharacters();

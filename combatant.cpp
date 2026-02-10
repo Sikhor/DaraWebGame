@@ -1,5 +1,6 @@
 #include "combatant.h"
-
+#include "ServerOptions.h"
+extern ServerOptions g_options;
 
 float GetRandomFloat(float min, float max)
 {
@@ -141,10 +142,15 @@ void Combatant::MobAttack(CombatantPtr target)
     if(!IsAlive())return;
     if(MezzCounter>0)return;
     float dmg= 0.f;
+    float nearRangeDmg;
 
     dmg = GetRandomDamage();
+    // dmg + if the mob is near to the last lane
+    nearRangeDmg= static_cast<float>(Lane/MAXLANES)*dmg;
+    dmg += nearRangeDmg;
     dmg-= target->GetCurrentDefense();
     target->ApplyDamage(dmg);
+    if(DARA_DEBUG_COMBAT)DaraLog("COMBAT", GetName()+ " Lane: "+std::to_string(Lane)+" NearRngDmg: "+std::to_string(nearRangeDmg) +" attacks with: "+std::to_string(dmg));
 }
 
 
@@ -234,11 +240,12 @@ void Combatant::ReceiveBurned()
 void Combatant::Heal(CombatantPtr target)
 {
     if(!IsAlive())return;
-    float healamount = 100.f;
+    float healamount = 100.f+BaseDamage;
     if (Mana > SPELLCOST) {
         //healamount = GetRandomDamage();
         ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
         target->ApplyHeal(healamount);
+        DaraLog("COMBAT", GetName()+" heals "+target->GetName()+ " for "+std::to_string(healamount));
     }
 
 }
@@ -330,10 +337,39 @@ json Combatant::ToJson() const
     return j;
 }
 
+void Combatant::CalcPos()
+{
+    float variation = 0.02f; // 2%
+    float jittery = GetRandomFloat(-variation, variation);
+    variation= 0.08f; //8%
+    float jitterx = GetRandomFloat(-variation, variation);
+
+    if(PosY<0.f) PosY = std::clamp((Lane+ 0.5f) / MAXLANES, 0.2f,0.8f);
+    if(PosX<0.f) PosX = (Slot + 0.5f) / MAXSLOTS;
+
+    if (!IsMezzed()) {
+        if(g_options.noMobJitter==false){
+            PosX += jitterx;
+            PosY += jittery;
+        }
+    }
+
+    // optional safety clamp
+    PosY = std::clamp(PosY, 0.0f, 1.0f);
+    PosX = std::clamp(PosX, 0.0f, 1.0f);
+}
 void Combatant::SetLane(int lane, int slot)
 {
     Lane = lane;
     Slot = slot;
+    CalcPos();
+}
+int Combatant::Move()
+{
+    Lane= static_cast<int>(CurrentField);
+    PosY = std::clamp((Lane+ 0.5f) / MAXLANES, 0.2f,0.8f);
+    CalcPos();
+    return Lane;
 }
 
 bool Combatant::ShouldMove()
@@ -341,7 +377,7 @@ bool Combatant::ShouldMove()
     if(MezzCounter>0)return false;
 
     CurrentField+=Speed;
-    return CurrentField>(Lane+1) && Lane<MAXLANES && MezzCounter<1;
+    return CurrentField>(Lane+1) && Lane<MAXLANES;
 }
 
 bool Combatant::ShouldAttack()
@@ -566,7 +602,7 @@ float Combatant::GetCurrentDefense() const
         CurrentDefense-= DEBUFF_VALUE_BURNED;
         CurrentDefense= std::clamp(CurrentDefense, 0.f, 10000000.f);
     }
-    DaraLog("COMBAT", GetName()+ " current Defense: "+std::to_string(CurrentDefense));
+    if(DARA_DEBUG_MOBCOMBAT) DaraLog("COMBAT", GetName()+ " current Defense: "+std::to_string(CurrentDefense));
     return CurrentDefense;
 }
 
@@ -583,3 +619,14 @@ void Combatant::AddCondition(ECondition c)
     if (c == ECondition::None) return;
     Conditions.insert(c);
 }
+
+float Combatant::GetX() const
+{
+    return PosX;
+}
+
+float Combatant::GetY() const
+{
+    return PosY;
+}
+

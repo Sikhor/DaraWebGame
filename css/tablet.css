@@ -1,0 +1,61 @@
+/* tablet.css */
+
+/* “mobile” layout breakpoint */
+@media (max-width: 900px){
+  :root{
+    --gap: 8px;
+    --sceneMinH: 240px;
+    --mobCardSize: 58px;
+    --mobImgSize: 36px;
+
+    /* mobile-ish widths */
+    --partyW: 34%;
+    --encW: 66%;
+    
+    --sceneMinH: 240px;
+    --mobCardSize: 58px;
+    --mobImgSize: 36px;
+  }
+  .hudBar{ flex-wrap: wrap; }
+  .chat-input{ min-width: 160px; }
+
+  /* Optional: if party still too wide on small phones */
+  .partyPanel{ max-height: var(--partyMaxHMobile); 
+  }
+
+  .partyPanel{
+    max-height: var(--partyMaxHMobile);
+    min-height: 0;
+  }
+
+  .hudBar{ flex-wrap: wrap; }
+  .chat-input{ min-width: 160px; }
+}
+
+/* iPad/tablet landscape */
+@media (orientation: landscape) and (max-width: 1024px){
+  :root{
+    --gap: 6px;
+    --sceneMinH: 220px;
+    --mobCardSize: 58px;
+    --mobImgSize: 32px;
+  }
+
+  .partyPanel{ max-height: none; }
+  .panelHeader{ padding: 6px 10px; font-size: 10px; }
+  .panelHeader .sub{ font-size: 11px; }
+  .lanes{ padding: 6px; }
+  .hudBar{ flex-wrap: nowrap; }
+
+  .chat-input{ min-width: 0; height: 32px; font-size: 13px; }
+  .target-input{ width: 95px; height: 32px; font-size: 12px; }
+
+  .actions{ grid-auto-columns: 40px; gap: 6px; }
+  .action-btn{ width: 40px; height: 40px;}
+  .action-btn img{ width: 24px; height: 24px; }
+}
+
+/* Rotate hint on portrait */
+@media (orientation: portrait){
+  #rotateHint{ display: flex; }
+}

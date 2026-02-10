@@ -691,7 +691,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
     std::string logMsg;
     for (const auto& a : actions)
     {
-        //DaraLog("DEBUG", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
+        DaraLog("DEBUG", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
         outTurnLog.push_back(a.playerName + " does: " + a.actionId + " (" + a.actionMsg + ")");
             std::string logMsg;
 
@@ -1063,7 +1063,7 @@ void CombatDirector::ResolveMobAttacks()
             // slot in current lane frei machen
             FilledSlotArray[mob->GetLane()][slot] = false;
 
-            mob->SetLane(nextLane, slot);
+            mob->Move();
 
             // slot in next lane belegen
             FilledSlotArray[nextLane][slot] = true;
@@ -1178,7 +1178,8 @@ CombatDirector::json CombatDirector::GetLogTailJson(size_t lastN) const
 }
 
 
-json CombatDirector::GetUIStateSnapshotJsonLocked(const std::string playerName) const
+json CombatDirector::GetUIStateSnapshotJsonLocked(
+    const std::string playerName, const std::string characterId, const std::string characterName) const
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
 
@@ -1215,6 +1216,8 @@ json CombatDirector::GetUIStateSnapshotJsonLocked(const std::string playerName) 
     uiJson["gameOverReason"] = GameOverReason;
     uiJson["infoMsg"]= InfoMsg;
     uiJson["playerName"]= playerName;
+    uiJson["characterName"]= characterName;
+    uiJson["characterId"]= characterId;
 
     if (isGameOver)
     {

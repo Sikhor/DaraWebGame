@@ -32,7 +32,7 @@ inline constexpr float DEBUFF_VALUE_BURNED= 10000000.f;
 inline constexpr float DAMAGE_VALUE_BURNED= 10.f;
 
 inline constexpr int MAXSLOTS=6;
-inline constexpr int MAXLANES=10;
+inline constexpr int MAXLANES=30;
 
 inline constexpr float STAT_MOB_SPEED= 0.5f;
 
@@ -171,6 +171,8 @@ protected:
 
     int Lane = 0; // 0=Short,1=Medium,2=Long
     int Slot = 0; // 0-MAXSLOTS allowed
+    float PosX=-1.f; //will then be calculated if <0
+    float PosY=-1.f; //will then be calculated if <0
     bool Active=true;
     std::string AvatarId="MSAgent-Soldorn";
     std::string MobClass="MSAgent-Soldorn";
@@ -221,6 +223,7 @@ protected:
     void AddCondition(ECondition c);
     void RemoveCondition(ECondition c){Conditions.erase(c);}
     void ClearConditions(){Conditions.clear();}
+    void CalcPos();
 
 public:
     Combatant(const std::string& name, ECombatantType type);
@@ -279,6 +282,8 @@ public:
     void SetLane(int lane, int slot);
     int GetLane() const { return Lane; }
     int GetSlot() const { return Slot; }
+    float GetX() const;
+    float GetY() const;
 
     std::string GetAvatarId() const { return AvatarId; }    
     void SetAvatarId(std::string avatarId) { AvatarId=avatarId; }   
@@ -289,6 +294,7 @@ public:
     std::string GetName() const;
 
     bool ShouldMove();
+    int Move();
     bool ShouldAttack();
     bool IsMezzed() const {return MezzCounter>0;}
     bool IsBurned() const {return BurnedCounter>0;}

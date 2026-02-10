@@ -29,13 +29,17 @@ bool MobTemplateStore::LoadFromFile(const std::string& path, std::string* err)
             t.mobClass    = m.at("mobClass").get<std::string>();
             t.attackType  = ParseAttackType(m.at("attackType").get<std::string>());
             t.difficulty  = ParseDifficulty(m.at("difficulty").get<std::string>());
-            t.speed       = m.at("speed").get<float>();
             t.wave        = m.at("wave").get<int>();
             t.maxHP       = m.at("maxHP").get<int>();
             t.maxEnergy   = m.at("maxEnergy").get<int>();
             t.maxMana     = m.at("maxMana").get<int>();
             t.baseDamage  = m.at("baseDamage").get<int>();
             t.baseDefense = m.at("baseDefense").get<int>();
+            if(t.difficulty==ECombatantDifficulty::Normal && GetRandomFloat(0.f,10.f)>8.f){
+                t.speed       = 2.f * m.at("speed").get<float>();
+            }else{
+                t.speed       = m.at("speed").get<float>();
+            }
 
             // store
             Templates[t.id] = t;

@@ -8,11 +8,11 @@
       "mobClass": "Spider",
       "difficulty": "Normal",
       "attackType": "Spider",
-      "speed": 0.2,
+      "speed": 1.0,
       "maxHP": 30,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 2,
+      "baseDamage": 6,
       "baseDefense": 1
     },
     {
@@ -23,10 +23,10 @@
       "difficulty": "Boss",
       "attackType": "Spider",
       "speed": 0.2,
-      "maxHP": 500,
+      "maxHP": 110,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 4,
+      "baseDamage": 14,
       "baseDefense": 10
     },
     {
@@ -40,8 +40,8 @@
       "maxHP": 110,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 14,
+      "baseDefense": 10
     },
     {
       "wave": 2,
@@ -50,12 +50,12 @@
       "mobClass": "Insect",
       "difficulty": "Normal",
       "attackType": "Insect",
-      "speed": 0.8,
+      "speed": 1.0,
       "maxHP": 40,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 7,
+      "baseDefense": 2
     },
     {
       "wave": 2,
@@ -64,12 +64,12 @@
       "mobClass": "Yesti",
       "difficulty": "Boss",
       "attackType": "Spider",
-      "speed": 0.8,
-      "maxHP": 40,
+      "speed": 0.3333,
+      "maxHP": 120,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 18,
+      "baseDefense": 20
     },
     {
       "wave": 3,
@@ -78,12 +78,12 @@
       "mobClass": "Snapi",
       "difficulty": "Normal",
       "attackType": "Insect",
-      "speed": 0.8,
+      "speed": 1.0,
       "maxHP": 50,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 8,
+      "baseDefense": 3
     },
     {
       "wave": 3,
@@ -92,12 +92,12 @@
       "mobClass": "Kinora",
       "difficulty": "Boss",
       "attackType": "Insect",
-      "speed": 0.2,
-      "maxHP": 120,
+      "speed": 0.5,
+      "maxHP": 130,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 22,
+      "baseDefense": 30
     },
     {
       "wave": 4,
@@ -106,12 +106,12 @@
       "mobClass": "Catorn",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
+      "speed": 1.3333,
       "maxHP": 60,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 9,
+      "baseDefense": 4
     },
     {
       "wave": 4,
@@ -120,12 +120,12 @@
       "mobClass": "Franka",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 130,
+      "speed": 0.6667,
+      "maxHP": 140,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 10,
-      "baseDefense": 2
+      "baseDamage": 26,
+      "baseDefense": 40
     },
     {
       "wave": 5,
@@ -134,12 +134,12 @@
       "mobClass": "Brolla",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
+      "speed": 1.6667,
       "maxHP": 70,
       "maxEnergy": 100,
       "maxMana": 0,
-      "baseDamage": 5,
-      "baseDefense": 1
+      "baseDamage": 10,
+      "baseDefense": 5
     },
     {
       "wave": 5,
@@ -148,12 +148,12 @@
       "mobClass": "Chicka",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 140,
+      "speed": 0.8333,
+      "maxHP": 150,
       "maxEnergy": 180,
       "maxMana": 20,
-      "baseDamage": 7,
-      "baseDefense": 2
+      "baseDamage": 30,
+      "baseDefense": 50
     },
     {
       "wave": 6,
@@ -162,12 +162,12 @@
       "mobClass": "Kornrex",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
+      "speed": 2.0,
       "maxHP": 80,
       "maxEnergy": 150,
       "maxMana": 200,
-      "baseDamage": 10,
-      "baseDefense": 5
+      "baseDamage": 11,
+      "baseDefense": 6
     },
     {
       "wave": 6,
@@ -176,12 +176,12 @@
       "mobClass": "Banoreth",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 150,
+      "speed": 1.0,
+      "maxHP": 160,
       "maxEnergy": 150,
       "maxMana": 200,
-      "baseDamage": 10,
-      "baseDefense": 5
+      "baseDamage": 34,
+      "baseDefense": 60
     },
     {
       "wave": 7,
@@ -190,12 +190,12 @@
       "mobClass": "X200",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 95,
+      "speed": 2.3333,
+      "maxHP": 90,
       "maxEnergy": 170,
       "maxMana": 10,
       "baseDamage": 12,
-      "baseDefense": 6
+      "baseDefense": 7
     },
     {
       "wave": 7,
@@ -204,12 +204,12 @@
       "mobClass": "X201",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 105,
+      "speed": 2.3333,
+      "maxHP": 90,
       "maxEnergy": 175,
       "maxMana": 15,
-      "baseDamage": 13,
-      "baseDefense": 6
+      "baseDamage": 12,
+      "baseDefense": 7
     },
     {
       "wave": 7,
@@ -218,14 +218,13 @@
       "mobClass": "AgentArgo",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 210,
+      "speed": 1.1667,
+      "maxHP": 170,
       "maxEnergy": 240,
       "maxMana": 60,
-      "baseDamage": 16,
-      "baseDefense": 10
+      "baseDamage": 38,
+      "baseDefense": 70
     },
-
     {
       "wave": 8,
       "id": "X220",
@@ -233,12 +232,12 @@
       "mobClass": "X220",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 120,
+      "speed": 2.6667,
+      "maxHP": 100,
       "maxEnergy": 190,
       "maxMana": 20,
-      "baseDamage": 14,
-      "baseDefense": 7
+      "baseDamage": 13,
+      "baseDefense": 8
     },
     {
       "wave": 8,
@@ -247,12 +246,12 @@
       "mobClass": "X304",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 130,
+      "speed": 2.6667,
+      "maxHP": 100,
       "maxEnergy": 200,
       "maxMana": 25,
-      "baseDamage": 15,
-      "baseDefense": 7
+      "baseDamage": 13,
+      "baseDefense": 8
     },
     {
       "wave": 8,
@@ -261,14 +260,13 @@
       "mobClass": "AgentLornt",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 240,
+      "speed": 1.3333,
+      "maxHP": 180,
       "maxEnergy": 260,
       "maxMana": 75,
-      "baseDamage": 18,
-      "baseDefense": 12
+      "baseDamage": 42,
+      "baseDefense": 80
     },
-
     {
       "wave": 9,
       "id": "X308",
@@ -276,12 +274,12 @@
       "mobClass": "X308",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 145,
+      "speed": 3.0,
+      "maxHP": 110,
       "maxEnergy": 215,
       "maxMana": 30,
-      "baseDamage": 16,
-      "baseDefense": 8
+      "baseDamage": 14,
+      "baseDefense": 9
     },
     {
       "wave": 9,
@@ -290,12 +288,12 @@
       "mobClass": "X345",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 155,
+      "speed": 3.0,
+      "maxHP": 110,
       "maxEnergy": 225,
       "maxMana": 35,
-      "baseDamage": 17,
-      "baseDefense": 8
+      "baseDamage": 14,
+      "baseDefense": 9
     },
     {
       "wave": 9,
@@ -304,14 +302,13 @@
       "mobClass": "LaserCanonX4",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 280,
+      "speed": 1.5,
+      "maxHP": 190,
       "maxEnergy": 300,
       "maxMana": 90,
-      "baseDamage": 21,
-      "baseDefense": 14
+      "baseDamage": 46,
+      "baseDefense": 90
     },
-
     {
       "wave": 10,
       "id": "X388",
@@ -319,12 +316,12 @@
       "mobClass": "X388",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 175,
+      "speed": 3.3333,
+      "maxHP": 120,
       "maxEnergy": 240,
       "maxMana": 40,
-      "baseDamage": 18,
-      "baseDefense": 9
+      "baseDamage": 15,
+      "baseDefense": 10
     },
     {
       "wave": 10,
@@ -333,12 +330,12 @@
       "mobClass": "X400",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 185,
+      "speed": 3.3333,
+      "maxHP": 120,
       "maxEnergy": 250,
       "maxMana": 45,
-      "baseDamage": 19,
-      "baseDefense": 9
+      "baseDamage": 15,
+      "baseDefense": 10
     },
     {
       "wave": 10,
@@ -347,14 +344,13 @@
       "mobClass": "LaserCanonX311",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 320,
+      "speed": 1.6667,
+      "maxHP": 200,
       "maxEnergy": 340,
       "maxMana": 110,
-      "baseDamage": 24,
-      "baseDefense": 16
+      "baseDamage": 50,
+      "baseDefense": 100
     },
-
     {
       "wave": 11,
       "id": "X418",
@@ -362,12 +358,12 @@
       "mobClass": "X418",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 205,
+      "speed": 3.6667,
+      "maxHP": 130,
       "maxEnergy": 270,
       "maxMana": 55,
-      "baseDamage": 20,
-      "baseDefense": 10
+      "baseDamage": 16,
+      "baseDefense": 11
     },
     {
       "wave": 11,
@@ -376,12 +372,12 @@
       "mobClass": "X430",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 215,
+      "speed": 3.6667,
+      "maxHP": 130,
       "maxEnergy": 280,
       "maxMana": 60,
-      "baseDamage": 21,
-      "baseDefense": 10
+      "baseDamage": 16,
+      "baseDefense": 11
     },
     {
       "wave": 11,
@@ -390,14 +386,13 @@
       "mobClass": "LaserCanonX312",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 360,
+      "speed": 1.8333,
+      "maxHP": 210,
       "maxEnergy": 380,
       "maxMana": 130,
-      "baseDamage": 26,
-      "baseDefense": 18
+      "baseDamage": 54,
+      "baseDefense": 110
     },
-
     {
       "wave": 12,
       "id": "X433",
@@ -405,12 +400,12 @@
       "mobClass": "X433",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 235,
+      "speed": 4.0,
+      "maxHP": 140,
       "maxEnergy": 300,
       "maxMana": 70,
-      "baseDamage": 22,
-      "baseDefense": 11
+      "baseDamage": 17,
+      "baseDefense": 12
     },
     {
       "wave": 12,
@@ -419,12 +414,12 @@
       "mobClass": "X439",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 245,
+      "speed": 4.0,
+      "maxHP": 140,
       "maxEnergy": 310,
       "maxMana": 75,
-      "baseDamage": 23,
-      "baseDefense": 11
+      "baseDamage": 17,
+      "baseDefense": 12
     },
     {
       "wave": 12,
@@ -433,11 +428,11 @@
       "mobClass": "X487",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 255,
+      "speed": 4.0,
+      "maxHP": 140,
       "maxEnergy": 320,
       "maxMana": 80,
-      "baseDamage": 24,
+      "baseDamage": 17,
       "baseDefense": 12
     },
     {
@@ -447,11 +442,11 @@
       "mobClass": "X499",
       "difficulty": "Normal",
       "attackType": "Ranged",
-      "speed": 0.8,
-      "maxHP": 265,
+      "speed": 4.0,
+      "maxHP": 140,
       "maxEnergy": 330,
       "maxMana": 85,
-      "baseDamage": 25,
+      "baseDamage": 17,
       "baseDefense": 12
     },
     {
@@ -461,185 +456,180 @@
       "mobClass": "AgentSarna",
       "difficulty": "Boss",
       "attackType": "Ranged",
-      "speed": 0.2,
-      "maxHP": 420,
+      "speed": 2.0,
+      "maxHP": 220,
       "maxEnergy": 420,
       "maxMana": 160,
-      "baseDamage": 30,
-      "baseDefense": 22
+      "baseDamage": 58,
+      "baseDefense": 120
     },
-{
-  "wave": 13,
-  "id": "AgentSnapper",
-  "displayName": "Agent Snapper",
-  "mobClass": "AgentSnapper",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 285,
-  "maxEnergy": 350,
-  "maxMana": 95,
-  "baseDamage": 26,
-  "baseDefense": 13
-},
-{
-  "wave": 13,
-  "id": "AgentTacker",
-  "displayName": "Agent Tacker",
-  "mobClass": "AgentTacker",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 295,
-  "maxEnergy": 360,
-  "maxMana": 100,
-  "baseDamage": 27,
-  "baseDefense": 13
-},
-{
-  "wave": 13,
-  "id": "AgentSitor",
-  "displayName": "Agent Sitor",
-  "mobClass": "AgentSitor",
-  "difficulty": "Boss",
-  "attackType": "Ranged",
-  "speed": 0.2,
-  "maxHP": 520,
-  "maxEnergy": 520,
-  "maxMana": 210,
-  "baseDamage": 36,
-  "baseDefense": 26
-},
-
-{
-  "wave": 14,
-  "id": "AgentZ002",
-  "displayName": "Agent Z002",
-  "mobClass": "AgentZ002",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 315,
-  "maxEnergy": 380,
-  "maxMana": 115,
-  "baseDamage": 28,
-  "baseDefense": 14
-},
-{
-  "wave": 14,
-  "id": "AgentZ005",
-  "displayName": "Agent Z005",
-  "mobClass": "AgentZ005",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 330,
-  "maxEnergy": 395,
-  "maxMana": 125,
-  "baseDamage": 29,
-  "baseDefense": 15
-},
-{
-  "wave": 14,
-  "id": "AgentLornt",
-  "displayName": "Agent Lornt",
-  "mobClass": "AgentLornt",
-  "difficulty": "Boss",
-  "attackType": "Ranged",
-  "speed": 0.2,
-  "maxHP": 600,
-  "maxEnergy": 560,
-  "maxMana": 240,
-  "baseDamage": 40,
-  "baseDefense": 28
-},
-
-{
-  "wave": 15,
-  "id": "X400",
-  "displayName": "X400",
-  "mobClass": "X400",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 355,
-  "maxEnergy": 420,
-  "maxMana": 140,
-  "baseDamage": 31,
-  "baseDefense": 16
-},
-{
-  "wave": 15,
-  "id": "LaserCanonX311",
-  "displayName": "Laser Canon X311",
-  "mobClass": "LaserCanonX311",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 370,
-  "maxEnergy": 435,
-  "maxMana": 150,
-  "baseDamage": 32,
-  "baseDefense": 16
-},
-{
-  "wave": 15,
-  "id": "UltraCanonX202",
-  "displayName": "Ultra Canon X202",
-  "mobClass": "UltraCanonX202",
-  "difficulty": "Boss",
-  "attackType": "Ranged",
-  "speed": 0.2,
-  "maxHP": 780,
-  "maxEnergy": 680,
-  "maxMana": 290,
-  "baseDamage": 48,
-  "baseDefense": 34
-},
-
-{
-  "wave": 16,
-  "id": "LaserCanonX312",
-  "displayName": "Laser Canon X312",
-  "mobClass": "LaserCanonX312",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 395,
-  "maxEnergy": 460,
-  "maxMana": 170,
-  "baseDamage": 34,
-  "baseDefense": 18
-},
-{
-  "wave": 16,
-  "id": "AgentArgo",
-  "displayName": "Agent Argo",
-  "mobClass": "AgentArgo",
-  "difficulty": "Normal",
-  "attackType": "Ranged",
-  "speed": 0.8,
-  "maxHP": 410,
-  "maxEnergy": 475,
-  "maxMana": 185,
-  "baseDamage": 35,
-  "baseDefense": 19
-},
-{
-  "wave": 16,
-  "id": "UltraCanonX302",
-  "displayName": "Ultra Canon X302",
-  "mobClass": "UltraCanonX302",
-  "difficulty": "Boss",
-  "attackType": "Ranged",
-  "speed": 0.2,
-  "maxHP": 920,
-  "maxEnergy": 760,
-  "maxMana": 330,
-  "baseDamage": 55,
-  "baseDefense": 40
-}
-
-
+    {
+      "wave": 13,
+      "id": "AgentSnapper",
+      "displayName": "Agent Snapper",
+      "mobClass": "AgentSnapper",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 4.3333,
+      "maxHP": 150,
+      "maxEnergy": 350,
+      "maxMana": 95,
+      "baseDamage": 18,
+      "baseDefense": 13
+    },
+    {
+      "wave": 13,
+      "id": "AgentTacker",
+      "displayName": "Agent Tacker",
+      "mobClass": "AgentTacker",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 4.3333,
+      "maxHP": 150,
+      "maxEnergy": 360,
+      "maxMana": 100,
+      "baseDamage": 18,
+      "baseDefense": 13
+    },
+    {
+      "wave": 13,
+      "id": "AgentSitor",
+      "displayName": "Agent Sitor",
+      "mobClass": "AgentSitor",
+      "difficulty": "Boss",
+      "attackType": "Ranged",
+      "speed": 2.1667,
+      "maxHP": 230,
+      "maxEnergy": 520,
+      "maxMana": 210,
+      "baseDamage": 62,
+      "baseDefense": 130
+    },
+    {
+      "wave": 14,
+      "id": "AgentZ002",
+      "displayName": "Agent Z002",
+      "mobClass": "AgentZ002",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 4.6667,
+      "maxHP": 160,
+      "maxEnergy": 380,
+      "maxMana": 115,
+      "baseDamage": 19,
+      "baseDefense": 14
+    },
+    {
+      "wave": 14,
+      "id": "AgentZ005",
+      "displayName": "Agent Z005",
+      "mobClass": "AgentZ005",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 4.6667,
+      "maxHP": 160,
+      "maxEnergy": 395,
+      "maxMana": 125,
+      "baseDamage": 19,
+      "baseDefense": 14
+    },
+    {
+      "wave": 14,
+      "id": "AgentLornt",
+      "displayName": "Agent Lornt",
+      "mobClass": "AgentLornt",
+      "difficulty": "Boss",
+      "attackType": "Ranged",
+      "speed": 2.3333,
+      "maxHP": 240,
+      "maxEnergy": 560,
+      "maxMana": 240,
+      "baseDamage": 66,
+      "baseDefense": 140
+    },
+    {
+      "wave": 15,
+      "id": "X400",
+      "displayName": "X400",
+      "mobClass": "X400",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 5.0,
+      "maxHP": 170,
+      "maxEnergy": 420,
+      "maxMana": 140,
+      "baseDamage": 20,
+      "baseDefense": 15
+    },
+    {
+      "wave": 15,
+      "id": "LaserCanonX311",
+      "displayName": "Laser Canon X311",
+      "mobClass": "LaserCanonX311",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 5.0,
+      "maxHP": 170,
+      "maxEnergy": 435,
+      "maxMana": 150,
+      "baseDamage": 20,
+      "baseDefense": 15
+    },
+    {
+      "wave": 15,
+      "id": "UltraCanonX202",
+      "displayName": "Ultra Canon X202",
+      "mobClass": "UltraCanonX202",
+      "difficulty": "Boss",
+      "attackType": "Ranged",
+      "speed": 2.5,
+      "maxHP": 250,
+      "maxEnergy": 680,
+      "maxMana": 290,
+      "baseDamage": 70,
+      "baseDefense": 150
+    },
+    {
+      "wave": 16,
+      "id": "LaserCanonX312",
+      "displayName": "Laser Canon X312",
+      "mobClass": "LaserCanonX312",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 5.3333,
+      "maxHP": 180,
+      "maxEnergy": 460,
+      "maxMana": 170,
+      "baseDamage": 21,
+      "baseDefense": 16
+    },
+    {
+      "wave": 16,
+      "id": "AgentArgo",
+      "displayName": "Agent Argo",
+      "mobClass": "AgentArgo",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 5.3333,
+      "maxHP": 180,
+      "maxEnergy": 475,
+      "maxMana": 185,
+      "baseDamage": 21,
+      "baseDefense": 16
+    },
+    {
+      "wave": 16,
+      "id": "UltraCanonX302",
+      "displayName": "Ultra Canon X302",
+      "mobClass": "UltraCanonX302",
+      "difficulty": "Boss",
+      "attackType": "Ranged",
+      "speed": 2.6667,
+      "maxHP": 260,
+      "maxEnergy": 760,
+      "maxMana": 330,
+      "baseDamage": 74,
+      "baseDefense": 160
+    }
   ]
 }
