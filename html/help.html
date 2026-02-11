@@ -808,16 +808,16 @@ const MEDIA = {
 
 /* ---------- SPELL DATA (tweaked text to be clearer + more “gamey”) ---------- */
 const SPELLS = [
-  { id:"attack", name:"Attack", cost:"Energy 10", desc:"Close-range strike. Reliable damage when you’re in position.", tags:["melee","damage"] },
+  { id:"attack", name:"Attack", cost:"Energy 10", desc:"Close-range strike. Reliable damage when you’re in position and enemy is in range.", tags:["melee","damage"] },
   { id:"shoot", name:"Shoot", cost:"Energy 10", desc:"Ranged physical shot. Fast pressure from a safer distance.", tags:["ranged","damage"] },
   { id:"defend", name:"Defend", cost:"Energy 10", desc:"Brace and harden armor. Reduces incoming damage for a short time.", tags:["defense","buff"] },
-  { id:"fireball", name:"Fireball", cost:"Mana 10", desc:"Ranged fire burst. Strong single-target damage; may apply Burning.", tags:["fire","ranged","damage"] },
+  { id:"fireball", name:"Fireball", cost:"Mana 10", desc:"Ranged fire burst. Strong single-target damage; may apply Burning which debuffs.", tags:["fire","ranged","damage"] },
   { id:"mezmerize", name:"Mezmerize", cost:"Mana 10", desc:"Crowd control. Temporarily disables a target to stop its threat.", tags:["cc","control"] },
-  { id:"heal", name:"Heal", cost:"Mana 10", desc:"Restore HP to an ally. Keeps the line stable under pressure.", tags:["heal","support"] },
+  { id:"heal", name:"Heal", cost:"Mana 10", desc:"Restore HP to an ally that you have in target. Keeps the line stable under pressure.", tags:["heal","support"] },
   { id:"revive", name:"Revive", cost:"Energy 10", desc:"Bring back a fallen ally with low HP. Protect them while they recover.", tags:["support","recovery"] },
   { id:"usepotion", name:"Use Potion", cost:"Cost 0", desc:"Consume one potion to restore resources. Use between spikes of damage.", tags:["consumable","utility"] },
-  { id:"talk", name:"Talk", cost:"Cost 0", desc:"Non-combat interaction. Use for NPC/dialog actions when available.", tags:["social","utility"] },
-  { id:"evac", name:"Evac", cost:"Cost 0", desc:"Emergency extraction. Use when the defense line is collapsing.", tags:["escape","utility"] }
+  { id:"talk", name:"Talk", cost:"Cost 0", desc:"Nonsense.. why talk? Non-combat interaction. Use for NPC/dialog actions when available.", tags:["social","utility"] },
+  { id:"evac", name:"Evac", cost:"Cost 0", desc:"Nonsense .. are you a coward? Emergency extraction. Use when the defense line is collapsing.", tags:["escape","utility"] }
 ];
 
 const list = document.getElementById("list");

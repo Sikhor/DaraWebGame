@@ -35,7 +35,7 @@ bool MobTemplateStore::LoadFromFile(const std::string& path, std::string* err)
             t.maxMana     = m.at("maxMana").get<int>();
             t.baseDamage  = m.at("baseDamage").get<int>();
             t.baseDefense = m.at("baseDefense").get<int>();
-            if(t.difficulty==ECombatantDifficulty::Normal && GetRandomFloat(0.f,10.f)>8.f){
+            if(t.difficulty==ECombatantDifficulty::Normal && GetRandomFloat(0.f,10.f)>5.f){
                 t.speed       = 2.f * m.at("speed").get<float>();
             }else{
                 t.speed       = m.at("speed").get<float>();

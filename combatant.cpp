@@ -369,6 +369,7 @@ int Combatant::Move()
     Lane= static_cast<int>(CurrentField);
     PosY = std::clamp((Lane+ 0.5f) / MAXLANES, 0.2f,0.8f);
     CalcPos();
+    DaraLog("MOVE", GetName()+" Lane: "+ std::to_string(Lane));
     return Lane;
 }
 

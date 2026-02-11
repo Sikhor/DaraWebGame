@@ -111,7 +111,7 @@
 const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
 const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/game-res/avatars";
 const BUFF_IMG_BASE= IMG_BASE;
-const SOUND_BASE = IMG_BASE;
+const SOUND_BASE = "https://gameinfo.daraempire.com/game-res/wav";
 const HELP_URL="https://gameinfo.daraempire.com/ui/help.html";
 
 const IMG_EXT = ".png";
@@ -129,6 +129,7 @@ let MOB_SIZE_RAIDMOB= 0.55;
 
 let ENABLE_SHAKE = false;
 let ENABLE_HIT_FLASH = false;
+let waveOverSoundPlayed= false;
 const RANGED_FX_COOLDOWN_MS = 2000; // 2 seconds
 
 let INFO_SPEED_PX_PER_SEC = Number(localStorage.getItem("infoSpeedPxPerSec") || "80");
@@ -359,42 +360,40 @@ const MEDIA = {
   }
 };
 
+
 const ACTION_SOUNDS = {
-  attack:   new Audio(SOUND_BASE+"Attack.wav"),
-  fireball: new Audio(SOUND_BASE+"Fireball.wav"),
-  heal:     new Audio(SOUND_BASE+"Heal.wav"),
-  defend:   new Audio(SOUND_BASE+"Defense.wav"),
-  mezmerize:new Audio(SOUND_BASE+"Mez.wav"),
-  revive:   new Audio(SOUND_BASE+"Revive.wav"),
-  evac:     new Audio(SOUND_BASE+"Evac.wav"),
-  talk:     new Audio(SOUND_BASE+"TalkDummy.wav"),
-  usepotion:new Audio(SOUND_BASE+"Potion.wav"),
-  shoot:    new Audio(SOUND_BASE+"LaserGun1.wav"),
-  mobdeath: new Audio(SOUND_BASE+"MobDeath.wav"),
-  gameover: new Audio(SOUND_BASE+"GameOverSciFi.wav"),
-  hit1: new Audio(SOUND_BASE+"PlayerHit1.wav"),
-  hit2: new Audio(SOUND_BASE+"PlayerHit2.wav"),
-  hit3: new Audio(SOUND_BASE+"PlayerHit3.wav"),
+  attack:   ["Attack.wav"],
+  fireball: ["Fireball.wav"],
+  heal:     ["Heal.wav"],
+  defend:   ["Defense.wav"],
+  mezmerize:["Mez.wav"],
+  revive:   ["Revive.wav"],
+  evac:     ["Evac.wav"],
+  talk:     ["TalkDummy.wav"],
+  usepotion:["Potion.wav"],
+  shoot:    ["LaserGun1.wav", "LaserGun2.wav", "LaserGun3.wav", "LaserGun4.wav"],
+  mobdeath: ["MobDeath.wav"],
+  gameover: ["GameOverSciFi.wav"],
+  hit:      ["PlayerHit1.wav", "PlayerHit2.wav", "PlayerHit3.wav"],
+  loot:     ["Loot1.wav", "Success_1.wav", "Success_2.wav", "Success_3.wav", "Success_4.wav", "Success_5.wav", "Success_6.wav", "Success_7.wav", "Success_8.wav", "Success_9.wav", "Success_10.wav"],
+  waveover: ["Pad.wav"],
+  wavebegin: ["WaveBegin.wav"]
 };
 
 function playSound(key){
-  const snd = ACTION_SOUNDS[key];
-  if(!snd) return;
+  const files = ACTION_SOUNDS[key];
+  if(!files || files.length === 0) return;
+
+  // Pick random file
+  const randomFile = files[Math.floor(Math.random() * files.length)];
+
   try{
-    snd.pause();
-    snd.currentTime = 0;
+    const snd = new Audio(SOUND_BASE +"/" + randomFile);
     snd.play().catch(()=>{});
   }catch(e){}
-} // (END playSound)
+}
 
-let lastHitSoundAt = 0;
-function playRandomHitSound(){
-  const now = performance.now();
-  if (now - lastHitSoundAt < 180) return;
-  lastHitSoundAt = now;
-  const hits = ["hit1", "hit2", "hit3"];
-  playSound(hits[Math.floor(Math.random() * hits.length)]);
-} // (END playRandomHitSound)
+
 
 const ACTIONS = [
   { id: "shoot",      label: "Shoot",    cd: 1  },
@@ -1414,17 +1413,19 @@ function showToast(text, type = "info", ms = 1800){
   if (t === "error") el.classList.add("toastError");
   else if (t === "warn" || t === "warning") el.classList.add("toastWarn");
   else if (t === "success") el.classList.add("toastSuccess");
+  else if (t === "loot") el.classList.add("toastLoot");
   else el.classList.add("toastInfo");
 
   el.textContent = String(text || "—");
   el.style.animationDuration = `${Math.max(300, ms)}ms`;
 
   host.appendChild(el);
-  setTimeout(() => el.remove(), Math.max(300, ms) + 50);
+  setTimeout(() => el.remove(), Math.max(500, ms) + 50);
 }// (END showToast)
 
 function showLootToast(text){
-  showToast(text, "info", 1800);
+  showToast(text, "loot", 2800);
+  playSound("loot");
 } // (END showLootToast)
 
 let lastState = null;
@@ -1619,7 +1620,7 @@ async function updateState(){
       if (myHit){
         const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
         triggerHitFeedback(intensity);
-        playRandomHitSound();
+        playSound("hit");
 
         s._damagedIds = new Set([meName]);
         setTimeout(() => {
@@ -1668,11 +1669,19 @@ async function updateState(){
     const isWave  = String(s.phase || "") === "wavecompleted";
 
     if (!isGameOver && isWave){
+      if(waveOverSoundPlayed==false){
+          playSound("waveover");
+          waveOverSoundPlayed=true;
+      };
       showWaveOverlay(s.wave, s.restartInMs ?? null);
       if (!wasWave && typeof showToast === "function"){
         showToast(`Wave ${Number(s.wave) || 0} cleared!`, "success", 1800);
       }
     } else {
+      if(waveOverSoundPlayed==true){
+          playSound("wavebegin");
+          waveOverSoundPlayed=false;
+      }
       hideWaveOverlay();
     }
 
@@ -1733,7 +1742,11 @@ function checkPlayerStatToasts(player) {
     console.log("CheckPlayerStats delta check");
 
     if (delta > 0) {
-      showToast(positiveMsg.replace("{n}", Math.abs(delta)), "success", 1500);
+      if(key!="xp"){
+          showLootToast(positiveMsg.replace("{n}", Math.abs(delta)));
+      }else{
+          showToast(positiveMsg.replace("{n}", Math.abs(delta)), "success", 1500);
+      }
     } else {
       showToast(negativeMsg.replace("{n}", Math.abs(delta)), "warning", 1500);
     }

@@ -815,7 +815,40 @@ void CombatDirector::MaybeGiveLoot(std::mt19937& rng, Combatant& player, const s
 MobRewards CombatDirector::GetMobRewards(const Combatant& mob) const
 {
     MobRewards r;
-    (void) mob;
+   switch (mob.GetDifficultyEnum())
+    {
+        case ECombatantDifficulty::RaidBoss:
+            r.MinCredits += 5;
+            r.MobAddsXP += 5;
+            break;
+
+        case ECombatantDifficulty::RaidMob:
+            r.MinCredits += 4;
+            r.MobAddsXP += 4;
+            break;
+
+        case ECombatantDifficulty::GroupBoss:
+            r.MinCredits += 3;
+            r.MobAddsXP += 3;
+            break;
+
+        case ECombatantDifficulty::GroupMob:
+            r.MinCredits += 2;
+            r.MobAddsXP += 2;
+            break;
+
+        case ECombatantDifficulty::Boss:
+            r.MinCredits += 1;
+            r.MobAddsXP += 1;
+            break;
+
+        case ECombatantDifficulty::Normal:
+        default:
+            r.MinCredits = 0;
+            r.MobAddsXP = 0;
+            break;
+    }
+
     // Tune by difficulty/level/etc:
     // if (mob.GetDifficulty() == Boss) { ... }
     return r;
@@ -839,8 +872,8 @@ void CombatDirector::RewardPlayersForMobDeath(
         // If you have “online / logged in” markers, check them here.
         // if (!p.IsOnline()) continue;
 
-        const int xp = RandInt(rng, r.xpMin, r.xpMax);
-        const int credits = RandInt(rng, r.creditsMin, r.creditsMax);
+        const int xp = RandInt(rng, r.xpMin, r.xpMax)+r.MobAddsXP;
+        const int credits = RandInt(rng, r.creditsMin, r.creditsMax)+r.MinCredits;
 
         int CurrentLevel= p.GetLevel();
         int CurrentXP= p.GetXP();

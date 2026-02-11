@@ -278,6 +278,7 @@ public:
 
     std::string GetAttackType()const;
     std::string GetDifficulty()const{return std::string(ToString(Difficulty));}
+    ECombatantDifficulty GetDifficultyEnum()const{return Difficulty;}
 
     void SetLane(int lane, int slot);
     int GetLane() const { return Lane; }
