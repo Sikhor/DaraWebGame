@@ -6,6 +6,7 @@
 #include <string>
 #include <random>
 #include <unordered_set>
+#include <chrono>
 #include "json.hpp"
 #include "DaraConfig.h"
 
@@ -225,11 +226,13 @@ protected:
     void ClearConditions(){Conditions.clear();}
     void CalcPos();
 
+    std::chrono::steady_clock::time_point LastActive;
+
 public:
     Combatant(const std::string& name, ECombatantType type);
     Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana, 
                 std::string mobClass="MSAgent-Soldorn", int lane=0, int slot=0);
-    Combatant(){Combatant("unknown",ECombatantType::Player);}
+    Combatant();
     void InitFromMobTemplate(
         const std::string& mobClass,
         ECombatantAttackType attackType,
@@ -257,7 +260,7 @@ public:
     int GetHP() const;
     int GetMana() const;
     int GetEnergy() const;
-    int GetActive() const { return Active ? 1 : 0; }   
+    int GetActive() const { return IsActive(); }   
     int GetMaxHP() const { return static_cast<int>(MaxHP); }
     int GetMaxEnergy() const { return static_cast<int>(MaxEnergy); }
     int GetMaxMana() const { return static_cast<int>(MaxMana); }
@@ -311,7 +314,10 @@ public:
     void Heal(CombatantPtr target);
     void ReviveTarget(CombatantPtr target);
     void BuffDefense();
+    void BuffAegolism();
     void UsePotion();
+    void MarkActive();
+    bool IsActive() const;
 
     void ApplyDamage(float dmg);
     void ApplyHeal(float amount);

@@ -5,7 +5,8 @@
 @media (max-width: 932px){
 
   :root{
-    --topbarH: 40px;
+    --topbarH: 15px;
+    --panelHeader: 15px;
     --gap: 6px;
 
     --uiFont: 12px;
@@ -15,8 +16,12 @@
 
   }
 
+  #app, #gameRoot, .scene, .ui {
+    touch-action: none; /* blocks pinch + double-tap zoom and scrolling on that container */
+  }
+
   .panelHeader{
-    padding: 6px 8px;
+    padding: 0px 0px;
   }
 
   /* topbar compact stays */
@@ -45,4 +50,10 @@
     padding: 4px 6px;
     font-size: 10px;
   }
+}
+
+/* to debug*/
+body::before {
+  content: "SMALL";
+  background: red;
 }

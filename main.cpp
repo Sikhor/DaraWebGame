@@ -514,7 +514,17 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
     const std::string& playerName = session.playerName;
     const std::string& characterId = session.characterId;
     const std::string& characterName = session.characterName;
+    
+    if(!g_combatDirector->HasPlayer(session.playerName)){
+        res.status = 401;
+        res.set_content(
+            (json{{"status","error"},{"message","Player not found"}}).dump(),
+            "application/json"
+        );
+        return;
+}
 
+    
     json out = g_combatDirector->GetUIStateSnapshotJsonLocked(playerName, characterId, characterName);
     if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
     if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["party"].dump(2) <<std::endl;

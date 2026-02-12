@@ -42,6 +42,7 @@ Combatant::Combatant(const std::string& name, ECombatantType type)
     Id = GenerateUUID();
     Name = name;
     Type = type;
+    LastActive= std::chrono::steady_clock::now();
 }
 
 Combatant::Combatant(const std::string& name, ECombatantType type, float hp, float energy, float mana, std::string mobClass, int lane, int slot)
@@ -62,7 +63,15 @@ Combatant::Combatant(const std::string& name, ECombatantType type, float hp, flo
     MaxMana= mana;
     Lane= lane;
     Slot= slot;
+
+    LastActive= std::chrono::steady_clock::now();
 }
+
+Combatant::Combatant(){
+    Combatant("unknown",ECombatantType::Player);
+    LastActive= std::chrono::steady_clock::now();
+}
+
 void Combatant::Revive()
 {
     HP=MaxHP;
@@ -269,6 +278,15 @@ void Combatant::BuffDefense()
         DefenseModifier+= 4*DefenseModifier;
     }
 }
+
+void Combatant::BuffAegolism()
+{
+    MaxHP= 4* MaxHP;
+    HP= MaxHP;
+    DamageModifier+= 4*DamageModifier;
+    DefenseModifier+= 4*DefenseModifier;
+    Difficulty= ECombatantDifficulty::GroupBoss;
+}
 void Combatant::UsePotion()
 {
     if(!IsAlive())return;
@@ -369,7 +387,7 @@ int Combatant::Move()
     Lane= static_cast<int>(CurrentField);
     PosY = std::clamp((Lane+ 0.5f) / MAXLANES, 0.2f,0.8f);
     CalcPos();
-    DaraLog("MOVE", GetName()+" Lane: "+ std::to_string(Lane));
+    //DaraLog("MOVE", GetName()+" Lane: "+ std::to_string(Lane));
     return Lane;
 }
 
@@ -631,3 +649,17 @@ float Combatant::GetY() const
     return PosY;
 }
 
+void Combatant::MarkActive()
+{
+    LastActive= std::chrono::steady_clock::now();
+    return;
+}
+
+bool Combatant::IsActive() const
+{
+    // 10min not marked active
+    std::chrono::minutes t = std::chrono::minutes(10);
+    std::chrono::steady_clock::time_point now= std::chrono::steady_clock::now();
+
+    return (now-LastActive)< t;
+}

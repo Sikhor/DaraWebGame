@@ -1320,10 +1320,25 @@
       await doLogout(); // uses your existing function
     });
 
-    const createBtn = document.getElementById("btnCreateChar");
+  // ✅ ADD THIS: enable/disable Create based on name+avatar
+  const nameInp = document.getElementById("newCharName");
+  if (nameInp) nameInp.addEventListener("input", validateNewCharForm);
+
+  // run once at startup (Create disabled until ready)
+  validateNewCharForm();
+
+  const createBtn = document.getElementById("btnCreateChar");
     if (createBtn) createBtn.addEventListener("click", async () => {
       const inp = document.getElementById("newCharName");
       const name = (inp.value || "").trim();
+
+      // HARD GATE: avatar required
+      if (!g_selectedAvatarKey){
+        alert("Please pick an avatar first.");
+        pulseAvatarButtonError();
+        return;
+      }
+
       if (!name){
         alert("Please enter a character name");
         return;
@@ -1333,32 +1348,37 @@
         createBtn.disabled = true;
 
         const created = await apiCreateCharacter(name);
-        // expected from server:
-        // { ok:true, characterId:"123", characterName:"Arikara-296", avatar:"..." }
 
-        // Normalize object to match renderCharacterList expectations
         const newChar = {
           characterId: created.characterId,
           characterName: created.characterName || name,
           avatarKey: created.avatarKey || g_selectedAvatarKey || created.avatar || ""
         };
 
-        // Add to cache (avoid duplicates if user double-clicked / retries)
         g_charCache = (g_charCache || []).filter(c => String(c.characterId) !== String(newChar.characterId));
-        g_charCache.unshift(newChar); // put newest on top
+        g_charCache.unshift(newChar);
 
-        // Re-render instantly
         renderCharacterList(g_charCache);
 
         inp.value = "";
         inp.focus();
+
+        // Optional: keep avatar selected OR reset it after creation
+        // If you want to force picking again for every new char, uncomment:
+        // g_selectedAvatarKey = "";
+        // const prev = document.getElementById("newCharAvatarPreview");
+        // if (prev) prev.style.backgroundImage = "";
+        // updateAvatarMiniButtonState();
+        // validateNewCharForm();
+
       }catch(e){
         alert(e.message || "Create failed");
       }finally{
         createBtn.disabled = false;
+        validateNewCharForm();
       }
     });
-
+  
 
   });
 
@@ -1803,6 +1823,7 @@ function renderAvatarPicker(indexJson){
       const key = btn.getAttribute("data-key") || "";
       const tier = btn.getAttribute("data-tier") || "standard";
       g_selectedAvatarKey = key;
+      validateNewCharForm();
 
       // update preview in create character row
       const prev = document.getElementById("newCharAvatarPreview");
@@ -1892,6 +1913,44 @@ function updateAvatarMiniButtonState(){
 
   btn.classList.toggle("has-avatar", !!hasAvatar);
 }
+
+function validateNewCharForm(){
+  const inp = document.getElementById("newCharName");
+  const createBtn = document.getElementById("btnCreateChar");
+
+  if (!inp || !createBtn) return;
+
+  const nameOk = (inp.value || "").trim().length > 0;
+  const avatarOk = !!(g_selectedAvatarKey && String(g_selectedAvatarKey).trim().length > 0);
+
+  createBtn.disabled = !(nameOk && avatarOk);
+  createBtn.style.opacity = createBtn.disabled ? "0.55" : "1.0";
+  createBtn.style.cursor = createBtn.disabled ? "not-allowed" : "pointer";
+
+  if (!avatarOk) createBtn.title = "Pick an avatar first";
+  else if (!nameOk) createBtn.title = "Enter a character name";
+  else createBtn.title = "";
+}
+
+
+
+function pulseAvatarButtonError(){
+  const btn = document.getElementById("btnPickAvatar");
+  if (!btn) return;
+  btn.animate(
+    [
+      { transform: "translateX(0)", filter: "drop-shadow(0 0 0 rgba(255,80,80,0))" },
+      { transform: "translateX(-4px)", filter: "drop-shadow(0 0 10px rgba(255,80,80,0.45))" },
+      { transform: "translateX(4px)",  filter: "drop-shadow(0 0 10px rgba(255,80,80,0.45))" },
+      { transform: "translateX(0)",  filter: "drop-shadow(0 0 0 rgba(255,80,80,0))" }
+    ],
+    { duration: 220, iterations: 2 }
+  );
+}
+
+
+
+
   </script>
 
 </body>

@@ -22,7 +22,7 @@ public:
     bool Empty() const { return Keys.empty(); }
     std::string PickRandomMobId();
     std::string PickRandomMobIdForWave(int wave);
-    std::string PickRandomBossForWave(int wave);
+    std::string PickRandomBossForWave(int wave,  ECombatantDifficulty difficulty= ECombatantDifficulty::Boss);
 
 private:
     struct MobTemplate {

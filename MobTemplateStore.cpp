@@ -117,7 +117,7 @@ std::string MobTemplateStore::PickRandomMobIdForWave(int wave)
     return waveKeys[dist(rng)];
 }
 
-std::string MobTemplateStore::PickRandomBossForWave(int wave)
+std::string MobTemplateStore::PickRandomBossForWave(int wave, ECombatantDifficulty difficulty)
 {
     std::vector<std::string> matches;
 
@@ -127,7 +127,7 @@ std::string MobTemplateStore::PickRandomBossForWave(int wave)
         if (it == Templates.end())
             continue;
 
-        if (it->second.wave == wave && it->second.difficulty == ECombatantDifficulty::Boss)
+        if (it->second.wave == wave && it->second.difficulty == difficulty)
         {
             matches.push_back(key);
         }
@@ -139,6 +139,7 @@ std::string MobTemplateStore::PickRandomBossForWave(int wave)
     std::uniform_int_distribution<size_t> dist(0, matches.size() - 1);
     return matches[dist(rng)];
 }
+
 
 
 ECombatantAttackType MobTemplateStore::ParseAttackType(const std::string& s)

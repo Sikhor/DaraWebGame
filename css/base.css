@@ -19,7 +19,7 @@
     --partyMaxHMobile: 32vh;
 
     /* Encounter responsiveness */
-    --sceneMinH: 520px;     /* desktop default */
+    /* --sceneMinH: 520px;      desktop default */
     --mobCardSize: 128px;    /* desktop default */
     --mobImgSize: 96px;     /* desktop default */
 
@@ -33,7 +33,18 @@
 
   }
 
-  html, body { height: 100%; }
+  html, body { 
+    margin: 0;
+    overflow: hidden;          /* no page scrolling */
+    overscroll-behavior: none; /* no bounce / rubber band */
+    touch-action: manipulation;/* disables double-tap zoom; still allows scroll in inner elements */
+    height: 100%; 
+  }
+  
+  #app, #gameRoot, .scene, .ui {
+    touch-action: none; /* blocks pinch + double-tap zoom and scrolling on that container */
+  }
+
   html { background:#05070b; }
   body{
     font-size: var(--uiFont);
@@ -63,7 +74,6 @@
 
   .topbar{
     height: var(--topbarH);
-    border: 1px solid var(--border);
     background: var(--bg);
     border-radius: var(--panel-radius);
     display: flex;
@@ -176,8 +186,8 @@
   }
   .encounterPanel .lanes{ 
     flex: 1 1 auto; 
-    min-height: var(--sceneMinH);
-    padding: 10px; 
+    min-height: 0;
+    padding: 5px; 
     overflow:hidden; 
     min-height: 0;
     min-width: 0;
@@ -190,7 +200,7 @@
     position: relative;
     height: 100%;
     flex: 1 1 auto; 
-    min-height: var(--sceneMinH);
+    min-height: 0;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.08);
     overflow: hidden;
@@ -1505,7 +1515,7 @@
   #lootToastHost{
     position: fixed;
     left: 50%;
-    top: calc(env(safe-area-inset-top) + 8px); /* << near the very top */
+    top: calc(env(safe-area-inset-top) + 40px); /* << near the very top */
     transform: translateX(-80%);
     z-index: 99996;
     pointer-events: none;
@@ -1564,6 +1574,26 @@
       inset 0 0 12px rgba(255, 220, 120, 0.25);
   }
 
+.waveTurns{
+  margin-top: 10px;
+  font-weight: 900;
+  letter-spacing: .2px;     /* a touch tighter */
+  opacity: .92;
+  font-size: 14px;          /* NEW: smaller line text */
+}
+
+#waveTurnsNum{
+  display: inline-block;
+  min-width: 2ch;
+  font-size: 18px;          /* was 26px */
+  line-height: 1;
+  padding: 0 6px;           /* was 0 8px */
+  border-radius: 8px;       /* was 10px */
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.40); /* slightly smaller shadow */
+}
+
 
 /* Font sizes */
   /* topbar + panels */
@@ -1581,3 +1611,16 @@
 /* target pill + misc small labels */
 .targetPillText{ font-size: 0.95em; }
 .tpBadge{ font-size: var(--uiFontTiny); }
+
+/* to debug */
+body::before {
+  content: "BASE";
+  position: fixed;
+  top: 5px;
+  right: 5px;
+  background: green;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  z-index: 9999;
+}

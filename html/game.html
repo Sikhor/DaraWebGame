@@ -2,17 +2,25 @@
 <html lang="de">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="dark" />
 <meta name="theme-color" content="#05070b" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+
+
 <title>Dara – Game</title>
 
-<link rel="stylesheet" href="css/base.css?v=1">
-<link rel="stylesheet" href="css/tablet.css?v=1" media="screen and (max-width: 1024px)">
-<link rel="stylesheet" href="css/small.css?v=1"  media="screen and (max-width: 858px)">
+<link rel="stylesheet" href="css/base.css?v=4">
+<link rel="stylesheet" href="css/tablet.css?v=4" media="screen and (max-width: 1024px)">
+<link rel="stylesheet" href="css/small.css?v=4"  media="screen and (max-width: 858px)">
+<script>
+  /*
+*/
+</script>
+
 
 </head>
 
@@ -69,10 +77,6 @@
             </div>
           </div>
         </div>
-        <div>
-          <button class="btnConfig" id="btnFlash" title="Flash">Flash: OFF</button>
-          <button class="btnConfig" id="btnShake" title="Shake">Shake: OFF</button>
-        </div>
       </div>
 
       <div class="lanes" id="lanes"></div>
@@ -101,9 +105,10 @@
 
 </div>
 
-<div id="hitFlash"></div>
 <div id="lootToastHost"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.3.5/dist/bundles/anime.umd.min.js"></script>
+<script src="./js/game.js"></script>
 <script>
 /* ======================================================================
    GLOBALS (BEGIN)
@@ -127,8 +132,6 @@ let MOB_SIZE_GROUPMOB= 0.40;
 let MOB_SIZE_RAIDMOB= 0.55;
 
 
-let ENABLE_SHAKE = false;
-let ENABLE_HIT_FLASH = false;
 let waveOverSoundPlayed= false;
 const RANGED_FX_COOLDOWN_MS = 2000; // 2 seconds
 
@@ -198,6 +201,43 @@ const CONDITION_PRIORITY = [
 ];
 
 /* ======================================================================
+   Mobile special behaviour(BEGIN)
+   ====================================================================== */
+// Mobile: tap same mob twice to auto-shoot
+let _lastMobTapId = null;
+let _lastMobTapAt = 0;
+
+function isMobileLike(){
+  // coarse pointer = touch devices (phones/tablets)
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
+function tryAutoShootOnRepeatTap(mobId){
+  if (!isMobileLike()) return;
+
+  const now = performance.now();
+  const same = (_lastMobTapId === mobId);
+  const fast = (now - _lastMobTapAt) <= 900; // ms window
+  _lastMobTapId = mobId;
+  _lastMobTapAt = now;
+
+  if (!(same && fast)) return;
+
+  // must have a target set already
+  const target = getActionTarget();
+  if (!target) return;
+
+  // find shoot button and click it (respects your cooldown + cost checks)
+  const shootBtn = document.querySelector(`.action-btn[data-action="shoot"]`);
+  if (!shootBtn) return;
+  if (shootBtn.classList.contains("cooldown")) return;
+
+  shootBtn.click();
+}
+
+
+
+/* ======================================================================
    AUTH + STORAGE (BEGIN)
    ====================================================================== */
 const LOGIN_PAGE = "index.html";
@@ -248,22 +288,7 @@ function requireAuthOrRedirect() {
   if (!t) window.location.href = LOGIN_PAGE;
 } // (END requireAuthOrRedirect)
 
-/* Load preferences */
-ENABLE_HIT_FLASH = (localStorage.getItem("enableHitFlash") ?? "0") === "1";
-ENABLE_SHAKE = (localStorage.getItem("enableShake") ?? "1") === "1";
 
-function updateShakeBtn(){
-  const b = document.getElementById("btnShake");
-  if (!b) return;
-  b.textContent = "Shake: " + (ENABLE_SHAKE ? "ON" : "OFF");
-} // (END updateShakeBtn)
-
-document.getElementById("btnShake")?.addEventListener("click", () => {
-  ENABLE_SHAKE = !ENABLE_SHAKE;
-  localStorage.setItem("enableShake", ENABLE_SHAKE ? "1" : "0");
-  updateShakeBtn();
-});
-updateShakeBtn();
 
 async function doLogout() {
   const token = getToken();
@@ -372,7 +397,8 @@ const ACTION_SOUNDS = {
   talk:     ["TalkDummy.wav"],
   usepotion:["Potion.wav"],
   shoot:    ["LaserGun1.wav", "LaserGun2.wav", "LaserGun3.wav", "LaserGun4.wav"],
-  mobdeath: ["MobDeath.wav"],
+  mobdeath: ["Death_01.wav", "Death_02.wav", "Death_03.wav", "Death_04.wav", "Death_05.wav"],
+  spiderdeath: ["MobDeath.wav"],
   gameover: ["GameOverSciFi.wav"],
   hit:      ["PlayerHit1.wav", "PlayerHit2.wav", "PlayerHit3.wav"],
   loot:     ["Loot1.wav", "Success_1.wav", "Success_2.wav", "Success_3.wav", "Success_4.wav", "Success_5.wav", "Success_6.wav", "Success_7.wav", "Success_8.wav", "Success_9.wav", "Success_10.wav"],
@@ -391,6 +417,16 @@ function playSound(key){
     const snd = new Audio(SOUND_BASE +"/" + randomFile);
     snd.play().catch(()=>{});
   }catch(e){}
+}
+
+function playSoundDeath(atkType)
+{
+  if (Math.random() < 0.4) return; 
+  if(atkType==="Spider"){
+    playSound("spiderdeath");
+  }else{
+    playSound("mobdeath");
+  }
 }
 
 
@@ -977,6 +1013,7 @@ function createMobDom(mobId, idx){
     uiState.selectedPartyId = null;
     setTargetMobId(mobId);
     updateEncounterMobs();
+    tryAutoShootOnRepeatTap(mobId);
   };
 
   const entry = { wrap, card, img, hpFill, targetTag, avatarFallback, condWrap, condImgs };
@@ -1453,7 +1490,7 @@ function detectMobDeaths(prev, next){
     if (playedDeaths.has(id)) return;
     playedDeaths.add(id);
 
-    playSound("mobdeath");
+    playSoundDeath(mobSnapshot.attackType);
 
     deadFx.set(id, {
       untilMs: now + DEAD_STAY_MS,
@@ -1506,7 +1543,7 @@ document.getElementById("btnHelp")?.addEventListener("click", () => {
 });
 
 /* ======================================================================
-   GAME OVER + HIT FLASH (BEGIN)
+   GAME OVER  (BEGIN)
    ====================================================================== */
 function showGameOverOverlay(reason, restartInMs){
   const overlay = document.getElementById("gameOverOverlay");
@@ -1532,42 +1569,9 @@ function hideGameOverOverlay(){
   document.body.classList.remove("locked");
 } // (END hideGameOverOverlay)
 
-let lastHitFlashAt = 0;
-function triggerHitFeedback(intensity01 = 0.7){
-  if (!ENABLE_HIT_FLASH) return;
 
-  const now = performance.now();
-  if (now - lastHitFlashAt < 500) return;
-  lastHitFlashAt = now;
-
-  const flash = document.getElementById("hitFlash");
-  if (!flash) return;
-
-  flash.classList.remove("on");
-  void flash.offsetHeight;
-  flash.style.opacity = String(Math.max(0.2, Math.min(0.6, intensity01)));
-  flash.classList.add("on");
-
-  if (ENABLE_SHAKE){
-    document.body.classList.add("hitShake");
-    setTimeout(() => document.body.classList.remove("hitShake"), 260);
-  }
-} // (END triggerHitFeedback)
-
-function updateFlashBtn(){
-  const b = document.getElementById("btnFlash");
-  if (!b) return;
-  b.textContent = "Flash: " + (ENABLE_HIT_FLASH ? "ON" : "OFF");
-} // (END updateFlashBtn)
-
-document.getElementById("btnFlash")?.addEventListener("click", () => {
-  ENABLE_HIT_FLASH = !ENABLE_HIT_FLASH;
-  localStorage.setItem("enableHitFlash", ENABLE_HIT_FLASH ? "1" : "0");
-  updateFlashBtn();
-});
-updateFlashBtn();
 /* ======================================================================
-   GAME OVER + HIT FLASH (END)
+   GAME OVER (END)
    ====================================================================== */
 
 
@@ -1613,13 +1617,14 @@ async function updateState(){
 
  const damages = detectPartyDamage(lastState || uiState, s);
 
-    const meName = String(mePlayer?.id || "").trim(); // party entry id (character display name)
+    //const meName = String(mePlayer?.id || "").trim(); // party entry id (character display name)
+    const meName = String(s.playerName || "").trim(); // party entry id (character display name)
 
     if (damages.length > 0 && meName){
       const myHit = damages.find(d => String(d.id) === meName);
       if (myHit){
         const intensity = Math.min(0.45, 0.18 + myHit.dmg / 80);
-        triggerHitFeedback(intensity);
+        playerHitEffect();
         playSound("hit");
 
         s._damagedIds = new Set([meName]);
@@ -1718,9 +1723,7 @@ function resetPlayerStatTracking() {
 }
 
 function checkPlayerStatToasts(player) {
-  console.log("CheckPlayerStats entry");
   if (!player) return;
-  console.log("CheckPlayerStats after player");
 
   if (lastPlayerStats === null) {
     lastPlayerStats = {
@@ -1739,7 +1742,8 @@ function checkPlayerStatToasts(player) {
     if (curr === prev) return;
 
     const delta = curr - prev;
-    console.log("CheckPlayerStats delta check");
+    //console.log("CheckPlayerStats delta check");
+
 
     if (delta > 0) {
       if(key!="xp"){
@@ -1775,19 +1779,38 @@ function checkPlayerStatToasts(player) {
 /* ======================================================================
    Wave over Functions (BEGIN)
    ====================================================================== */
+
 function showWaveOverlay(wave, nextInTurns){
   const el = document.getElementById("waveOverlay");
   const title = document.getElementById("waveTitle");
   const sub = document.getElementById("waveSub");
-  if (!el || !title || !sub) return;
+  const numEl = document.getElementById("waveTurnsNum");
+
+  if (!el || !title) return;
 
   title.textContent = `WAVE ${Number(wave) || 0} CLEARED`;
-  if(nextInTurns != null){
-    const turnsleft= Number(nextInTurns) ;
-    sub.textContent = `Next wave in ~${nextInTurns} turns…`;
-  }else{
-    sub.textContent = `Next wave incoming soon…`;
+
+  if (nextInTurns != null){
+    const turnsLeft = Math.max(0, Number(nextInTurns) || 0);
+
+    // optional: keep your old text
+    //if (sub) sub.textContent = `Next wave in ~${turnsLeft} turns…`;
+
+    // rolling number
+    if (numEl){
+      if (_waveTurnsShown === null) {
+        numEl.textContent = String(turnsLeft);
+      } else if (_waveTurnsShown !== turnsLeft) {
+        animateRollingInt(numEl, _waveTurnsShown, turnsLeft, { duration: 520 });
+      }
+      _waveTurnsShown = turnsLeft;
+    }
+  } else {
+    if (sub) sub.textContent = `Next wave incoming soon…`;
+    if (numEl) numEl.textContent = "—";
+    _waveTurnsShown = null;
   }
+
   el.classList.remove("hidden");
   el.setAttribute("aria-hidden", "false");
 }
@@ -1797,7 +1820,9 @@ function hideWaveOverlay(){
   if (!el) return;
   el.classList.add("hidden");
   el.setAttribute("aria-hidden", "true");
+  _waveTurnsShown = null;
 }
+
 /* ======================================================================
    Wave over Functions (END)
    ====================================================================== */
@@ -2652,7 +2677,11 @@ window.addEventListener("pageshow", (e) => {
 <div id="waveOverlay" class="hidden" aria-hidden="true">
   <div class="waveCard">
     <div class="waveTitle" id="waveTitle">WAVE CLEARED</div>
-    <div class="waveSub" id="waveSub">Next wave incoming…</div>
+    <div class="waveSub" id="waveSub">
+      <div class="waveTurns">
+        Next wave in <span id="waveTurnsNum">—</span> turns…
+      </div>
+    </div>
   </div>
 </div>
 

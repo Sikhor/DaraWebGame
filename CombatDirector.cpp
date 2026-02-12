@@ -395,7 +395,7 @@ bool CombatDirector::SubmitPlayerAction(const std::string& playerName,
     {
         if (BufferedActions.count(playerName))
         {
-            if (outError) *outError = "Already submitted for next turn (buffered)";
+            //if (outError) *outError = "Already submitted for next turn (buffered)";
             return true; // because we only send error to player if there is a real problem
         }
 
@@ -407,7 +407,7 @@ bool CombatDirector::SubmitPlayerAction(const std::string& playerName,
     // Current turn is open
     if (PendingActions.count(playerName))
     {
-        if (outError) *outError = "Player already submitted action for this turn";
+        //if (outError) *outError = "Player already submitted action for this turn";
         return true;  // because we only send error to player if there is a real problem
     }
 
@@ -511,6 +511,8 @@ void CombatDirector::ResolverLoop()
 
         {
             std::unique_lock<std::mutex> lk(CacheMutex);
+
+            if(!Players.empty()) KickInactivePlayersLocked();   // <---- add this
 
             // If no players, just idle
             if (Players.empty())
@@ -703,6 +705,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
 
             if(pit!=Players.end() && tit!=Players.end()){
                 player= pit->second;
+                player->MarkActive();
                 target= tit->second;
                 if(a.actionId=="attack")dmg= player->AttackMelee(target);
                 if(a.actionId=="fireball")dmg= player->AttackFireball(target);
@@ -725,6 +728,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
 
             if(pit!=Players.end() && tit!=Players.end()){
                 player= pit->second;
+                player->MarkActive();
                 target= tit->second;
                 if(a.actionId=="heal") player->Heal(target);
                 if(a.actionId=="revive") target->Revive();
@@ -744,6 +748,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
 
             if(pit!=Players.end()){
                 player= pit->second;
+                player->MarkActive();
                 if(a.actionId=="defense") player->BuffDefense();
                 if(a.actionId=="usepotion") player->UsePotion();
 
@@ -1074,7 +1079,7 @@ void CombatDirector::ResolveSpawnMobs()
         if (mobId.empty()) {
             //throw std::runtime_error("No mob templates loaded");
             mobId = g_mobTemplates.PickRandomMobId();
-            DaraLog("TURN", "End of possible mob waves... you should add more");
+            DaraLog("ERROR", "End of possible mob waves... you should add more");
         }
         SpawnMob(mobId, 0, slot);
 
@@ -1329,4 +1334,41 @@ void CombatDirector::ResetGameLocked()
     // Clear game over state
     Phase = EGamePhase::Running;
     GameOverReason.clear();
+}
+
+
+
+
+void CombatDirector::KickInactivePlayersLocked()
+{
+    std::vector<std::string> toRemove;
+    toRemove.reserve(Players.size());
+
+    for (const auto& [name, p] : Players)
+    {
+        if (!p) { toRemove.push_back(name); continue; }
+        if (!p->IsActive())  // IMPORTANT: IsActive should return true if recently active
+            toRemove.push_back(name);
+    }
+
+    for (const auto& name : toRemove)
+    {
+        DaraLog("LOGOUT", "Inactive timeout → removing " + name);
+        Players.erase(name);
+        PendingActions.erase(name);
+        BufferedActions.erase(name);
+
+    }
+
+    if (Players.empty())
+    {
+        DaraLog("GAMESTATE", "All players inactive → resetting to Wave 0");
+        ResetWave();
+    }
+}
+
+bool CombatDirector::HasPlayer(const std::string& playerName) const
+{
+  std::lock_guard<std::mutex> lk(CacheMutex);
+  return Players.find(playerName) != Players.end();
 }

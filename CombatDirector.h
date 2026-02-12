@@ -125,6 +125,8 @@ public:
     bool CheckGameOverLocked(std::string& outReason);
     void ResetGameLocked();
 
+    bool HasPlayer(const std::string& playerName) const; 
+
 private:
     int Wave=1;
     int WaveMobsLeft=10;
@@ -133,7 +135,6 @@ private:
 
     void NewWave();
     void ResetWave();
-
 
     // Thread loop
     void ResolverLoop();
@@ -166,6 +167,8 @@ private:
     bool CheckGameOverLocked(std::string& outReason) const;
 
     void AppendLogLocked(uint64_t turnId, const std::vector<std::string>& lines);
+
+    void KickInactivePlayersLocked();
 
 
 

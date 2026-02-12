@@ -4,7 +4,6 @@
 @media (max-width: 900px){
   :root{
     --gap: 8px;
-    --sceneMinH: 240px;
     --mobCardSize: 58px;
     --mobImgSize: 36px;
 
@@ -12,10 +11,14 @@
     --partyW: 34%;
     --encW: 66%;
     
-    --sceneMinH: 240px;
     --mobCardSize: 58px;
     --mobImgSize: 36px;
   }
+
+  #app, #gameRoot, .scene, .ui {
+    touch-action: none; /* blocks pinch + double-tap zoom and scrolling on that container */
+  }
+
   .hudBar{ flex-wrap: wrap; }
   .chat-input{ min-width: 160px; }
 
@@ -36,13 +39,15 @@
 @media (orientation: landscape) and (max-width: 1024px){
   :root{
     --gap: 6px;
-    --sceneMinH: 220px;
-    --mobCardSize: 58px;
-    --mobImgSize: 32px;
+    --mobCardSize: 64px;
+    --mobImgSize: 42px;
+  }
+  #app, #gameRoot, .scene, .ui {
+    touch-action: none; /* blocks pinch + double-tap zoom and scrolling on that container */
   }
 
   .partyPanel{ max-height: none; }
-  .panelHeader{ padding: 6px 10px; font-size: 10px; }
+  .panelHeader{ padding: 3px 10px; font-size: 10px; }
   .panelHeader .sub{ font-size: 11px; }
   .lanes{ padding: 6px; }
   .hudBar{ flex-wrap: nowrap; }
@@ -59,3 +64,59 @@
 @media (orientation: portrait){
   #rotateHint{ display: flex; }
 }
+
+/* small definitions */
+@media (orientation: landscape) and (max-width: 1024px){
+
+  :root{
+    --topbarH: 20px;
+    --gap: 6px;
+
+    --uiFont: 12px;
+    --uiFontSmall: 11px;
+    --uiFontTiny: 10px;
+    --actionTipFont: 9px; /* keep */
+
+  }
+
+  .panelHeader{
+    padding: 3px 4px;
+  }
+
+  /* topbar compact stays */
+  .topbar{
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .title{
+    font-size: 13px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  #turnBadge,
+  #gameBadge{
+    display: none;
+  }
+
+  .badge{
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .btnTop{
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+}
+
+
+
+
+/* to debug */
+body::before {
+  content: "TABLET";
+  background: orange;
+}
+
