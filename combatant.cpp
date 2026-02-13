@@ -162,6 +162,22 @@ void Combatant::MobAttack(CombatantPtr target)
     target->ApplyDamage(dmg);
     if(DARA_DEBUG_COMBAT)DaraLog("COMBAT", GetName()+ " Lane: "+std::to_string(Lane)+" NearRngDmg: "+std::to_string(nearRangeDmg) +" attacks with: "+std::to_string(dmg));
 }
+void Combatant::PlayerAttack(CombatantPtr target)
+{
+    if(target->GetAttackTypeEnum()==ECombatantAttackType::Bomb){
+        target->TriggerExplode();
+        DaraLog("BOMB", GetName()+" triggered Bomb to explode");
+    }
+}
+
+void Combatant::DefuseBomb()
+{
+    if(AttackType==ECombatantAttackType::Bomb){
+        HP=0;
+        ExplodeCounter=50000;
+        DaraLog("BOMB", GetName()+" defused bomb");
+    }
+}
 
 
 float Combatant::AttackMelee(CombatantPtr target)
@@ -175,6 +191,7 @@ float Combatant::AttackMelee(CombatantPtr target)
     }
 
     if (Energy > MELEECOST) {
+        PlayerAttack(target);
         dmg = GetRandomDamage();
         ApplyRandomCost(Energy, MELEECOST, DEVIATION);
         DaraLog("COMBAT", "Player: "+GetName()+ " attacks melee with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
@@ -189,12 +206,13 @@ float Combatant::AttackFireball(CombatantPtr target)
     float dmg= 0.f;
 
     if(!IsAlive())return dmg;
-    if(target->GetLane()<= MAX_LANES-5){
+    if(target->GetLane()<= MAX_LANES/2){
         //std::cout << "TOOOO FAR" << std::endl;
         //return 0.f;
     }
 
     if (Mana > SPELLCOST) {
+        PlayerAttack(target);
         dmg = GetRandomDamage();
         ApplyRandomCost(Mana, SPELLCOST, DEVIATION);
         DaraLog("COMBAT", "Player: "+GetName()+ " attacks fireball with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
@@ -216,7 +234,9 @@ float Combatant::AttackShoot(CombatantPtr target)
     }
 
     if(!IsAlive())return dmg;
+
     if (Energy > SPELLCOST) {
+        PlayerAttack(target);
         dmg = GetRandomDamage();
         ApplyRandomCost(Energy, SPELLCOST, DEVIATION);
         DaraLog("COMBAT", "Player: "+GetName()+ " attacks shoot with "+std::to_string(dmg)+" on a defense of: "+ std::to_string(target->GetCurrentDefense()));
@@ -366,7 +386,7 @@ void Combatant::CalcPos()
     if(PosY<0.f) PosY = std::clamp((Lane+ 0.5f) / MAX_LANES, 0.2f,0.9f);
     if(PosX<0.f) PosX = (Slot + 0.5f) / MAX_SLOTS;
 
-    if (!IsMezzed()) {
+    if (!IsMezzed() && Speed>0.f) {
         if(g_options.noMobJitter==false){
             PosX += jitterx;
             PosY += jittery;
@@ -429,7 +449,7 @@ bool Combatant::ShouldAttack()
             // No damage – healing handled elsewhere
             return false;
 
-            case ECombatantAttackType::Bomb:
+        case ECombatantAttackType::Bomb:
             // No damage – only on explosion
             return false;
 
@@ -482,6 +502,7 @@ std::string Combatant::GetAttackType() const
         case ECombatantAttackType::Spider:  return "Spider";
         case ECombatantAttackType::Insect:  return "Insect";
         case ECombatantAttackType::Healer:  return "Healer";
+        case ECombatantAttackType::Bomb:    return "Bomb";
         default:  
           {
             DaraLog("MOBTEMPLATE", "Unknown AttackType") ;
@@ -675,6 +696,7 @@ bool Combatant::ShouldExplode()
     if(AttackType!=ECombatantAttackType::Bomb) return false;
     ExplodeCounter--;
 
+    //if(DARA_DEBUG_COMBAT)
     DaraLog("COMBAT", "ExplodeCounter: " + GetName()+ ":"+std::to_string(ExplodeCounter));
 
     return ExplodeCounter<1;
@@ -692,7 +714,7 @@ void Combatant::Explode(CombatantPtr target)
     dmg += nearRangeDmg;
     dmg-= target->GetCurrentDefense();
     target->ApplyDamage(dmg);
-    //if(DARA_DEBUG_COMBAT)
-    DaraLog("COMBAT", "Explosion "+GetName()+ " Lane: "+std::to_string(Lane)+" NearRngDmg: "+std::to_string(nearRangeDmg) +" attacks with: "+std::to_string(dmg));
+    // if(DARA_DEBUG_COMBAT) 
+    DaraLog("BOMB", "Explosion "+GetName()+ " Lane: "+std::to_string(Lane)+" NearRngDmg: "+std::to_string(nearRangeDmg) +" attacks with: "+std::to_string(dmg));
     HP=0;
 }

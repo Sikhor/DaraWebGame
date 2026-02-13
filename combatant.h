@@ -204,7 +204,7 @@ protected:
     int PotionAmount= INITIALPOTIONS;
     int MezzCounter= 0;
     int BurnedCounter= 0;
-    int ExplodeCounter= 50;
+    int ExplodeCounter= 6;
     std::unordered_set<ECondition> Conditions;
 
     int Level=0;
@@ -230,6 +230,9 @@ protected:
     void CalcPos();
 
     std::chrono::steady_clock::time_point LastActive;
+    // should not used directly
+    void PlayerAttack(CombatantPtr target);
+
 
 public:
     Combatant(const std::string& name, ECombatantType type);
@@ -284,6 +287,7 @@ public:
     void AddPotion(int amount){PotionAmount+=amount;};
 
     std::string GetAttackType()const;
+    ECombatantAttackType GetAttackTypeEnum()const {return AttackType;};
     std::string GetDifficulty()const{return std::string(ToString(Difficulty));}
     ECombatantDifficulty GetDifficultyEnum()const{return Difficulty;}
 
@@ -304,8 +308,12 @@ public:
     bool ShouldMove();
     int Move();
     bool ShouldAttack();
+    
     bool ShouldExplode();
+    void TriggerExplode(){ExplodeCounter=0;};
     void Explode(CombatantPtr target);
+    void DefuseBomb();
+
     bool IsMezzed() const {return MezzCounter>0;}
     bool IsBurned() const {return BurnedCounter>0;}
     json GetConditionsJson() const;

@@ -332,6 +332,12 @@
     50%     { transform: translate3d(0,var(--bobY),0) rotate(0.20deg); }
   }
 
+  .mobCard.idle-breathe { animation: breathe 2.2s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{ transform: translateZ(0) scale(1); } 50%{ transform: translateZ(0) scale(1.02);} }
+
+  .mobCard.idle-spider { animation: breathe 2.0s ease-in-out infinite, twitch 6s ease-in-out infinite; }
+  @keyframes twitch { 0%,92%,100%{ filter:none; } 93%{ filter:brightness(1.3); } 94%{ filter:none; } }
+
   .mobCard.threat{
     border-color: rgba(120,200,255,0.28);
   }
@@ -1593,6 +1599,44 @@
   border: 1px solid rgba(255,255,255,0.14);
   box-shadow: 0 8px 22px rgba(0,0,0,0.40); /* slightly smaller shadow */
 }
+
+.bombFx{
+  position:absolute;
+  right: 6px;
+  top: 6px;
+  left: auto;
+  transform: none;
+
+  width: 54px;
+  height: 54px;
+  pointer-events:none;
+  z-index: 6;
+  filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
+
+  /* CSS pulse (no anime.js needed) */
+  animation: bombPulse 900ms ease-in-out infinite;
+}
+
+.bombFx .ring{
+  position:absolute;
+  inset:0;
+  border-radius:999px;
+  border:3px solid rgba(255,80,80,0.85);
+  box-shadow: 0 0 18px rgba(255,60,60,0.25) inset;
+  opacity: 0.95;
+  animation: bombRingPulse 900ms ease-in-out infinite;
+}
+
+@keyframes bombPulse{
+  0%,100% { transform: none; }
+  50%     { transform: scale(1.06); }
+}
+@keyframes bombRingPulse{
+  0%,100% { opacity: 0.95; }
+  50%     { opacity: 0.55; }
+}
+
+
 
 
 /* Font sizes */

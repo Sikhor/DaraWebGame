@@ -152,6 +152,8 @@ ECombatantAttackType MobTemplateStore::ParseAttackType(const std::string& s)
     if (s == "Spider")  return ECombatantAttackType::Spider;
     if (s == "Insect")  return ECombatantAttackType::Insect;
     if (s == "Healer") return ECombatantAttackType::Healer;
+    if (s == "Bomb") return ECombatantAttackType::Bomb;
+
     try
     {
         // somewhere deep inside

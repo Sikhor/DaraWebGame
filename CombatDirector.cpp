@@ -697,7 +697,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
         outTurnLog.push_back(a.playerName + " does: " + a.actionId + " (" + a.actionMsg + ")");
             std::string logMsg;
 
-        if(a.actionId=="attack" || a.actionId=="fireball"|| a.actionId=="shoot"|| a.actionId=="mezmerize"){
+        if(a.actionId=="attack" || a.actionId=="fireball"|| a.actionId=="shoot"|| a.actionId=="mezmerize"||a.actionId=="defuse"){
             std::shared_ptr<Combatant> target;
             std::shared_ptr<Combatant> player;
             auto pit=Players.find(a.playerName);
@@ -711,6 +711,11 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
                 if(a.actionId=="fireball")dmg= player->AttackFireball(target);
                 if(a.actionId=="shoot")dmg= player->AttackShoot(target);
                 if(a.actionId=="mezmerize")dmg= player->AttackMezz(target);
+                if(a.actionId=="defuse") {
+                    target->DefuseBomb();
+                    DaraLog("BOMB", "Bomb defused");
+                }
+
                 logMsg= "Success "+std::to_string(dmg);                
             }else{
                 logMsg="Could not find player or target";
@@ -1070,7 +1075,7 @@ void CombatDirector::ResolveSpawnMobs()
 
     if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;
-        if(GetRandomFloat(0.f,10.f>9.f)){
+        if(GetRandomFloat(0.f,1000.f)>(900.f-Wave)){
             int BombForWave= Wave/10+1000+1;
             mobId = g_mobTemplates.PickRandomBossForWave(BombForWave);
             if(mobId.empty()){
