@@ -32,8 +32,8 @@ inline constexpr int BURNEDTURNS= 5;
 inline constexpr float DEBUFF_VALUE_BURNED= 10000000.f;
 inline constexpr float DAMAGE_VALUE_BURNED= 10.f;
 
-inline constexpr int MAXSLOTS=6;
-inline constexpr int MAXLANES=30;
+inline constexpr int MAX_SLOTS=6;
+inline constexpr int MAX_LANES=100;
 
 inline constexpr float STAT_MOB_SPEED= 0.5f;
 
@@ -56,7 +56,8 @@ enum class ECombatantAttackType
     Combi,
     Spider,
     Insect,
-    Healer
+    Healer,
+    Bomb
 };
 
 enum class ECombatantType
@@ -110,6 +111,7 @@ static constexpr std::string_view ToString(ECombatantAttackType a)
         case ECombatantAttackType::Spider:  return "Spider";
         case ECombatantAttackType::Insect:  return "Insect";
         case ECombatantAttackType::Healer: return "Healer";
+        case ECombatantAttackType::Bomb: return "Bomb";
         default:                           return "Unknown ECombatantAttackType";
     }
 }
@@ -171,7 +173,7 @@ protected:
     std::string Name;      // Display name
 
     int Lane = 0; // 0=Short,1=Medium,2=Long
-    int Slot = 0; // 0-MAXSLOTS allowed
+    int Slot = 0; // 0-MAX_SLOTS allowed
     float PosX=-1.f; //will then be calculated if <0
     float PosY=-1.f; //will then be calculated if <0
     bool Active=true;
@@ -202,6 +204,7 @@ protected:
     int PotionAmount= INITIALPOTIONS;
     int MezzCounter= 0;
     int BurnedCounter= 0;
+    int ExplodeCounter= 50;
     std::unordered_set<ECondition> Conditions;
 
     int Level=0;
@@ -235,6 +238,7 @@ public:
     Combatant();
     void InitFromMobTemplate(
         const std::string& mobClass,
+        const std::string& avatarId,
         ECombatantAttackType attackType,
         ECombatantDifficulty difficulty,
         float speed,
@@ -300,6 +304,8 @@ public:
     bool ShouldMove();
     int Move();
     bool ShouldAttack();
+    bool ShouldExplode();
+    void Explode(CombatantPtr target);
     bool IsMezzed() const {return MezzCounter>0;}
     bool IsBurned() const {return BurnedCounter>0;}
     json GetConditionsJson() const;

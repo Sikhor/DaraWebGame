@@ -189,7 +189,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Combatant>> Players;
     std::unordered_map<std::string, std::shared_ptr<Combatant>> Mobs;
 
-    bool FilledSlotArray[MAXLANES][MAXSLOTS];
+    bool FilledSlotArray[MAX_LANES][MAX_SLOTS];
     int OpenSlotAmount=0;
     int SpawnedMobsAmount=0;
 

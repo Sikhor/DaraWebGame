@@ -13,9 +13,9 @@
 
 <title>Dara – Game</title>
 
-<link rel="stylesheet" href="css/base.css?v=4">
-<link rel="stylesheet" href="css/tablet.css?v=4" media="screen and (max-width: 1024px)">
-<link rel="stylesheet" href="css/small.css?v=4"  media="screen and (max-width: 858px)">
+<link rel="stylesheet" href="css/base.css?v=1707812012">
+<link rel="stylesheet" href="css/tablet.css?v=1707812012" media="screen and (max-width: 1024px)">
+<link rel="stylesheet" href="css/small.css?v=1707812012"  media="screen and (max-width: 858px)">
 <script>
   /*
 */
@@ -364,7 +364,7 @@ const ACTION_COSTS = {
   mezmerize:  { res: "mn", cost: 10 },
   shoot:      { res: "en", cost: 10 },
   usepotion:  { res: null, cost: 0  },
-  talk:       { res: null, cost: 0  },
+  defuse:     { res: "en", cost: 10 },
   revive:     { res: "mn", cost: 10 },
   evac:       { res: null, cost: 0  }
 };
@@ -391,14 +391,16 @@ const ACTION_SOUNDS = {
   fireball: ["Fireball.wav"],
   heal:     ["Heal.wav"],
   defend:   ["Defense.wav"],
+  explosion:["Explosion1.wav", "Explosion2.wav"],
+  explosionsmall:["ExplosionSmall1.wav", "ExplosionSmall2.wav"],
   mezmerize:["Mez.wav"],
   revive:   ["Revive.wav"],
   evac:     ["Evac.wav"],
-  talk:     ["TalkDummy.wav"],
+  defuse:   ["Defuse1.wav", "Defuse2.wav"],
   usepotion:["Potion.wav"],
   shoot:    ["LaserGun1.wav", "LaserGun2.wav", "LaserGun3.wav", "LaserGun4.wav"],
   mobdeath: ["Death_01.wav", "Death_02.wav", "Death_03.wav", "Death_04.wav", "Death_05.wav"],
-  spiderdeath: ["MobDeath.wav"],
+  spiderdeath: ["MobDeath.wav", "SpiderDeath1.wav","SpiderDeath2.wav"],
   gameover: ["GameOverSciFi.wav"],
   hit:      ["PlayerHit1.wav", "PlayerHit2.wav", "PlayerHit3.wav"],
   loot:     ["Loot1.wav", "Success_1.wav", "Success_2.wav", "Success_3.wav", "Success_4.wav", "Success_5.wav", "Success_6.wav", "Success_7.wav", "Success_8.wav", "Success_9.wav", "Success_10.wav"],

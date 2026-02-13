@@ -116,7 +116,7 @@
 
 /* to debug */
 body::before {
-  content: "TABLET";
+  content: "Medium";
   background: orange;
 }
 

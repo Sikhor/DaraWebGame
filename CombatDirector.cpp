@@ -25,7 +25,7 @@ static float Rand01(std::mt19937& rng)
 int RandSlot()
 {
     static thread_local std::mt19937 rng{ std::random_device{}() };
-    static std::uniform_int_distribution<int> dist(0, MAXSLOTS-1);
+    static std::uniform_int_distribution<int> dist(0, MAX_SLOTS-1);
     return dist(rng);
 }
 bool ShallMobSpawn(int turn)
@@ -38,8 +38,8 @@ bool ShallMobSpawn(int turn)
 CombatDirector::CombatDirector(std::string gameId)
     : GameId(std::move(gameId))
 {
-    for (int l = 0; l < MAXLANES; ++l)
-    for (int s = 0; s < MAXSLOTS; ++s)
+    for (int l = 0; l < MAX_LANES; ++l)
+    for (int s = 0; s < MAX_SLOTS; ++s)
         FilledSlotArray[l][s] = false;
 }
 
@@ -998,10 +998,10 @@ void CombatDirector::NewWave()
 void CombatDirector::GetFilledSlotArray()
 {
     // alles auf false
-    for (int l = 0; l < MAXLANES; ++l)
-        for (int s = 0; s < MAXSLOTS; ++s)
+    for (int l = 0; l < MAX_LANES; ++l)
+        for (int s = 0; s < MAX_SLOTS; ++s)
             FilledSlotArray[l][s] = false;
-    OpenSlotAmount=MAXLANES*MAXSLOTS;
+    OpenSlotAmount=MAX_LANES*MAX_SLOTS;
     SpawnedMobsAmount=0;
 
     // check which is open
@@ -1014,8 +1014,8 @@ void CombatDirector::GetFilledSlotArray()
         int lane = mob->GetLane();
         int slot = mob->GetSlot();
 
-        if (lane >= 0 && lane < MAXLANES &&
-            slot >= 0 && slot < MAXSLOTS)
+        if (lane >= 0 && lane < MAX_LANES &&
+            slot >= 0 && slot < MAX_SLOTS)
         {
             FilledSlotArray[lane][slot] = true; // belegt
             SpawnedMobsAmount++;
@@ -1070,6 +1070,15 @@ void CombatDirector::ResolveSpawnMobs()
 
     if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;
+        if(GetRandomFloat(0.f,10.f>9.f)){
+            int BombForWave= Wave/10+1000+1;
+            mobId = g_mobTemplates.PickRandomBossForWave(BombForWave);
+            if(mobId.empty()){
+                DaraLog("ERROR", "No Bomb found for "+ std::to_string(BombForWave));
+            }else{
+                SpawnMob(mobId, 0, slot);
+            }
+        }
         if (MobToSpawnInWave <= 1) {
             mobId = g_mobTemplates.PickRandomBossForWave(Wave);
         }else{
@@ -1096,7 +1105,7 @@ void CombatDirector::ResolveMobAttacks()
         int nextLane = mob->GetLane() + 1;
         int slot = mob->GetSlot();
 
-        if (nextLane < MAXLANES && !FilledSlotArray[nextLane][slot] && mob->ShouldMove())
+        if (nextLane < MAX_LANES && !FilledSlotArray[nextLane][slot] && mob->ShouldMove())
         {
             // slot in current lane frei machen
             FilledSlotArray[mob->GetLane()][slot] = false;
@@ -1164,12 +1173,16 @@ void CombatDirector::ResolveMobs(const json& aiJson,
 
             if(DARA_DEBUG_COMBAT) DaraLog("MobAttack", logMsg);
         }
-        // Optional per-entity log fields if you have them:
-        // mob->SetLastAction("attack");
-        // mob->SetCombatLog("Attacked " + target->GetName());
-        // target->SetCombatLog("Hit by " + mobName);
+        if(mob->ShouldExplode()){
+            for (const auto& explTarget : alivePlayers) {
+                if (!explTarget) continue;
+                mob->Explode(explTarget);
+
+            }
+        }
     }
-    
+    // second time as bombs could have exploded and are dead now
+    // ResolveDeadMobs();  
 }
 
 void CombatDirector::AppendLogLocked(uint64_t turnId, const std::vector<std::string>& lines)

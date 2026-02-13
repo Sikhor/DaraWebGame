@@ -150,12 +150,13 @@ void Combatant::MobAttack(CombatantPtr target)
 {
     if(!IsAlive())return;
     if(MezzCounter>0)return;
+    if(AttackType==ECombatantAttackType::Bomb) return;
     float dmg= 0.f;
     float nearRangeDmg;
 
     dmg = GetRandomDamage();
     // dmg + if the mob is near to the last lane
-    nearRangeDmg= static_cast<float>(Lane/MAXLANES)*dmg;
+    nearRangeDmg= static_cast<float>(Lane/MAX_LANES)*dmg;
     dmg += nearRangeDmg;
     dmg-= target->GetCurrentDefense();
     target->ApplyDamage(dmg);
@@ -167,7 +168,7 @@ float Combatant::AttackMelee(CombatantPtr target)
 {
     float dmg= 0.f;
     if(!IsAlive())return dmg;
-    if(target->GetLane()<= MAXLANES-2)
+    if(target->GetLane()<= MAX_LANES-2)
     {
         //std::cout << "TOOOO FAR" << std::endl;
         return dmg;
@@ -188,7 +189,7 @@ float Combatant::AttackFireball(CombatantPtr target)
     float dmg= 0.f;
 
     if(!IsAlive())return dmg;
-    if(target->GetLane()<= MAXLANES-5){
+    if(target->GetLane()<= MAX_LANES-5){
         //std::cout << "TOOOO FAR" << std::endl;
         //return 0.f;
     }
@@ -362,8 +363,8 @@ void Combatant::CalcPos()
     variation= 0.08f; //8%
     float jitterx = GetRandomFloat(-variation, variation);
 
-    if(PosY<0.f) PosY = std::clamp((Lane+ 0.5f) / MAXLANES, 0.2f,0.8f);
-    if(PosX<0.f) PosX = (Slot + 0.5f) / MAXSLOTS;
+    if(PosY<0.f) PosY = std::clamp((Lane+ 0.5f) / MAX_LANES, 0.2f,0.9f);
+    if(PosX<0.f) PosX = (Slot + 0.5f) / MAX_SLOTS;
 
     if (!IsMezzed()) {
         if(g_options.noMobJitter==false){
@@ -373,8 +374,8 @@ void Combatant::CalcPos()
     }
 
     // optional safety clamp
-    PosY = std::clamp(PosY, 0.0f, 1.0f);
-    PosX = std::clamp(PosX, 0.0f, 1.0f);
+    PosY = std::clamp(PosY, 0.0f, 0.9f);
+    PosX = std::clamp(PosX, 0.1f, 0.9f);
 }
 void Combatant::SetLane(int lane, int slot)
 {
@@ -385,7 +386,7 @@ void Combatant::SetLane(int lane, int slot)
 int Combatant::Move()
 {
     Lane= static_cast<int>(CurrentField);
-    PosY = std::clamp((Lane+ 0.5f) / MAXLANES, 0.2f,0.8f);
+    PosY = std::clamp((Lane+ 0.5f) / MAX_LANES, 0.15f,0.8f);
     CalcPos();
     //DaraLog("MOVE", GetName()+" Lane: "+ std::to_string(Lane));
     return Lane;
@@ -396,7 +397,8 @@ bool Combatant::ShouldMove()
     if(MezzCounter>0)return false;
 
     CurrentField+=Speed;
-    return CurrentField>(Lane+1) && Lane<MAXLANES;
+    //return CurrentField>(Lane+1) && Lane<MAX_LANES;
+    return Lane<MAX_LANES;
 }
 
 bool Combatant::ShouldAttack()
@@ -405,11 +407,11 @@ bool Combatant::ShouldAttack()
     {
         case ECombatantAttackType::Melee:
             // Strong, close-range
-            return Lane>=MAXLANES-1;
+            return Lane>=MAX_LANES-1;
 
         case ECombatantAttackType::Ranged:
             // Safer, slightly weaker
-            return true; // old one ! Lane>=MAXLANES-1;
+            return true; // old one ! Lane>=MAX_LANES-1;
 
         case ECombatantAttackType::Combi:
             // Flexible, tactical
@@ -417,14 +419,18 @@ bool Combatant::ShouldAttack()
 
         case ECombatantAttackType::Spider:
             // Safer, slightly weaker
-            return true; // old one ! Lane>=MAXLANES-1;
+            return true; // old one ! Lane>=MAX_LANES-1;
 
         case ECombatantAttackType::Insect:
             // Safer, slightly weaker
-            return true; // old one ! Lane>=MAXLANES-1;
+            return true; // old one ! Lane>=MAX_LANES-1;
 
         case ECombatantAttackType::Healer:
             // No damage – healing handled elsewhere
+            return false;
+
+            case ECombatantAttackType::Bomb:
+            // No damage – only on explosion
             return false;
 
         default:
@@ -437,6 +443,7 @@ bool Combatant::ShouldAttack()
 
 void Combatant::InitFromMobTemplate(
     const std::string& mobClass,
+    const std::string& avatarId,
     ECombatantAttackType attackType,
     ECombatantDifficulty difficulty,
     float speed,
@@ -448,7 +455,7 @@ void Combatant::InitFromMobTemplate(
 )
 {
     MobClass = mobClass;
-    AvatarId = mobClass;
+    AvatarId = avatarId;
     AttackType = attackType;
     Difficulty = difficulty;
 
@@ -662,4 +669,30 @@ bool Combatant::IsActive() const
     std::chrono::steady_clock::time_point now= std::chrono::steady_clock::now();
 
     return (now-LastActive)< t;
+}
+bool Combatant::ShouldExplode()
+{
+    if(AttackType!=ECombatantAttackType::Bomb) return false;
+    ExplodeCounter--;
+
+    DaraLog("COMBAT", "ExplodeCounter: " + GetName()+ ":"+std::to_string(ExplodeCounter));
+
+    return ExplodeCounter<1;
+}
+
+void Combatant::Explode(CombatantPtr target)
+{
+    if(AttackType!=ECombatantAttackType::Bomb) return;
+    float dmg= 0.f;
+    float nearRangeDmg;
+
+    dmg = GetRandomDamage();
+    // dmg + if the mob is near to the last lane
+    nearRangeDmg= static_cast<float>(Lane/MAX_LANES)*dmg;
+    dmg += nearRangeDmg;
+    dmg-= target->GetCurrentDefense();
+    target->ApplyDamage(dmg);
+    //if(DARA_DEBUG_COMBAT)
+    DaraLog("COMBAT", "Explosion "+GetName()+ " Lane: "+std::to_string(Lane)+" NearRngDmg: "+std::to_string(nearRangeDmg) +" attacks with: "+std::to_string(dmg));
+    HP=0;
 }

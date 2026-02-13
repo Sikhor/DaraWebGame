@@ -29,6 +29,7 @@ private:
         std::string id;
         std::string displayName;
         std::string mobClass;
+        std::string avatarId;
         ECombatantAttackType attackType;
         ECombatantDifficulty difficulty;
         float speed;
