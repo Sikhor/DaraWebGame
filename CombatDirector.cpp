@@ -882,21 +882,23 @@ void CombatDirector::RewardPlayersForMobDeath(
         // If you have “online / logged in” markers, check them here.
         // if (!p.IsOnline()) continue;
 
-        const int xp = RandInt(rng, r.xpMin, r.xpMax)+r.MobAddsXP;
+        int xp = RandInt(rng, r.xpMin, r.xpMax)+r.MobAddsXP;
         const int credits = RandInt(rng, r.creditsMin, r.creditsMax)+r.MinCredits;
+        DaraLog("LOOT", "xp:" +std::to_string(xp));
 
         int CurrentLevel= p.GetLevel();
         int CurrentXP= p.GetXP();
         int CurrentPotions= p.GetPotionAmount();
         int CurrentCredits= p.GetCredits();
 
-        if(p.GetDifficulty()=="Normal"){
-            p.AddXP(xp);
-        }else{
-            p.AddXP(xp+10);
-        }
-        if (Rand01(rng) < r.creditsChance)
+        if(p.GetDifficulty()!="Normal") xp+=10;
+        DaraLog("LOOT", "xp:" +std::to_string(xp));
+        p.AddXP(xp);
+
+        if (Rand01(rng) < r.creditsChance){
+            DaraLog("LOOT", "credits:" +std::to_string(credits));
             p.AddCredits(credits);
+        }
 
         if (Rand01(rng) < r.lootChance)
             MaybeGiveLoot(rng, p, mobName);
@@ -943,6 +945,8 @@ void CombatDirector::ResolveDeadMobs()
         // already visually dead ("corpse state")
         if (!mob->IsAlive())
         {
+            mob->SetAvatarId("Dead"); // mark it (frontend will show corpse/diffused bomb)
+            justDied.emplace_back(mobName, mob);
             // keep it while the counter is still > 0
             if (mob->ShallStayInGame())
             {
@@ -953,18 +957,6 @@ void CombatDirector::ResolveDeadMobs()
             {
                 it = Mobs.erase(it);
             }
-            continue;
-        }
-
-        // newly dead this turn (first tick where IsAlive() is false)
-        if (!mob->IsAlive())
-        {
-            mob->SetAvatarId("Dead"); // mark it (frontend will show corpse/diffused bomb)
-            justDied.emplace_back(mobName, mob);
-
-            // IMPORTANT: do NOT countdown here if you want the corpse to be visible
-            // for exactly StayInGameCounter ticks AFTER the death tick.
-            ++it;
             continue;
         }
 

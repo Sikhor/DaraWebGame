@@ -184,7 +184,7 @@
     min-height: 0;
     min-width: 0;
   }
-  .encounterPanel .lanes{ 
+  .encounterPanel .battleFieldRoot{ 
     flex: 1 1 auto; 
     min-height: 0;
     padding: 5px; 
@@ -521,9 +521,8 @@
 
 /* when mob is dead -> shrink away */
 .mob-card.is-dead{
-  animation: mobShrinkOut 650ms ease-in forwards;
-  overflow: hidden;            /* allows height collapse */
-  max-height: 220px;           /* set to >= your card height */
+  overflow: hidden;
+  max-height: 220px;
 }
 
 /* keep death image visible but shrink it too */
@@ -1602,15 +1601,12 @@
 
 
 /*************BOMB ***********************************/
-     .bombFx {
+     .bombFx{
         position: absolute;
-        left: 50%;
-        top: -18px;
-        transform: translate(-50%,-100%);
         width: 64px;
         height: 64px;
         pointer-events: none;
-        z-index: 5;
+        z-index: 50;
         filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
       }
       .bombFx .ring {
@@ -1784,12 +1780,91 @@
         scale(var(--s,1)) rotate(var(--spin, 0deg));
       }
     }
+/* LootCoins BEGIN *******************************************************/
+/* --- Loot coin sprinkle FX --- */
+.lootCoinLayer{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
 
+.lootCoin{
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.25);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(255,255,255,0) 45%),
+    radial-gradient(circle at 70% 70%, rgba(0,0,0,.25), rgba(0,0,0,0) 55%),
+    linear-gradient(135deg, rgba(255,215,80,.95), rgba(210,140,20,.95));
+  opacity: 0;
+  animation: coinFly 750ms cubic-bezier(.15,.8,.2,1) forwards; 
+  will-change: transform, opacity;
+}
 
+@keyframes coinFly {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+.lootCoin { animation: coinFly 750ms ease-in forwards; }
 
+/***************** END Loot coin *******************/
+.lootPotionLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
 
+.lootPotion {
+  position: absolute;
+  border-radius: 50% 50% 40% 40%;
+  background: url('https://gameinfo.daraempire.com/game-res/icons/Potion.png') center/contain no-repeat;
+  border: none;
+  box-shadow: 0 0 10px rgba(120,160,255,0.6);
+  animation: potionFall 1600ms cubic-bezier(.05,.8,.2,1) forwards;
+}
 
+@keyframes potionFall {
+  0% {
+    transform: translate(0,0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+/***************** END Potion toast *******************/
 
+/* optional tiny sparkle */
+.lootSpark{
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);
+  opacity: 0;
+  animation: sparkPop 520ms ease-out forwards;
+}
+
+@keyframes sparkPop{
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(.6); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) translate(var(--dx), var(--dy)) scale(1.1); }
+}
+
+/* LootCoins End *********************************************************/
+
+/* FONT SIZES BEGIN *******************************************************/
 /* Font sizes */
   /* topbar + panels */
 .title{ font-size: 0.95em; }

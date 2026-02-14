@@ -10,9 +10,9 @@ UIState::json UIState::ToJson(
 {
     json ui;
     ui["turn"]  = Turn;
-    ui["slots"] = Slots;
+    // ui["slots"] = Slots; Not needed anymore
 
-    ui["lanes"] = BuildDefaultLanes();
+    // ui["lanes"] = BuildDefaultLanes(); not needed anymore ?
 
     ui["selectedMobId"]   = SelectedMobId ? json(*SelectedMobId) : json(nullptr);
     ui["selectedPartyId"] = SelectedPartyId ? json(*SelectedPartyId) : json(nullptr);

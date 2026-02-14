@@ -543,13 +543,13 @@
      ENCOUNTER (NO FLICKER) - PERSISTENT DOM
      ====================================================================== */
   function ensureScene() {
-    const lanesEl = document.getElementById("lanes");
-    if (!lanesEl) return null;
+    const battleFieldRoot = document.getElementById("battleFieldRoot");
+    if (!battleFieldRoot) return null;
 
-    let scene = lanesEl.querySelector(".scene");
+    let scene = battleFieldRoot.querySelector(".scene");
     if (scene) return scene;
 
-    lanesEl.innerHTML = "";
+    battleFieldRoot.innerHTML = "";
 
     scene = document.createElement("div");
     scene.className = "scene";
@@ -564,7 +564,7 @@
     scene.appendChild(fog1);
     scene.appendChild(fog2);
 
-    lanesEl.appendChild(scene);
+    battleFieldRoot.appendChild(scene);
     return scene;
   }
 
@@ -1287,6 +1287,13 @@
 
   function showLootToast(text) {
     showToast(text, "loot", 2800);
+    sprinkleCoinsAtXY(0.5,0.9, 10, 800);
+    playSound("loot");
+  }
+
+  function showPotionToast(text) {
+    showToast(text, "loot", 2800);
+    sprinklePotionAtXY(0.5,0.9, 1, 800);
     playSound("loot");
   }
 
@@ -1318,13 +1325,17 @@
       playSoundDeathForMob(mobSnapshot);
       triggerDeathEffect(mobSnapshot);
 
+      let deadStayTime= DEAD_STAY_MS;
+      if((mobSnapshot.attackType).toLowerCase()==="bomb"){
+        deadStayTime= 8000+DEAD_STAY_MS;
+      }
 
       deadFx.set(id, {
-        untilMs: now + DEAD_STAY_MS,
+        untilMs: now + deadStayTime,
         lastMob: { ...mobSnapshot, hp: 0 }
       });
 
-      markMobDeadAndRemove(id, DEAD_STAY_MS);
+      markMobDeadAndRemove(id, deadStayTime);
     };
 
     for (const [id, nextMob] of nextMap) {
@@ -1346,17 +1357,23 @@
   }
 
   function markMobDeadAndRemove(mobId, delayMs) {
-    const card = document.querySelector(`.mob-card[data-mob-id="${CSS.escape(String(mobId))}"]`);
+    const card = document.querySelector(
+      `.mob-card[data-mob-id="${CSS.escape(String(mobId))}"]`
+    );
     if (!card) return;
     if (card.dataset.deadStarted === "1") return;
 
     card.dataset.deadStarted = "1";
+
+    // Set animation dynamically
+    card.style.animation = `mobShrinkOut ${delayMs}ms ease-in forwards`;
     card.classList.add("is-dead");
 
-    window.setTimeout(() => {
+    setTimeout(() => {
       card.remove();
     }, delayMs);
   }
+
 
   /* ======================================================================
      GAME OVER
@@ -1472,6 +1489,120 @@
     /* ======================================================================
      Anime functions
      ====================================================================== */
+
+    /**** Sprinkle Coins BEGIN ***********************************************/
+    function sprinkleCoinsAtXY(x, y, amount = 14, lifeMs = 750) {
+      const host = document.getElementById("battleFieldRoot");
+      if (!host) return;
+
+      // Allow normalized coords (0..1) or pixel coords
+      const r = host.getBoundingClientRect();
+      const cx = (x >= 0 && x <= 1) ? (x * r.width) : x;
+      const cy = (y >= 0 && y <= 1) ? (y * r.height) : y;
+
+      const layer = document.createElement("div");
+      layer.className = "lootCoinLayer";
+      host.appendChild(layer);
+
+      const rand = (a, b) => a + Math.random() * (b - a);
+
+      for (let i = 0; i < amount; i++) {
+        const coin = document.createElement("div");
+        coin.className = "lootCoin";
+
+        // Start spread out ABOVE the target point...
+        const sx = rand(-120, 120);     // horizontal spread
+        const sy = rand(-160, -60);     // start above (negative y)
+
+        // ...then fall down INTO the target point
+        const dx = (-sx) + rand(-18, 18);
+        const dy = (-sy) + rand(20, 70); // extra downward pull (gravity feel)
+        const rot = rand(-220, 220) + "deg";
+
+        coin.style.left = (cx + sx) + "px";
+        coin.style.top  = (cy + sy) + "px";
+        coin.style.setProperty("--dx", dx.toFixed(1) + "px");
+        coin.style.setProperty("--dy", dy.toFixed(1) + "px");
+        coin.style.setProperty("--rot", rot);
+
+        coin.style.animationDelay = (Math.random() * 90).toFixed(0) + "ms";
+        coin.style.width = (12 + Math.random() * 10).toFixed(0) + "px";
+        coin.style.height = coin.style.width;
+
+        layer.appendChild(coin);
+
+        // Optional sparkle (also falls into the target)
+        if (Math.random() < 0.45) {
+          const sp = document.createElement("div");
+          sp.className = "lootSpark";
+
+          const spx = rand(-110, 110);
+          const spy = rand(-150, -50);
+          const spdx = (-spx) + rand(-15, 15);
+          const spdy = (-spy) + rand(10, 55);
+
+          sp.style.left = (cx + spx) + "px";
+          sp.style.top  = (cy + spy) + "px";
+          sp.style.setProperty("--dx", spdx.toFixed(1) + "px");
+          sp.style.setProperty("--dy", spdy.toFixed(1) + "px");
+
+          sp.style.animationDelay = (Math.random() * 80).toFixed(0) + "ms";
+          layer.appendChild(sp);
+        }
+      }
+
+      setTimeout(() => layer.remove(), lifeMs);
+    }
+
+
+     /**** Sprinkle Coins END   ***********************************************/
+     /**** Sprinkle Potion Begin   ***********************************************/
+      function sprinklePotionAtXY(x, y, amount = 10, lifeMs = 1600) {
+        const host = document.getElementById("battleFieldRoot");
+        if (!host) return;
+
+        const r = host.getBoundingClientRect();
+        const cx = (x >= 0 && x <= 1) ? x * r.width  : x;
+        const cy = (y >= 0 && y <= 1) ? y * r.height : y;
+
+        const layer = document.createElement("div");
+        layer.className = "lootPotionLayer";
+        host.appendChild(layer);
+
+        const rand = (a, b) => a + Math.random() * (b - a);
+
+        for (let i = 0; i < amount; i++) {
+          const potion = document.createElement("div");
+          potion.className = "lootPotion";
+
+          // Start spread out above the target
+          const sx = rand(-110, 110);
+          const sy = rand(-150, -60);
+
+          // Fall into the center
+          const dx = (-sx) + rand(-15, 15);
+          const dy = (-sy) + rand(25, 80);
+          const rot = rand(-180, 180) + "deg";
+
+          potion.style.left = (cx + sx) + "px";
+          potion.style.top  = (cy + sy) + "px";
+          potion.style.setProperty("--dx", dx.toFixed(1) + "px");
+          potion.style.setProperty("--dy", dy.toFixed(1) + "px");
+          potion.style.setProperty("--rot", rot);
+
+          potion.style.animationDelay = (Math.random() * 80).toFixed(0) + "ms";
+          potion.style.width = (24 + Math.random() * 12).toFixed(0) + "px";
+          potion.style.height = potion.style.width;
+
+          layer.appendChild(potion);
+        }
+
+        setTimeout(() => layer.remove(), lifeMs);
+      }
+
+
+     /**** Sprinkle Potion END   ***********************************************/
+
 /* ======================================================================
    BOMB COUNTDOWN FX (anime.js) — attackType "bomb"
    ====================================================================== */
@@ -1782,7 +1913,7 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
     const mobId = String(mob.id || "").trim();
     if (!mobId) return;
     if(hasCondition(mob,"defused"))return;
-    console.log("BOMB defused 1")
+    // console.log("BOMB not defused 1 ",getMobConditionsArray(mob));
 
     // if already running -> keep it
     if (bombFxByMobId.has(mobId)) return;
@@ -1816,7 +1947,11 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
     const prevPos = getComputedStyle(mobCardEl).position;
     if (prevPos === "static") mobCardEl.style.position = "relative";
 
-    mobCardEl.appendChild(root);
+    const fxLayer = document.getElementById("fxLayer");
+    if (!fxLayer) return;
+    fxLayer.appendChild(root);
+    
+    positionBombFxOverMob(root, mobCardEl);
 
     const startedAtMs = Date.now();
     const endAtMs = startedAtMs + totalSec * 1000;
@@ -1831,8 +1966,9 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
       if (!bombFxByMobId.has(mobId)) return;
       const entry = bombFxByMobId.get(mobId);
       const mobNow = entry?.mobRef || mob; // see below note
+      // console.log("BOMB soundTimer ", getMobConditionsArray(mobNow));
       if (hasCondition(mobNow, "defused")) {
-        console.log("BOMB defused 2")
+        // console.log("BOMB defused in soundTimer");
         clearInterval(entry.timerId);
         clearInterval(entry.soundTimerId);
         removeBombFx(mobId);      // removes UI + deletes map entry
@@ -1848,10 +1984,13 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
     const timerId = setInterval(() => {
       const entry = bombFxByMobId.get(mobId);
       const mobNow = entry?.mobRef || mob;
-
+      
+      positionBombFxOverMob(root, mobCardEl);
+      
       // ✅ stop if defused
+      // console.log("BOMB tickTimer ", getMobConditionsArray(mobNow));
       if (hasCondition(mobNow, "defused")) {
-        console.log("BOMB defused 3")
+        // console.log("BOMB defused in tick updates");
         clearInterval(timerId);
         clearInterval(soundTimerId);
         removeBombFx(mobId);
@@ -1892,12 +2031,30 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
       timerId,
       soundTimerId,
       timeline: null,
-      endAtMs
+      endAtMs,
+      mobRef: mob
     });
     // ✅ Important: store a reference you update each state tick (see next section)
-    mobRef: mob
+
   }
 
+
+  function positionBombFxOverMob(rootEl, mobCardEl) {
+    const fxLayer = document.getElementById("fxLayer");
+    if (!fxLayer || !rootEl || !mobCardEl) return;
+
+    const cardRect = mobCardEl.getBoundingClientRect();
+    const layerRect = fxLayer.getBoundingClientRect();
+
+    // Center above the mob card
+    const x = (cardRect.left + cardRect.width / 2) - layerRect.left;
+    const y = (cardRect.top) - layerRect.top;
+
+    // Put it a bit above the card
+    rootEl.style.left = `${x}px`;
+    rootEl.style.top  = `${y - 10}px`;
+    rootEl.style.transform = "translate(-50%, -100%)"; // anchor bottom-center
+  }
   /* -----------------------------
    5) Your existing apply function can stay the same
    ----------------------------- */
@@ -2715,7 +2872,9 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
       const delta = curr - prev;
 
       if (delta > 0) {
-        if (key !== "xp") showLootToast(positiveMsg.replace("{n}", Math.abs(delta)));
+        if (key === "xp") showToast(positiveMsg.replace("{n}", Math.abs(delta)), "success", 1500);
+        else if(key==="credits") showLootToast(positiveMsg.replace("{n}", Math.abs(delta)));
+        else if(key==="potions")  showPotionToast(positiveMsg.replace("{n}", Math.abs(delta)));
         else showToast(positiveMsg.replace("{n}", Math.abs(delta)), "success", 1500);
       } else {
         showToast(negativeMsg.replace("{n}", Math.abs(delta)), "warning", 1500);

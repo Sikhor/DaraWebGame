@@ -49,7 +49,7 @@
   .partyPanel{ max-height: none; }
   .panelHeader{ padding: 3px 10px; font-size: 10px; }
   .panelHeader .sub{ font-size: 11px; }
-  .lanes{ padding: 6px; }
+  .battleFieldRoot{ padding: 6px; }
   .hudBar{ flex-wrap: nowrap; }
 
   .chat-input{ min-width: 0; height: 32px; font-size: 13px; }
