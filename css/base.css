@@ -1600,41 +1600,192 @@
   box-shadow: 0 8px 22px rgba(0,0,0,0.40); /* slightly smaller shadow */
 }
 
-.bombFx{
-  position:absolute;
-  right: 6px;
-  top: 6px;
-  left: auto;
-  transform: none;
 
-  width: 54px;
-  height: 54px;
-  pointer-events:none;
-  z-index: 6;
-  filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
+/*************BOMB ***********************************/
+     .bombFx {
+        position: absolute;
+        left: 50%;
+        top: -18px;
+        transform: translate(-50%,-100%);
+        width: 64px;
+        height: 64px;
+        pointer-events: none;
+        z-index: 5;
+        filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
+      }
+      .bombFx .ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        border: 3px solid rgba(255,80,80,0.85);
+        box-shadow: 0 0 18px rgba(255,60,60,0.25) inset;
+        opacity: 0.95;
+      }
+      .bombFx .fill {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        background: conic-gradient(rgba(255,70,70,0.95) 0deg, rgba(255,70,70,0.15) 0deg);
+        mask: radial-gradient(circle at center, transparent 58%, #000 60%);
+        -webkit-mask: radial-gradient(circle at center, transparent 58%, #000 60%);
+        opacity: 0.95;
+      }
+      .bombFx .num {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        font-weight: 900;
+        font-size: 22px;
+        letter-spacing: 0.5px;
+        color: rgba(255,235,235,0.95);
+        text-shadow: 0 0 10px rgba(255,40,40,0.65);
+      }
+      .bombFx .label {
+        position: absolute;
+        left: 50%;
+        bottom: -18px;
+        transform: translateX(-50%);
+        font-size: 11px;
+        opacity: 0.85;
+        color: rgba(255,210,210,0.9);
+        text-shadow: 0 0 10px rgba(255,40,40,0.45);
+        white-space: nowrap;
+      }
+      .bombFx.flash {
+        animation: bombFxFlash 220ms ease-out 1;
+      }
+      @keyframes bombFxFlash {
+        0% { transform: translate(-50%,-100%) scale(1); opacity: 1; }
+        70% { transform: translate(-50%,-100%) scale(1.25); opacity: 1; }
+        100% { transform: translate(-50%,-100%) scale(1.55); opacity: 0; }
+      }
+ 
 
-  /* CSS pulse (no anime.js needed) */
-  animation: bombPulse 900ms ease-in-out infinite;
+/* ===============================
+   Explosion FX (global)
+   =============================== */
+
+.boomRoot{
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9999;
+  contain: layout style paint;
 }
 
-.bombFx .ring{
-  position:absolute;
-  inset:0;
-  border-radius:999px;
-  border:3px solid rgba(255,80,80,0.85);
-  box-shadow: 0 0 18px rgba(255,60,60,0.25) inset;
-  opacity: 0.95;
-  animation: bombRingPulse 900ms ease-in-out infinite;
+/* Core flash */
+.boomCore{
+  position:absolute; inset:-8%;
+  border-radius: 24px;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255,245,200,0.95) 0%,
+    rgba(255,160,80,0.85) 22%,
+    rgba(255,90,60,0.50) 45%,
+    rgba(255,60,60,0.00) 72%);
+  filter: drop-shadow(0 0 18px rgba(255,120,60,0.7));
+  opacity: 0;
+  transform: scale(0.55);
+  animation: boomCore 520ms ease-out forwards;
 }
 
-@keyframes bombPulse{
-  0%,100% { transform: none; }
-  50%     { transform: scale(1.06); }
+@keyframes boomCore{
+  0%   { opacity: 0; transform: scale(0.45); }
+  10%  { opacity: 1; }
+  55%  { opacity: 0.95; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(1.7); }
 }
-@keyframes bombRingPulse{
-  0%,100% { opacity: 0.95; }
-  50%     { opacity: 0.55; }
-}
+
+ /* Shockwave ring */
+    .boomRing{
+      position:absolute; left:50%; top:50%;
+      width: 20%; height: 20%;
+      transform: translate(-50%,-50%) scale(1);
+      border-radius: 999px;
+      border: 2px solid rgba(255,220,170,0.75);
+      box-shadow: 0 0 22px rgba(255,140,80,0.35);
+      opacity: 0;
+      animation: boomRing 650ms ease-out forwards;
+    }
+    @keyframes boomRing{
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.2); }
+      12%  { opacity: 1; }
+      80%  { opacity: 0.25; }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(4.2); }
+    }
+
+    /* Smoke */
+    .boomSmoke{
+      position:absolute; inset: 0;
+      border-radius: 999px;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(50,50,60,0.00) 0%,
+        rgba(70,70,80,0.25) 35%,
+        rgba(40,40,50,0.55) 60%,
+        rgba(10,10,14,0.00) 78%);
+      filter: blur(2px);
+      opacity: 0;
+      transform: scale(0.8);
+      animation: boomSmoke 900ms ease-out forwards;
+    }
+    @keyframes boomSmoke{
+      0%   { opacity: 0; transform: scale(0.55); }
+      18%  { opacity: 0.55; }
+      70%  { opacity: 0.35; transform: scale(1.55); }
+      100% { opacity: 0; transform: scale(1.9); }
+    }
+
+    /* Sparks */
+    .boomSpark{
+      position:absolute;
+      left:50%; top:50%;
+      width: 34px; height: 3px;
+      transform: translate(-50%,-50%) rotate(var(--rot, 0deg));
+      border-radius: 999px;
+      background: linear-gradient(90deg,
+        rgba(255,255,220,0.0) 0%,
+        rgba(255,250,200,0.95) 30%,
+        rgba(255,140,80,0.95) 65%,
+        rgba(255,60,60,0.0) 100%);
+      filter: drop-shadow(0 0 10px rgba(255,180,90,0.75));
+      opacity: 0;
+      animation: boomSparkFly 520ms ease-out forwards;
+    }
+    @keyframes boomSparkFly{
+      0%   { opacity: 0; transform: translate(-50%,-50%) rotate(var(--rot)) scaleX(0.4); }
+      10%  { opacity: 1; }
+      100% { opacity: 0; transform:
+        translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+        rotate(var(--rot)) scaleX(1.2);
+      }
+    }
+
+    /* Debris chunks */
+    .boomDebris{
+      position:absolute;
+      left:50%; top:50%;
+      width: 10px; height: 6px;
+      transform: translate(-50%,-50%) scale(var(--s,1));
+      border-radius: 2px;
+      background: linear-gradient(180deg,
+        rgba(80,80,90,0.95),
+        rgba(30,30,38,0.95));
+      box-shadow: 0 0 8px rgba(0,0,0,0.35);
+      opacity: 0;
+      animation: boomDebrisFly 760ms cubic-bezier(.2,.9,.2,1) forwards;
+    }
+    @keyframes boomDebrisFly{
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(var(--s,1)) rotate(0deg); }
+      12%  { opacity: 1; }
+      100% { opacity: 0; transform:
+        translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+        scale(var(--s,1)) rotate(var(--spin, 0deg));
+      }
+    }
+
+
 
 
 

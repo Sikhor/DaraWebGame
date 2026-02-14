@@ -933,24 +933,44 @@ void CombatDirector::ResolveDeadMobs()
             continue;
         }
 
-        // remove already-marked corpses or deleteAll
-        if (deleteAll || mob->GetAvatarId() == "Dead")
+        // global wipe
+        if (deleteAll)
         {
             it = Mobs.erase(it);
             continue;
         }
 
-        // newly dead this turn
+        // already visually dead ("corpse state")
         if (!mob->IsAlive())
         {
-            mob->SetAvatarId("Dead");     // mark it
+            // keep it while the counter is still > 0
+            if (mob->ShallStayInGame())
+            {
+                mob->CountdownStayInGame();
+                ++it;
+            }
+            else
+            {
+                it = Mobs.erase(it);
+            }
+            continue;
+        }
+
+        // newly dead this turn (first tick where IsAlive() is false)
+        if (!mob->IsAlive())
+        {
+            mob->SetAvatarId("Dead"); // mark it (frontend will show corpse/diffused bomb)
             justDied.emplace_back(mobName, mob);
+
+            // IMPORTANT: do NOT countdown here if you want the corpse to be visible
+            // for exactly StayInGameCounter ticks AFTER the death tick.
             ++it;
             continue;
         }
 
         ++it;
     }
+
 
     // 2) reward only if something died this turn
     if (!justDied.empty())
@@ -1075,6 +1095,7 @@ void CombatDirector::ResolveSpawnMobs()
 
     if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;
+        // do I need to spawn special stuff like a bomb?
         if(GetRandomFloat(0.f,1000.f)>(900.f-Wave)){
             int BombForWave= Wave/10+1000+1;
             mobId = g_mobTemplates.PickRandomBossForWave(BombForWave);
@@ -1084,6 +1105,7 @@ void CombatDirector::ResolveSpawnMobs()
                 SpawnMob(mobId, 0, slot);
             }
         }
+        
         if (MobToSpawnInWave <= 1) {
             mobId = g_mobTemplates.PickRandomBossForWave(Wave);
         }else{
@@ -1096,6 +1118,7 @@ void CombatDirector::ResolveSpawnMobs()
             DaraLog("ERROR", "End of possible mob waves... you should add more");
         }
         SpawnMob(mobId, 0, slot);
+        
 
     }
 }
@@ -1234,8 +1257,7 @@ CombatDirector::json CombatDirector::GetLogTailJson(size_t lastN) const
 }
 
 
-json CombatDirector::GetUIStateSnapshotJsonLocked(
-    const std::string playerName, const std::string characterId, const std::string characterName) const
+json CombatDirector::GetUIStateSnapshotJsonLocked(const std::string characterId, const std::string characterName) const
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
 
@@ -1271,9 +1293,9 @@ json CombatDirector::GetUIStateSnapshotJsonLocked(
 
     uiJson["gameOverReason"] = GameOverReason;
     uiJson["infoMsg"]= InfoMsg;
-    uiJson["playerName"]= playerName;
+
     uiJson["characterName"]= characterName;
-    uiJson["characterId"]= characterId;
+    uiJson["characterId"]= characterId; 
 
     if (isGameOver)
     {

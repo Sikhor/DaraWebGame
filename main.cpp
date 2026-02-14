@@ -458,8 +458,8 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
         return;
     }
 
-    const std::string& playerName = session.playerName;
-    if (playerName.empty()) {
+    const std::string& characterName = session.characterName;
+    if (characterName.empty()) {
         res.status = 400;
         res.set_content(R"({"status":"error","message":"Session has no playerName"})", "application/json");
         return;
@@ -471,7 +471,7 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
     std::string actionId     = body.value("actionId", "");
     std::string actionTarget = body.value("actionTarget", "");
     std::string actionMsg    = body.value("actionMsg", "");
-    DaraLog("Action", "Received action from player "+ playerName
+    DaraLog("Action", "Received action from player "+ characterName
               + ": " + actionId + " " + actionTarget + " ActionMsg: " + actionMsg );
 
     std::string err;
@@ -479,10 +479,10 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
 
     if(g_combatDirector->GetPhase()==EGamePhase::GameOverPause){
         res.status = 200;
-        res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
+        res.set_content((json{{"status","ok"},{"characterName",characterName}}).dump(), "application/json");
         return;
     }
-    bool ok = g_combatDirector->SubmitPlayerAction(playerName, actionId, actionTarget, actionMsg, &err);
+    bool ok = g_combatDirector->SubmitPlayerAction(characterName, actionId, actionTarget, actionMsg, &err);
 
     if (!ok || !err.empty()) {
         res.status = 400;
@@ -491,7 +491,7 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
     }
   
     res.status = 200;
-    res.set_content((json{{"status","ok"},{"playerName",playerName}}).dump(), "application/json");
+    res.set_content((json{{"status","ok"},{"playerName",characterName}}).dump(), "application/json");
 });
 
 
@@ -511,7 +511,6 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
         return;
     }
     // DAS ist jetzt deine Player-Identität
-    const std::string& playerName = session.playerName;
     const std::string& characterId = session.characterId;
     const std::string& characterName = session.characterName;
     
@@ -525,7 +524,7 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
 }
 
     
-    json out = g_combatDirector->GetUIStateSnapshotJsonLocked(playerName, characterId, characterName);
+    json out = g_combatDirector->GetUIStateSnapshotJsonLocked(characterId, characterName);
     if(DARA_DEBUG_MOBSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["mobs"].dump(2) <<std::endl;
     if(DARA_DEBUG_PLAYERSTATS) std::cout << "GetUIStateSnapshotJsonLocked: " << out["party"].dump(2) <<std::endl;
     if(DARA_DEBUG_FULLSTATE || g_options.showFullState) std::cout << "/state reply: " << out.dump(2) <<std::endl;

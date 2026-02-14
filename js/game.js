@@ -64,6 +64,7 @@
   const MOB_CONDITIONS = {
     Mezzed: { icon: "BuffMezzed.png", title: "Mezzed", desc: "Cannot act or attack" },
     Burned: { icon: "BuffBurned.png", title: "Burned", desc: "Takes fire damage over time and reduces defense" },
+    Defused: { icon: "Defused.png", title: "Defused", desc: "Bomb is defused... not further action needed" },
     Poisoned: { icon: "BuffPoisoned.png", title: "Poisoned", desc: "Takes poison damage over time and reduces defense" },
     Wounded: { icon: "BuffWounded.png", title: "Wounded", desc: "Reduced effectiveness and reduces defense" },
     Defending: { icon: "BuffDefending.png", title: "Defending", desc: "Reduced damage taken" },
@@ -74,6 +75,7 @@
   const CONDITION_PRIORITY = [
     "Mezzed",
     "Burned",
+    "Defused",
     "Poisoned",
     "Wounded",
     "Fleeing",
@@ -118,7 +120,6 @@
   const LOGIN_PAGE = "index.html";
 
   function getToken() { return localStorage.getItem("sessionToken") || ""; }
-  function getPlayerName() { return localStorage.getItem("playerName") || "unknown player"; }
   function getGameId() { return localStorage.getItem("gameId") || "0"; }
 
   function readCharacterFromUrlOnce() {
@@ -137,12 +138,10 @@
     }
   }
 
-  function getCharacterId() { return localStorage.getItem("characterId") || ""; }
-  function getCharacterName() { return localStorage.getItem("characterName") || ""; }
-
+  
   function requireCharacterOrRedirect() {
-    const cid = getCharacterId();
-    const cname = getCharacterName();
+    const cid = getMeCharacterId();
+    const cname = getMeName();
     if (!cid && !cname) {
       window.location.href = LOGIN_PAGE;
     }
@@ -251,6 +250,7 @@
 
   const ACTION_SOUNDS = {
     attack: ["Attack.wav"],
+    bombbeep: ["BombBeep.wav"],
     fireball: ["Fireball.wav"],
     heal: ["Heal.wav"],
     defend: ["Defense.wav"],
@@ -296,6 +296,18 @@
     playSound(deathKey);
   }
 
+  function triggerDeathEffect(mob)
+  {
+    const mobEntry = mobDom.get(mob.id);
+    if (!mobEntry?.card) return;
+
+    const fxCfg = getMobEffects(mob);
+    if(!fxCfg.deathEffect) return;
+
+    if(fxCfg.deathEffect=== "bomb"){
+        spawnExplosionFxForMob(mob, mobEntry.card);
+    }
+  }
 
   const ACTIONS = [
     { id: "shoot", label: "Shoot", cd: 1 },
@@ -407,19 +419,8 @@
 
         playSound(actionId);
 
-        const userName = getPlayerName();
-        const characterId = getCharacterId();
-        const characterName = getCharacterName();
-
-        if (!userName) {
-          console.warn("No playerName in localStorage yet");
-          return;
-        }
-        if (!characterId && !characterName) {
-          console.warn("No character selected");
-          window.location.href = LOGIN_PAGE;
-          return;
-        }
+        const characterId = getMeCharacterId();
+        const characterName = getMeName();
 
         startCooldown(actionId, cdSec);
         tickCooldowns();
@@ -435,7 +436,6 @@
             headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
               gameId: String(getGameId()),
-              userName,
               characterId,
               characterName,
               actionId,
@@ -492,24 +492,29 @@
   function clamp01(x) { return Math.max(0, Math.min(1, x)); }
   function pct(v, max) { return max > 0 ? clamp01(v / max) : 0; }
 
+  const ME={
+    characterId:"",
+    characterName: ""
+  }
+
   let uiState = {
     turn: 1,
     mobs: [],
     party: [],
     selectedMobId: null,
-    selectedPartyId: null
+    selectedPartyId: null,
   };
 
   function renderBadges() {
-    const p = getPlayerName() || "(not set)";
-    const c = getCharacterName() || getCharacterId() || "(no character)";
+    const name = getMeName();
+    const cid = getMeCharacterId() || "(no characterId)";
     const pb = document.getElementById("playerBadge");
     const gb = document.getElementById("gameBadge");
     const tb = document.getElementById("turnBadge");
     const wb = document.getElementById("waveBadge");
     const pc = document.getElementById("partyCount");
 
-    if (pb) pb.textContent = `Player: ${p} • Char: ${c}`;
+    if (pb) pb.textContent = `You: ${name}`;
     if (gb) gb.textContent = "Game: " + getGameId();
     if (tb) tb.textContent = "Turn: " + (uiState.turn ?? 1);
     if (wb) wb.textContent = "Wave: " + (uiState.wave ?? 0) + " | Left: " + (uiState.waveMobsLeft ?? 0);
@@ -771,10 +776,12 @@
       rangedCooldownMs: 2000
     },
     bomb: {
-      projectile: "acid",             // uses spawnAcidSpit
+      projectile: null,             // uses none
+      bombCountdownSec: 15,
       attackSoundKey: null,
-      deathSoundKey: "mobdeath",
-      idle: ["breathe"],
+      deathSoundKey: "explosion",
+      deathEffect: "bomb",
+      idle: [],
       rangedCooldownMs: 2000
     }
   };
@@ -1227,6 +1234,9 @@
 
     lastInfoMsg = text;
   }
+  /* ======================================================================
+     Condition Checks to adjust behaviour
+     ====================================================================== */
 
   /* ======================================================================
      DAMAGE + DEATH DETECTION
@@ -1306,6 +1316,8 @@
       playedDeaths.add(id);
 
       playSoundDeathForMob(mobSnapshot);
+      triggerDeathEffect(mobSnapshot);
+
 
       deadFx.set(id, {
         untilMs: now + DEAD_STAY_MS,
@@ -1466,99 +1478,317 @@
 
   const bombFxByMobId = new Map(); // mobId -> { rootEl, timerId, timeline, endAtMs }
 
+  /* -----------------------------
+    1) Separate explosion function
+    ----------------------------- */
+  function spawnExplosionFxForMob(mob, mobCardEl) {
+      if (!mobCardEl) return;
+
+      const r = mobCardEl.getBoundingClientRect();
+      const x = r.left + r.width * 0.5;
+      const y = r.top + r.height * 0.5;
+
+      if(hasCondition(mob,"defused"))return;
+      
+      playSound("explosion");
+      spawnDifficultyExplosion(mob, x, y);
+  }
+
+  function spawnDifficultyExplosion(mob, x, y) {
+  if (!mob) return;
+
+  const diff = String(mob.difficulty || "").toLowerCase();
+
+  switch (diff) {
+
+    // --------------------------------------------------
+    // NORMAL
+    // --------------------------------------------------
+    case "normal":
+      spawnExplosionFxAtXY(x, y, {
+        sizePx: 120,
+        sparkCount: 8,
+        debrisCount: 5,
+        lifeMs: 750
+      });
+      break;
+
+
+    // --------------------------------------------------
+    // GROUP MOB
+    // --------------------------------------------------
+    case "groupmob":
+      spawnExplosionFxAtXY(x, y, {
+        sizePx: 150,
+        sparkCount: 12,
+        debrisCount: 8,
+        lifeMs: 850
+      });
+      break;
+
+
+    // --------------------------------------------------
+    // BOSS
+    // --------------------------------------------------
+    case "boss":
+      spawnExplosionFxAtXY(x, y, {
+        sizePx: 200,
+        sparkCount: 18,
+        debrisCount: 14,
+        lifeMs: 1100
+      });
+
+      // second delayed burst
+      setTimeout(() => {
+        spawnExplosionFxAtXY(x, y, {
+          sizePx: 260,
+          sparkCount: 10,
+          debrisCount: 6,
+          soundKey: false,
+          lifeMs: 900
+        });
+      }, 80);
+
+      break;
+
+
+    // --------------------------------------------------
+    // GROUP BOSS
+    // --------------------------------------------------
+    case "groupboss":
+      spawnExplosionFxAtXY(x, y, {
+        sizePx: 260,
+        sparkCount: 24,
+        debrisCount: 18,
+        lifeMs: 1200
+      });
+
+      setTimeout(() => {
+        spawnExplosionFxAtXY(x, y, {
+          sizePx: 320,
+          sparkCount: 12,
+          debrisCount: 8,
+          soundKey: false,
+          lifeMs: 1000
+        });
+      }, 120);
+
+      break;
+
+
+    // --------------------------------------------------
+    // RAID MOB
+    // --------------------------------------------------
+    case "raidmob":
+      spawnExplosionFxAtXY(x, y, {
+        sizePx: 280,
+        sparkCount: 26,
+        debrisCount: 20,
+        lifeMs: 1300
+      });
+
+      // triple shock
+      setTimeout(() => {
+        spawnExplosionFxAtXY(x, y, {
+          sizePx: 340,
+          sparkCount: 14,
+          debrisCount: 10,
+          soundKey: false,
+          lifeMs: 1000
+        });
+      }, 90);
+
+      setTimeout(() => {
+        spawnExplosionFxAtXY(x, y, {
+          sizePx: 200,
+          sparkCount: 8,
+          debrisCount: 6,
+          soundKey: false,
+          lifeMs: 700
+        });
+      }, 180);
+
+      break;
+
+
+    // --------------------------------------------------
+    // RAID BOSS (NUCLEAR 😈)
+    // --------------------------------------------------
+    case "raidboss":
+      spawnExplosionFxAtXY(x, y, {
+        sizePx: 360,
+        sparkCount: 40,
+        debrisCount: 30,
+        lifeMs: 1600
+      });
+
+      // expanding nuclear chain
+      setTimeout(() => {
+        spawnExplosionFxAtXY(x, y, {
+          sizePx: 480,
+          sparkCount: 20,
+          debrisCount: 14,
+          soundKey: false,
+          lifeMs: 1400
+        });
+      }, 120);
+
+      setTimeout(() => {
+        spawnExplosionFxAtXY(x, y, {
+          sizePx: 600,
+          sparkCount: 10,
+          debrisCount: 6,
+          soundKey: false,
+          shake: false,
+          lifeMs: 1000
+        });
+      }, 240);
+
+      break;
+
+
+    // --------------------------------------------------
+    // FALLBACK
+    // --------------------------------------------------
+    default:
+      spawnExplosionFxAtXY(x, y);
+  }
+}
+
+
+function spawnExplosionFxAtXY(x, y, opts = {}) {
+    // expects your CSS classes in base.css:
+    // .boomRoot .boomCore .boomRing .boomSmoke .boomSpark .boomDebris (+ keyframes)
+
+    const layer = document.getElementById("fxLayer") || ensureFxLayer?.();
+    if (!layer) return;
+
+    const size = opts.sizePx ?? 140;
+
+    // root
+    const root = document.createElement("div");
+    root.className = "boomRoot";
+    root.style.left = `${x}px`;
+    root.style.top  = `${y}px`;
+    root.style.width  = `${size}px`;
+    root.style.height = `${size}px`;
+
+    // core / ring / smoke
+    const core = document.createElement("div");
+    core.className = "boomCore";
+
+    const ring = document.createElement("div");
+    ring.className = "boomRing";
+
+    const smoke = document.createElement("div");
+    smoke.className = "boomSmoke";
+
+    root.appendChild(core);
+    root.appendChild(ring);
+    root.appendChild(smoke);
+
+    // sparks (thin streaks)
+    const sparkCount = opts.sparkCount ?? 10;
+    for (let i = 0; i < sparkCount; i++) {
+      const s = document.createElement("div");
+      s.className = "boomSpark";
+
+      const rot = Math.random() * 360;
+      const dist = (size * 0.55) + Math.random() * (size * 0.55); // how far it flies
+      const dx = Math.cos(rot * Math.PI / 180) * dist;
+      const dy = Math.sin(rot * Math.PI / 180) * dist;
+
+      s.style.setProperty("--rot", `${rot}deg`);
+      s.style.setProperty("--dx", `${dx}px`);
+      s.style.setProperty("--dy", `${dy}px`);
+
+      // small per-spark delay makes it feel more chaotic
+      s.style.animationDelay = `${Math.random() * 60}ms`;
+
+      root.appendChild(s);
+    }
+
+    // debris (chunks)
+    const debrisCount = opts.debrisCount ?? 7;
+    for (let i = 0; i < debrisCount; i++) {
+      const d = document.createElement("div");
+      d.className = "boomDebris";
+
+      const rot = Math.random() * 360;
+      const dist = (size * 0.35) + Math.random() * (size * 0.65);
+      const dx = Math.cos(rot * Math.PI / 180) * dist;
+      const dy = Math.sin(rot * Math.PI / 180) * dist;
+
+      // random chunk size + spin
+      const s = 0.7 + Math.random() * 1.1;              // scale
+      const spin = (-220 + Math.random() * 440) + "deg"; // -220..220
+
+      d.style.setProperty("--dx", `${dx}px`);
+      d.style.setProperty("--dy", `${dy}px`);
+      d.style.setProperty("--s", `${s}`);
+      d.style.setProperty("--spin", `${spin}`);
+
+      // optional: slightly different chunk sizes (w/h)
+      d.style.width = `${8 + Math.random() * 10}px`;
+      d.style.height = `${5 + Math.random() * 8}px`;
+
+      d.style.animationDelay = `${Math.random() * 80}ms`;
+
+      root.appendChild(d);
+    }
+
+    layer.appendChild(root);
+
+    // optional sound
+    if (opts.soundKey !== false) {
+      try { playSound("explosion"); } catch {}
+    }
+
+    // optional little screenshake + flash (if you want)
+    if (opts.shake !== false) {
+      document.body.classList.add("hitShake");
+      setTimeout(() => document.body.classList.remove("hitShake"), 260);
+    }
+
+    // cleanup after the longest animation (debris is 760ms)
+    setTimeout(() => root.remove(), opts.lifeMs ?? 900);
+  }
+
+  /* -----------------------------
+   2) Optional: add styles once
+   ----------------------------- */
+  
   function removeBombFx(mobId) {
     const fx = bombFxByMobId.get(mobId);
     if (!fx) return;
 
     try { if (fx.timerId) clearInterval(fx.timerId); } catch (e) {}
+    try { if (fx.soundTimerId) clearInterval(fx.soundTimerId);} catch (e) {}
     try { fx.rootEl?.remove(); } catch (e) {}
     try { fx.rootEl?.remove(); } catch (e) {}
+    
+
 
     bombFxByMobId.delete(mobId);
   }
 
-  function ensureBombFxStyles() {
-    if (document.getElementById("bombFxStyles")) return;
-
-    const st = document.createElement("style");
-    st.id = "bombFxStyles";
-    st.textContent = `
-      .bombFx {
-        position: absolute;
-        left: 50%;
-        top: -18px;
-        transform: translate(-50%,-100%);
-        width: 64px;
-        height: 64px;
-        pointer-events: none;
-        z-index: 5;
-        filter: drop-shadow(0 0 10px rgba(255,60,60,0.35));
-      }
-      .bombFx .ring {
-        position: absolute;
-        inset: 0;
-        border-radius: 999px;
-        border: 3px solid rgba(255,80,80,0.85);
-        box-shadow: 0 0 18px rgba(255,60,60,0.25) inset;
-        opacity: 0.95;
-      }
-      .bombFx .fill {
-        position: absolute;
-        inset: 0;
-        border-radius: 999px;
-        background: conic-gradient(rgba(255,70,70,0.95) 0deg, rgba(255,70,70,0.15) 0deg);
-        mask: radial-gradient(circle at center, transparent 58%, #000 60%);
-        -webkit-mask: radial-gradient(circle at center, transparent 58%, #000 60%);
-        opacity: 0.95;
-      }
-      .bombFx .num {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%,-50%);
-        font-weight: 900;
-        font-size: 22px;
-        letter-spacing: 0.5px;
-        color: rgba(255,235,235,0.95);
-        text-shadow: 0 0 10px rgba(255,40,40,0.65);
-      }
-      .bombFx .label {
-        position: absolute;
-        left: 50%;
-        bottom: -18px;
-        transform: translateX(-50%);
-        font-size: 11px;
-        opacity: 0.85;
-        color: rgba(255,210,210,0.9);
-        text-shadow: 0 0 10px rgba(255,40,40,0.45);
-        white-space: nowrap;
-      }
-      .bombFx.flash {
-        animation: bombFxFlash 220ms ease-out 1;
-      }
-      @keyframes bombFxFlash {
-        0% { transform: translate(-50%,-100%) scale(1); opacity: 1; }
-        70% { transform: translate(-50%,-100%) scale(1.25); opacity: 1; }
-        100% { transform: translate(-50%,-100%) scale(1.55); opacity: 0; }
-      }
-    `;
-    document.head.appendChild(st);
-  }
-
-  function spawnBombCountdownFxForMob(mob, mobCardEl) {
+/* -----------------------------
+   4) Your upgraded countdown function
+   ----------------------------- */
+function spawnBombCountdownFxForMob(mob, mobCardEl) {
     const anime = window.anime;
     if (!anime || !mob || !mobCardEl) return;
 
     const mobId = String(mob.id || "").trim();
     if (!mobId) return;
+    if(hasCondition(mob,"defused"))return;
+    console.log("BOMB defused 1")
 
     // if already running -> keep it
     if (bombFxByMobId.has(mobId)) return;
-
-    ensureBombFxStyles();
-
+ 
     const fxCfg = getMobEffects(mob);
-    const totalSec = Math.max(3, Number(fxCfg.bombCountdownSec ?? 15) || 15);
+    const totalSec = Math.max(3, Number(fxCfg.bombCountdownSec) || 20);
 
     // Root element mounted inside the mobCard so it moves/scales with it
     const root = document.createElement("div");
@@ -1588,10 +1818,46 @@
 
     mobCardEl.appendChild(root);
 
-    const endAtMs = Date.now() + totalSec * 1000;
+    const startedAtMs = Date.now();
+    const endAtMs = startedAtMs + totalSec * 1000;
 
-      // Tick updater
-      const timerId = setInterval(() => {
+    // Flag that is only true if the countdown reached 0 naturally
+    let finishedNaturally = false;
+
+    // ---- Sound every 5 seconds while active ----
+    // (plays immediately, then every 5s; change if you want first beep after 5s)
+    const soundTimerId = setInterval(() => {
+      // only play if still active
+      if (!bombFxByMobId.has(mobId)) return;
+      const entry = bombFxByMobId.get(mobId);
+      const mobNow = entry?.mobRef || mob; // see below note
+      if (hasCondition(mobNow, "defused")) {
+        console.log("BOMB defused 2")
+        clearInterval(entry.timerId);
+        clearInterval(entry.soundTimerId);
+        removeBombFx(mobId);      // removes UI + deletes map entry
+        return;
+      }
+      playSound("bombbeep"); // <-- your sound key
+    }, 5000);
+
+    // Optional: play right away too
+    playSound("bombbeep");
+
+    // Tick updater
+    const timerId = setInterval(() => {
+      const entry = bombFxByMobId.get(mobId);
+      const mobNow = entry?.mobRef || mob;
+
+      // ✅ stop if defused
+      if (hasCondition(mobNow, "defused")) {
+        console.log("BOMB defused 3")
+        clearInterval(timerId);
+        clearInterval(soundTimerId);
+        removeBombFx(mobId);
+        return;
+      }
+
       const leftMs = Math.max(0, endAtMs - Date.now());
       const leftSec = Math.ceil(leftMs / 1000);
 
@@ -1607,9 +1873,12 @@
         root.style.filter = "drop-shadow(0 0 14px rgba(255,60,60,0.6))";
       }
 
-      // Done: flash and remove
+      // Done
       if (leftMs <= 0) {
+        finishedNaturally = true;
+
         clearInterval(timerId);
+        clearInterval(soundTimerId);
 
         // one last flash pop
         root.classList.add("flash");
@@ -1618,9 +1887,20 @@
       }
     }, 120);
 
-    bombFxByMobId.set(mobId, { rootEl: root, timerId, timeline: null, endAtMs });
+    bombFxByMobId.set(mobId, {
+      rootEl: root,
+      timerId,
+      soundTimerId,
+      timeline: null,
+      endAtMs
+    });
+    // ✅ Important: store a reference you update each state tick (see next section)
+    mobRef: mob
   }
 
+  /* -----------------------------
+   5) Your existing apply function can stay the same
+   ----------------------------- */
   function applyBombFxIfNeeded(entry, mob) {
     if (!entry?.card || !mob) return;
 
@@ -1634,8 +1914,12 @@
     }
 
     // start if needed
-    spawnBombCountdownFxForMob(mob, entry.wrap);
+    spawnBombCountdownFxForMob(mob, entry.card);
   }
+
+
+
+  /**** END BOMB **********************************************************/
 
   /* ======================================================================
      Target Pill functions
@@ -1682,21 +1966,11 @@
      Helper Functions
      ====================================================================== */
   function getMe() {
-    const cid = String(getCharacterId() || "").trim();
-    const cname = String(getCharacterName() || "").trim();
-    const pname = String(getPlayerName() || "").trim();
     const party = uiState.party || [];
 
+    const cid = getMeCharacterId();
     if (cid) {
       const hit = party.find(p => String(p.characterId || "").trim() === cid);
-      if (hit) return hit;
-    }
-    if (cname) {
-      const hit = party.find(p => String(p.id || "").trim() === cname);
-      if (hit) return hit;
-    }
-    if (pname) {
-      const hit = party.find(p => String(p.playerName || "").trim() === pname);
       if (hit) return hit;
     }
     return null;
@@ -2086,13 +2360,34 @@
   function applyMobIdleFx(entry, mob) {
     if (!entry?.card || !mob) return;
 
-    const isDead = Number(mob.hp) <= 0;
-    entry.card.classList.toggle("idle-breathe", !isDead); // simple CSS-based idle
+      const isDead = Number(mob.hp) <= 0;
+      const fx = getMobEffects(mob);
 
-    // If you want per-type explained with classes:
-    const atk = normKey(mob.attackType);
-    entry.card.classList.toggle("idle-spider", !isDead && atk === "spider");
-    entry.card.classList.toggle("idle-insect", !isDead && atk === "insect");
+      // Remove all idle classes first (clean state)
+      entry.card.classList.remove(
+        "idle-breathe",
+        "idle-spider",
+        "idle-insect"
+      );
+
+      // If dead → no idle ever
+      if (isDead) return;
+
+      // If no idle config → do nothing
+      if (!Array.isArray(fx.idle) || fx.idle.length === 0) return;
+
+      // Apply configured idles
+      if (fx.idle.includes("breathe")) {
+        entry.card.classList.add("idle-breathe");
+      }
+
+      if (fx.idle.includes("spider")) {
+        entry.card.classList.add("idle-spider");
+      }
+
+      if (fx.idle.includes("insect")) {
+        entry.card.classList.add("idle-insect");
+      }
   }
 
 
@@ -2449,7 +2744,7 @@
   async function updateState() {
     try {
       const url = new URL(STATE_URL, window.location.origin);
-      const cid = getCharacterId();
+      const cid = getMeCharacterId();
       const gid = getGameId();
       if (cid) url.searchParams.set("characterId", cid);
       if (gid) url.searchParams.set("gameId", String(gid));
@@ -2460,16 +2755,13 @@
 
       const s = await res.json();
 
-      const myPlayerName = String(getPlayerName() || "").trim();
-      const mePlayer = (s.party || []).find(p =>
-        String(p.playerName || "").trim() === myPlayerName
-      ) || null;
+      setMeFromState(s);
 
       updateInfoMarquee(s.infoMsg);
 
       const damages = detectPartyDamage(lastState || uiState, s);
 
-      const meName = String(s.playerName || "").trim();
+      const meName = getMeName();
 
       if (damages.length > 0 && meName) {
         const myHit = damages.find(d => String(d.id) === meName);
@@ -2488,6 +2780,12 @@
       }
 
       detectMobDeaths(lastState || uiState, s);
+      // ✅ keep bomb countdown aware of updated conditions (defused etc.)
+      for (const mob of (s.mobs || [])) {
+        const id = String(mob.id || "").trim();
+        const fx = bombFxByMobId.get(id);
+        if (fx) fx.mobRef = mob;
+      }
 
       // Ranged fx on mob attacks
       if (damages.length > -10) {
@@ -2541,9 +2839,7 @@
 
       lastState = s;
 
-      const tmpPlayer = (s.party || []).find(p =>
-        String(p.playerName || "").trim() === s.characterName
-      ) || null;
+      const tmpPlayer = getMe();
 
       checkPlayerStatToasts(tmpPlayer);
       CheckTargetClearNeeded();
@@ -2553,6 +2849,22 @@
     } catch (e) {
       console.error("updateState crashed:", e);
     }
+  }
+/* ======================================================================
+     Only Way to get my character information
+     ====================================================================== */
+  function setMeFromState(s) {
+      // pick from JSON (use whatever your server actually sends)
+      ME.characterId    = String(s?.characterId    || "").trim();
+      ME.characterName  = String(s?.characterName  || "").trim();
+  }
+
+  function getMeName() {
+    // the ONLY displayed name
+    return ME.characterName || ME.playerName || "unknown";
+  }
+  function getMeCharacterId() {
+    return ME.characterId || "empty"; // fallback only if needed
   }
 
   /* ======================================================================

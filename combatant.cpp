@@ -175,7 +175,9 @@ void Combatant::DefuseBomb()
     if(AttackType==ECombatantAttackType::Bomb){
         HP=0;
         ExplodeCounter=50000;
+        AddCondition(ECondition::Defused);
         DaraLog("BOMB", GetName()+" defused bomb");
+        StayInGameCounter= 5;
     }
 }
 
@@ -717,4 +719,14 @@ void Combatant::Explode(CombatantPtr target)
     // if(DARA_DEBUG_COMBAT) 
     DaraLog("BOMB", "Explosion "+GetName()+ " Lane: "+std::to_string(Lane)+" NearRngDmg: "+std::to_string(nearRangeDmg) +" attacks with: "+std::to_string(dmg));
     HP=0;
+}
+
+
+bool Combatant::ShallStayInGame()
+{
+    return StayInGameCounter>0;
+}
+void Combatant::CountdownStayInGame()
+{
+    StayInGameCounter--;
 }

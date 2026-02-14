@@ -75,7 +75,8 @@ enum class ECondition
     Mezzed,
     Defending,
     Fleeing,
-    Incapacitated
+    Incapacitated,
+    Defused
 };
 
 // --- enum to string helpers ---
@@ -127,6 +128,7 @@ static constexpr std::string_view ToString(ECondition c)
         case ECondition::Defending:     return "Defending";
         case ECondition::Fleeing:       return "Fleeing";
         case ECondition::Incapacitated: return "Incapacitated";
+        case ECondition::Defused:       return "Defused";
         default:                        return "Unknown ECondition";
     }
 }
@@ -205,6 +207,7 @@ protected:
     int MezzCounter= 0;
     int BurnedCounter= 0;
     int ExplodeCounter= 6;
+    int StayInGameCounter= 1;
     std::unordered_set<ECondition> Conditions;
 
     int Level=0;
@@ -285,6 +288,9 @@ public:
     void AddXP(int amount);
     void AddCredits(int amount){Credits+=amount;}
     void AddPotion(int amount){PotionAmount+=amount;};
+
+    bool ShallStayInGame();
+    void CountdownStayInGame();
 
     std::string GetAttackType()const;
     ECombatantAttackType GetAttackTypeEnum()const {return AttackType;};
