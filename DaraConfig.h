@@ -17,6 +17,7 @@ inline constexpr int DARA_DEBUG_PLAYERSTATS= 0;
 inline constexpr int DARA_DEBUG_MOBSTATS= 0; 
 inline constexpr int DARA_DEBUG_MOBCOMBAT= 0; 
 inline constexpr int DARA_DEBUG_COMBAT= 0;
+inline constexpr int DARA_DEBUG_LOOT= 0;
 inline constexpr int DARA_DEBUG_STORYLOG= 0;
 inline constexpr int DARA_DEBUG_SPAWNS= 0;
 inline constexpr int DARA_DEBUG_FULLSTATE= 0;

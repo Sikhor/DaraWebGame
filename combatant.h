@@ -180,6 +180,7 @@ protected:
     float PosY=-1.f; //will then be calculated if <0
     bool Active=true;
     std::string AvatarId="MSAgent-Soldorn";
+    std::string OriginalAvatarId="MSAgent-Soldorn";
     std::string MobClass="MSAgent-Soldorn";
     float BaseDamage=STAT_BASE_DAMAGE_PLAYER;
     float DamageModifier= 0.f;
@@ -304,7 +305,7 @@ public:
     float GetY() const;
 
     std::string GetAvatarId() const { return AvatarId; }    
-    void SetAvatarId(std::string avatarId) { AvatarId=avatarId; }   
+    void SetAvatarId(std::string avatarId) { AvatarId=avatarId; OriginalAvatarId= avatarId; }   
 
     void RegenTurn();
     void RegenTurnMob();

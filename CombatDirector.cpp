@@ -693,7 +693,7 @@ void CombatDirector::ResolvePlayers(const std::vector<PlayerAction>& actions,
     std::string logMsg;
     for (const auto& a : actions)
     {
-        DaraLog("DEBUG", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
+        if(DARA_DEBUG_COMBAT)DaraLog("COMBAT", a.playerName + " does: " + a.actionId + " on" + a.actionTarget+ " (" + a.actionMsg + ")");
         outTurnLog.push_back(a.playerName + " does: " + a.actionId + " (" + a.actionMsg + ")");
             std::string logMsg;
 
@@ -884,7 +884,6 @@ void CombatDirector::RewardPlayersForMobDeath(
 
         int xp = RandInt(rng, r.xpMin, r.xpMax)+r.MobAddsXP;
         const int credits = RandInt(rng, r.creditsMin, r.creditsMax)+r.MinCredits;
-        DaraLog("LOOT", "xp:" +std::to_string(xp));
 
         int CurrentLevel= p.GetLevel();
         int CurrentXP= p.GetXP();
@@ -892,12 +891,12 @@ void CombatDirector::RewardPlayersForMobDeath(
         int CurrentCredits= p.GetCredits();
 
         if(p.GetDifficulty()!="Normal") xp+=10;
-        DaraLog("LOOT", "xp:" +std::to_string(xp));
         p.AddXP(xp);
+        if(DARA_DEBUG_LOOT)DaraLog("LOOT", "xp:" +std::to_string(xp));
 
         if (Rand01(rng) < r.creditsChance){
-            DaraLog("LOOT", "credits:" +std::to_string(credits));
             p.AddCredits(credits);
+            if(DARA_DEBUG_LOOT)DaraLog("LOOT", "credits:" +std::to_string(credits));
         }
 
         if (Rand01(rng) < r.lootChance)
@@ -1083,7 +1082,7 @@ void CombatDirector::ResolveSpawnMobs()
     int slot= RandSlot();
     
     GetFilledSlotArray();
-    DaraLog("TURN", "Wave: " + std::to_string(Wave)+ " Turn: "+std::to_string(CurrentTurnId));
+    if(DARA_DEBUG_COMBAT) DaraLog("TURN", "Wave: " + std::to_string(Wave)+ " Turn: "+std::to_string(CurrentTurnId));
 
     if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;

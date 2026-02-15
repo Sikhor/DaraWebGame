@@ -718,10 +718,21 @@
       entry.img.removeAttribute("src");
       entry.img.style.display = "none";
       entry.fallback.style.display = "grid";
-    } else if (entry.img.getAttribute("src") !== imgSrc) {
+    } else {
+      // ensure it's visible every tick
       entry.img.style.display = "";
       entry.fallback.style.display = "none";
-      entry.img.src = imgSrc;
+
+      // only update src if needed
+      if (entry.img.getAttribute("src") !== imgSrc) {
+        entry.img.src = imgSrc;
+      }
+
+      // optional: if browser thinks it's loaded but it's actually not painted/valid
+      if (entry.img.complete && entry.img.naturalWidth === 0) {
+        entry.img.style.display = "none";
+        entry.fallback.style.display = "grid";
+      }
     }
 
     entry.fallback.textContent = (name.slice(0, 2) || "ME").toUpperCase();
@@ -1214,27 +1225,6 @@
   }
 
   /* ======================================================================
-     INFO MSG
-     ====================================================================== */
-  let lastInfoMsg = "";
-  function updateInfoMarquee(msg) {
-    const marquee = document.getElementById("infoMarquee");
-    const a = document.getElementById("infoTextA");
-    if (!marquee || !a) return;
-
-    const text = String(msg || "").trim();
-    const shown = text || "—";
-
-    a.textContent = shown;
-    marquee.title = text;
-
-    marquee.classList.remove("scrolling");
-    marquee.style.removeProperty("--infoShift");
-    marquee.style.removeProperty("--infoDur");
-
-    lastInfoMsg = text;
-  }
-  /* ======================================================================
      Condition Checks to adjust behaviour
      ====================================================================== */
 
@@ -1295,6 +1285,13 @@
     showToast(text, "loot", 2800);
     sprinklePotionAtXY(0.5,0.9, 1, 800);
     playSound("loot");
+  }
+  
+  let lastInfoToastMsg= "";
+  function showInfoMsgToast(text) {
+    if(lastInfoToastMsg===text)return;
+    lastInfoToastMsg= text;
+    showToast(text, "info", 2800);
   }
 
   let lastState = null;
@@ -2916,7 +2913,7 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
 
       setMeFromState(s);
 
-      updateInfoMarquee(s.infoMsg);
+      showInfoMsgToast(s.infoMsg);
 
       const damages = detectPartyDamage(lastState || uiState, s);
 
@@ -3149,3 +3146,8 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
   });
 
 })();
+
+
+
+/**** More Helper functions */
+/**** END More Helper functions */

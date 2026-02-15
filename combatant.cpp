@@ -77,7 +77,7 @@ void Combatant::Revive()
     HP=MaxHP;
     Energy= MaxEnergy;
     Mana= MaxMana;
-    AvatarId=MobClass;
+    SetAvatarId(OriginalAvatarId);
 }
 
 bool Combatant::IsAlive() const

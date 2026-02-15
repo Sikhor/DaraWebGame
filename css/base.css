@@ -310,10 +310,10 @@
   .mobCard{
     width: var(--mobCardSize);
     height: var(--mobCardSize);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.14);
-    background: linear-gradient(180deg, rgba(20,28,40,0.55) 0%, rgba(0,0,0,0.35) 100%);
-    box-shadow: 0 14px 28px rgba(0,0,0,0.45);
+    border-radius: none; /*14px;*/
+    border: none; /*1px solid rgba(255,255,255,0.14);*/
+    background: none; /* linear-gradient(180deg, rgba(20,28,40,0.55) 0%, rgba(0,0,0,0.35) 100%);*/
+    box-shadow: none; /*0 14px 28px rgba(0,0,0,0.45);*/
     position:relative;
     overflow:hidden;
     cursor:pointer;
@@ -421,10 +421,10 @@
   .mobImg{
     width: var(--mobImgSize);
     height: var(--mobImgSize);
-    border-radius: 10px;
+    border-radius: none; /* 10px;*/
     object-fit: cover;
-    border: 1px solid rgba(255,255,255,0.22);
-    box-shadow: 0 0 14px rgba(0,0,0,0.45);
+    border: none; /* 1px solid rgba(255,255,255,0.22);*/
+    box-shadow: none; /* 0 0 14px rgba(0,0,0,0.45);*/
   }
 
   .avatar{
@@ -984,48 +984,6 @@
 
 
 /*********************  END NEW FXLAYER *****************************/
-  /* ---------- Info (non-moving, like your last state) ---------- */
-  #infoMarquee{ display:none !important; }
-  .infoMarquee{
-    position: relative;
-    height: 34px;
-    flex: 1 1 auto;
-    min-width: 140px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: rgba(0,0,0,0.22);
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    padding: 0 10px;
-    box-sizing: border-box;
-  }
-  .infoMarquee::before,
-  .infoMarquee::after{
-    content:"";
-    position:absolute;
-    top:0; bottom:0;
-    width: 18px;
-    pointer-events:none;
-    z-index: 2;
-  }
-  .infoMarquee::before{
-    left:0;
-    background: linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
-  }
-  .infoMarquee::after{
-    right:0;
-    background: linear-gradient(270deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
-  }
-  .infoTrack{ width:100%; overflow:hidden; white-space:nowrap; }
-  .infoInner{ display:inline-flex; align-items:center; gap:28px; }
-  .infoText{
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    color: rgba(255,255,255,0.86);
-  }
-  .infoMarquee.scrolling .infoInner{ animation: none !important; }
 
   /* ---------- PARTY ---------- */
   .pRow.selected{
