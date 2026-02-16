@@ -327,7 +327,7 @@ void Combatant::ApplyDamage(float dmg)
     HP -= dmg;
     if (HP <= 0.f){ 
         HP = 0.f;
-        AvatarId= DARA_DEAD_AVATAR_PLAYER;
+        AvatarId= DARA_DEAD_AVATAR_CHARACTER;
     }
     CheckStats();
 }
@@ -639,8 +639,8 @@ void Combatant::InitLevel(int level)
     MaxEnergy= STAT_BASE_MAX_ENERGY*(1+Level*0.2);
     Mana= STAT_BASE_MAX_MANA*(1+Level*0.2);
     MaxMana= STAT_BASE_MAX_MANA*(1+Level*0.2);
-    BaseDamage=STAT_BASE_DAMAGE_PLAYER*(1+Level*0.2);
-    BaseDefense=STAT_BASE_DEFENSE_PLAYER*(1+Level*0.2);
+    BaseDamage=STAT_BASE_DAMAGE_CHARACTER*(1+Level*0.2);
+    BaseDefense=STAT_BASE_DEFENSE_CHARACTER*(1+Level*0.2);
 
 }
 

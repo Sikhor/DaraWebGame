@@ -70,7 +70,7 @@ public:
     bool ApplyDamageToPlayerLocked(const std::string& playerName, float dmg);
     void RemovePlayer(const std::string& playerName);
 
-    json GetPlayerStateJson(const std::string& playerName) const;
+    json GetPlayerStateJson(const std::string& characterId) const;
 
     void AddOrUpdateMob(const std::string& mobName);
     void SpawnMob(const std::string& mobId, int lane, int slot);
@@ -90,7 +90,7 @@ public:
     // Submit action for the currently-open turn (server authoritative).
     // If the turn is resolving, the action is queued for the next turn.
     // Returns false if rejected (unknown player, duplicate submit for that bucket, etc.)
-    bool SubmitPlayerAction(const std::string& playerName,
+    bool SubmitPlayerAction(const std::string& characterId,
                             const std::string& actionId,
                             const std::string& actionTarget,
                             const std::string& actionMsg,

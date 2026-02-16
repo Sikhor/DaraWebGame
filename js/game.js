@@ -3017,7 +3017,7 @@ function spawnBombCountdownFxForMob(mob, mobCardEl) {
 
   function getMeName() {
     // the ONLY displayed name
-    return ME.characterName || ME.playerName || "unknown";
+    return ME.characterName || "unknown";
   }
   function getMeCharacterId() {
     return ME.characterId || "empty"; // fallback only if needed

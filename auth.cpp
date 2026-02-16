@@ -202,7 +202,7 @@ bool ValidateSessionToken(const std::string& token, std::string& outUserName)
         return false;
     }
 
-    outUserName = it->second.userName;
+    outUserName = it->second.userId;
     return true;
 }
 
@@ -492,7 +492,7 @@ void RegisterAuthRoutes(httplib::Server& server)
             const std::string token = MakeToken();
             Session s;
             s.sub= claims.sub;
-            s.userName = claims.eMail;
+            s.userId = claims.eMail;
             s.eMail= claims.eMail;
             s.name= claims.name;
 
@@ -518,9 +518,9 @@ void RegisterAuthRoutes(httplib::Server& server)
             json out = {
                 {"status","ok"},
                 {"token", token},
-                {"userName", s.userName},
+                {"userName", s.userId},
                 {"name", claims.name},
-                {"playerName", s.playerName},
+                 {"playerName", s.playerId},
                 {"picture", claims.picture},
                 {"expiresDays", kSessionDays}
             };
@@ -577,8 +577,10 @@ void RegisterAuthRoutes(httplib::Server& server)
         res.status = 200;
         res.set_content((json{
             {"status","ok"},
-            {"userName", it->second.userName},
-            {"playerName", it->second.playerName}
+            {"userId", it->second.userId},
+            {"characterId", it->second.characterId},
+            {"userName", it->second.userId},  // ATTENT
+            {"playerName", it->second.characterId}
         }).dump(), "application/json");
     });
 }

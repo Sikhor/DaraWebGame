@@ -169,12 +169,12 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character 
 
 
 
-json CombatDirector::GetPlayerStateJson(const std::string& playerName) const
+json CombatDirector::GetPlayerStateJson(const std::string& characterId) const
 {
     std::shared_ptr<Combatant> p;
     {
         std::lock_guard<std::mutex> lk(CacheMutex);
-        auto it = Players.find(playerName);
+        auto it = Players.find(characterId);
         if (it == Players.end())
             return json{{"error","Unknown player"}};
         p = it->second;
@@ -368,7 +368,7 @@ Enhancements applied:
 - (Policy) First action wins per turn: if already submitted for that turn/buffer, reject.
   If you prefer "last action wins", replace the rejects with overwrites.
 */
-bool CombatDirector::SubmitPlayerAction(const std::string& playerName,
+bool CombatDirector::SubmitPlayerAction(const std::string& characterId,
                                        const std::string& actionId,
                                        const std::string& actionTarget,
                                        const std::string& actionMsg,
@@ -376,42 +376,42 @@ bool CombatDirector::SubmitPlayerAction(const std::string& playerName,
 {
     std::lock_guard<std::mutex> lk(CacheMutex);
 
-    if (playerName.empty())
+    if (characterId.empty())
     {
-        if (outError) *outError = "Empty playerName not allowed";
+        if (outError) *outError = "SubmitPlayeraction() Empty playerName not allowed";
         return false;
     }
 
-    if (!Players.count(playerName))
+    if (!Players.count(characterId))
     {
-        if (outError) *outError = "Unknown player";
+        if (outError) *outError = "SubmitPlayeraction() Unknown player";
         return false;
     }
 
-    PlayerAction act{playerName, actionId, actionTarget, actionMsg};
+    PlayerAction act{characterId, actionId, actionTarget, actionMsg};
 
     // If current turn is closed/resolving, queue for next turn
     if (Resolving)
     {
-        if (BufferedActions.count(playerName))
+        if (BufferedActions.count(characterId))
         {
             //if (outError) *outError = "Already submitted for next turn (buffered)";
             return true; // because we only send error to player if there is a real problem
         }
 
-        BufferedActions.emplace(playerName, std::move(act));
+        BufferedActions.emplace(characterId, std::move(act));
         Cv.notify_all();
         return true;
     }
 
     // Current turn is open
-    if (PendingActions.count(playerName))
+    if (PendingActions.count(characterId))
     {
         //if (outError) *outError = "Player already submitted action for this turn";
         return true;  // because we only send error to player if there is a real problem
     }
 
-    PendingActions.emplace(playerName, std::move(act));
+    PendingActions.emplace(characterId, std::move(act));
     Cv.notify_all();
     return true;
 }

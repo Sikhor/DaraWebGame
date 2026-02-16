@@ -22,8 +22,8 @@ inline constexpr float DEVIATION= 5.f;
 inline constexpr float STAT_BASE_MAX_HP=   900.f;
 inline constexpr float STAT_BASE_MAX_ENERGY= 100.f;
 inline constexpr float STAT_BASE_MAX_MANA= 100.f;
-inline constexpr float STAT_BASE_DAMAGE_PLAYER= 50.f;  
-inline constexpr float STAT_BASE_DEFENSE_PLAYER= 2.f;  
+inline constexpr float STAT_BASE_DAMAGE_CHARACTER= 50.f;  
+inline constexpr float STAT_BASE_DEFENSE_CHARACTER= 2.f;  
 
 inline constexpr int INITIALPOTIONS= 10;  
 inline constexpr int MEZZTURNS= 100;  
@@ -182,9 +182,9 @@ protected:
     std::string AvatarId="MSAgent-Soldorn";
     std::string OriginalAvatarId="MSAgent-Soldorn";
     std::string MobClass="MSAgent-Soldorn";
-    float BaseDamage=STAT_BASE_DAMAGE_PLAYER;
+    float BaseDamage=STAT_BASE_DAMAGE_CHARACTER;
     float DamageModifier= 0.f;
-    float BaseDefense=STAT_BASE_DEFENSE_PLAYER;
+    float BaseDefense=STAT_BASE_DEFENSE_CHARACTER;
     float DefenseModifier= 0.f;
 
     float Speed= STAT_MOB_SPEED;

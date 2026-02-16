@@ -52,6 +52,5 @@ bool SetSessionCharacter(const std::string& token,
   return PatchSessionByToken(token, [&](Session& s){
     s.characterId = characterId;       // you need these fields in Session
     s.characterName = characterName;   // optional but handy for UI
-    s.playerName = characterName;      // if your CombatDirector uses playerName as “active character”
   });
 }

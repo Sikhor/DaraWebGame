@@ -15,10 +15,10 @@ struct Session
     std::string characterId;     // currently selected character
     std::string characterName;   // convenience: cached from character list 
     std::string sub; // should be the id from google
-    std::string userName; // use email as identity if you do not use sub.. sub would be better
+    std::string userId; // use email as identity if you do not use sub.. sub would be better
     std::string name; 
     std::string eMail; // should be the email
-    std::string playerName; // use email as identity
+    std::string playerId; // use email as identity
     std::chrono::system_clock::time_point expiresAt;
 };
 

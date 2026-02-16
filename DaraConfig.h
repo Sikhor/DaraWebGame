@@ -32,7 +32,7 @@ inline constexpr int DARA_GAMEOVER_PAUSE=10000;
 inline constexpr int DARA_WAVECOMPLETED_PAUSE=5; // in turns not in seconds;
 
 
-inline constexpr std::string_view DARA_DEAD_AVATAR_PLAYER = "Dead";
+inline constexpr std::string_view DARA_DEAD_AVATAR_CHARACTER = "Dead";
 inline constexpr std::string_view DARA_DEAD_AVATAR_MOB= "Dead";
 inline constexpr std::string_view DARA_MOB_STORE= "mobs/mobdb.json";
 

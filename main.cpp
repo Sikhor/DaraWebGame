@@ -39,8 +39,6 @@ auto AddCorsHeaders = [](httplib::Response& res)
     res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 };
 
-static std::unordered_map<std::string, std::shared_ptr<GameState>> g_stateByGameId;
-static std::mutex g_stateMapMutex;
 
 
 static std::unordered_map<std::string, std::vector<json>> g_historyByGameId;
@@ -99,19 +97,19 @@ static std::string GeneratePlayerName()
     return a[distA(rng)] + b[distB(rng)] + "-" + std::to_string(distNum(rng));
 } */
 
-std::string NewPlayer(const std::string& userName,
-                      const std::string& displayName,
+std::string NewPlayer(const std::string& characterId,
+                      const std::string& characterName,
                       Character character)
 {
     //std::string playerName = GeneratePlayerName(displayName);
     // Your join logic:
-    g_combatDirector->AddOrUpdatePlayer(displayName, character);
+    g_combatDirector->AddOrUpdatePlayer(characterId, character);
 
-    DaraLog("LOGIN", "Created character :" + displayName + " for "+ userName + " Avatar: "+character.avatar);
+    DaraLog("LOGIN", "Created character:" + characterName + " id: "+ characterId + " Avatar: "+character.avatar);
 
     // Optional: welcome narrative / combatlog
     //CombatLogState.PushPlayerLog(playerName, "You arrive on Dara III.", "talk");
-    return displayName;
+    return characterName;
 }
 
 
@@ -138,32 +136,6 @@ static std::string TrimCopy(std::string s)
     return s;
 }
 
-/*
-static std::shared_ptr<GameState> GetGameState(const std::string& gameId)
-{
-    std::lock_guard<std::mutex> lock(g_stateMapMutex);
-    auto& ptr = g_stateByGameId[gameId];
-    if (!ptr) ptr = std::make_shared<GameState>();
-    return ptr;
-}
-    */
-
-    /*
-static std::string BuildCombinedTurnText(const std::vector<PendingAction>& actions)
-{
-    std::string combined = "PlayerActions:\n";
-    for (const auto& a : actions)
-    {
-        combined += "- " ;
-        combined += a.userName +" ";
-        combined += a.actionId;
-        // combined += "  ActionMsg: " + a.actionMsg + "\n";
-        combined += "\n";
-        //StartPlayerCombatActions(a.userName, a.actionId);
-    }
-    return combined;
-}
-    */
 
 void DebugMsg(const json& messages)
 {
@@ -369,32 +341,6 @@ void InitialActions()
     // Example initial actions to setup the game state
 }
 
-/*
-static void ResolveTurnAsync(const std::string gameId, int turnNumber, std::vector<PendingAction> actionsCopy)
-{
-    static int turnId=0;
-    // Call AI outside of locks
-    const std::string turnMsg = BuildCombinedTurnText(actionsCopy);
-
-
-    // Reuse your ContactAI() by sending one combined "turn_commit" action
-    std::string gmMsg = ContactAI(gameId, turnId, turnMsg);
-    turnId++;
-
-    auto state = GetGameState(gameId);
-    {
-        std::lock_guard<std::mutex> lock(state->mtx);
-
-        TurnResult r;
-        r.turnNumber = turnNumber;
-        r.actions = std::move(actionsCopy);
-        r.gameMasterMsg = std::move(gmMsg);
-        r.createdAt = std::chrono::system_clock::now();
-
-        state->results[turnNumber] = std::move(r);
-    }
-}
-    */
 
 void TrimHistory(std::vector<json>& hist)
 {
@@ -423,10 +369,10 @@ void LogoutByToken(const std::string& token)
         return;
     }
 
-    DaraLog("LOGOUT",s.playerName);
+    DaraLog("LOGOUT", "LogoutByToken() "+s.userId + " Character: "+ s.characterName);
     // IMPORTANT: Remove player by playerName (because you added playerName to CombatDirector)
-    if (!s.playerName.empty()) {
-        g_combatDirector->RemovePlayer(s.playerName);
+    if (!s.userId.empty()) {
+        g_combatDirector->RemovePlayer(s.userId);
     }
 
     RemoveSession(token);
@@ -458,6 +404,7 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
         return;
     }
 
+    const std::string& characterId = session.characterId;
     const std::string& characterName = session.characterName;
     if (characterName.empty()) {
         res.status = 400;
@@ -482,7 +429,7 @@ server.Post("/action", [](const httplib::Request& req, httplib::Response& res)
         res.set_content((json{{"status","ok"},{"characterName",characterName}}).dump(), "application/json");
         return;
     }
-    bool ok = g_combatDirector->SubmitPlayerAction(characterName, actionId, actionTarget, actionMsg, &err);
+    bool ok = g_combatDirector->SubmitPlayerAction(characterId, actionId, actionTarget, actionMsg, &err);
 
     if (!ok || !err.empty()) {
         res.status = 400;
@@ -508,20 +455,22 @@ server.Get("/state", [](const httplib::Request& req, httplib::Response& res)
             (json{{"status","error"},{"message",err}}).dump(),
             "application/json"
         );
+        DaraLog("AUTH", "/state couldnt find the session");
         return;
     }
     // DAS ist jetzt deine Player-Identität
     const std::string& characterId = session.characterId;
     const std::string& characterName = session.characterName;
     
-    if(!g_combatDirector->HasPlayer(session.playerName)){
+    if(!g_combatDirector->HasPlayer(session.characterId)){
         res.status = 401;
         res.set_content(
             (json{{"status","error"},{"message","Player not found"}}).dump(),
             "application/json"
         );
+        DaraLog("AUTH", "/state couldnt find the player "+ session.characterId +" in g_combatDirector");
         return;
-}
+    }
 
     
     json out = g_combatDirector->GetUIStateSnapshotJsonLocked(characterId, characterName);
@@ -557,9 +506,9 @@ server.Post("/auth/logout", [](const httplib::Request& req, httplib::Response& r
         res.set_content(R"({"status":"error","message":"Invalid or expired session"})", "application/json");
         return;
     }
-    DaraLog("LOGOUT", s.userName+" "+s.playerName);
-    if (!s.playerName.empty()) {
-        g_combatDirector->RemovePlayer(s.playerName);
+    DaraLog("LOGOUT", "/auth/logout called by "+ s.userId+" "+s.characterName+ "id: "+s.characterId);
+    if (!s.characterId.empty()) {
+        g_combatDirector->RemovePlayer(s.characterId);
     }
 
     RemoveSession(token);
@@ -742,6 +691,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     if (token.empty()) {
         res.status = 401;
         res.set_content(R"({"status":"error","message":"Missing Authorization Bearer token"})", "application/json");
+        DaraLog("AUTH", "/characters/select Token empty");
         return;
     }
 
@@ -749,6 +699,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     if (!TryGetSession(token, session)) {
         res.status = 401;
         res.set_content(R"({"status":"error","message":"Invalid or expired session"})", "application/json");
+        DaraLog("AUTH", "/characters/select Invalid session");
         return;
     }
 
@@ -757,6 +708,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     catch (...) {
         res.status = 400;
         res.set_content(R"({"status":"error","message":"Invalid JSON body"})", "application/json");
+        DaraLog("AUTH", "/characters/select Invalid JSON body");
         return;
     }
 
@@ -788,9 +740,9 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
         res.set_content(R"({"status":"error","message":"characterId is required"})", "application/json");
         return;
     }else{
-        DaraLog("LOGIN", session.userName+" has chosen characterId:"+characterId);
+        DaraLog("LOGIN", session.userId+" has chosen characterId:"+characterId);
         DaraLog("LOGIN", "Session.sub:"+session.sub);
-        DaraLog("LOGIN", "Session.userName:"+session.userName);
+        DaraLog("LOGIN", "Session.userName:"+session.userId);
         DaraLog("LOGIN", "Session.eMail:"+session.eMail);
         DaraLog("LOGIN", "Session.name:"+session.name);
     }
@@ -824,7 +776,7 @@ server.Post("/characters/select", [](const httplib::Request& req, httplib::Respo
     SetSessionCharacter(token, chosen.characterId, chosen.characterName);
 
     // Now that a character is selected, you can join combat as that character:
-    NewPlayer(session.userName, chosen.characterName, chosen);
+    NewPlayer(chosen.characterId, chosen.characterName, chosen);
 
     json out;
     out["status"] = "ok";
@@ -874,7 +826,7 @@ server.Post("/characters/create", [](const httplib::Request& req, httplib::Respo
         throw std::runtime_error("Missing characterName or characterClass");
 
     // DB write (safe here: character screen, not in match tick)
-    auto created= CreateCharacterForUserAndCache(session.userName, session.eMail, charactername, characterclass, characteravatar);
+    auto created= CreateCharacterForUserAndCache(session.userId, session.eMail, charactername, characterclass, characteravatar);
     if (created) {
             DaraLog("CREATECHAR", "Created successfully: eMail"+ session.eMail+ "CharacterName:"+charactername+" New Id:"+created->characterId);
             // you can immediately return created->characterId to the client if you want
@@ -936,7 +888,7 @@ server.Post("/characters/delete", [](const httplib::Request& req, httplib::Respo
 
     // IMPORTANT: pick the SAME key you used on CreateCharacter / cache.
     // If your DB column UserId contains session.userName, use that here too.
-    const std::string userKey = session.userName;   // or session.userId (but be consistent!)
+    const std::string userKey = session.userId;   // or session.userId (but be consistent!)
 
     DaraLog("DELETECHAR", "Requested by eMail: " + session.eMail);
     DaraLog("DELETECHAR", "UserKey: " + userKey + " CharacterId: " + characterId);

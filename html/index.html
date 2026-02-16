@@ -1397,7 +1397,7 @@
     }
 
     localStorage.setItem("sessionToken", j.token);
-    localStorage.setItem("playerName", j.playerName || "Unknown Agent");
+    localStorage.setItem("playerName", j.characterName || "Unknown Agent");
 
     // NEW: show character select
     await loadAndShowCharacters();
