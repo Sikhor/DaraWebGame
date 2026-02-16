@@ -258,18 +258,18 @@ bool CombatDirector::ApplyDamageToPlayer(const std::string& playerName, float dm
     return ApplyDamageToPlayerLocked(playerName, dmg);
 }
 
-bool CombatDirector::ApplyDamageToPlayerLocked(const std::string& playerName, float dmg)
+bool CombatDirector::ApplyDamageToPlayerLocked(const std::string& characterId, float dmg)
 {
-    auto it = Players.find(playerName);
+    auto it = Players.find(characterId);
     if (it == Players.end()) {
-        DaraLog("ERROR", "ApplyDamageToPlayer Unknown player"+playerName);
+        DaraLog("ERROR", "ApplyDamageToPlayer Unknown characterId: "+characterId);
         return false;
     }else{
         std::shared_ptr<Combatant> p=it->second;
         p->ApplyDamage(dmg);
     }
 
-    if(DARA_DEBUG_MOBCOMBAT) DaraLog("COMBAT", "ApplyDamageToPlayer "+playerName+" "+std::to_string(dmg));
+    if(DARA_DEBUG_MOBCOMBAT) DaraLog("COMBAT", "ApplyDamageToPlayer characterId "+characterId+" "+std::to_string(dmg));
     return true;
 }
 
@@ -1089,11 +1089,27 @@ void CombatDirector::ResolveSpawnMobs()
     if(!FilledSlotArray[0][rndSlot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;
         // do I need to spawn special stuff like a bomb?
-        if(GetRandomFloat(0.f,1000.f)>900.f-Wave){
-            int BombForWave= Wave/3+1000+1;
+        if(GetRandomFloat(0.f,1000.f)>900.f-(Wave*10)){
+            int BombForWave= (Wave/3)+1000+1;
             mobId = g_mobTemplates.PickRandomBossForWave(BombForWave);
             if(mobId.empty()){
                 DaraLog("ERROR", "No Bomb found for "+ std::to_string(BombForWave));
+            }else{
+                rndSlot= RandSlot();
+                SpawnMob(mobId, 0, rndSlot);
+                if(GetRandomFloat(0.f,1000.f)>900.f-Wave){
+                    // spawn second bomb
+                    rndSlot= RandSlot();
+                    SpawnMob(mobId, 0, rndSlot);
+                }
+            }
+        }       
+        // should Healers spawn?
+        if(GetRandomFloat(0.f,1000.f)>900.f-(Wave*20)){
+            int HealerForWave= 2000;
+            mobId = g_mobTemplates.PickRandomMobIdForWave(HealerForWave);
+            if(mobId.empty()){
+                DaraLog("ERROR", "No Healer found for "+ std::to_string(HealerForWave));
             }else{
                 rndSlot= RandSlot();
                 SpawnMob(mobId, 0, rndSlot);
@@ -1195,7 +1211,7 @@ void CombatDirector::ResolveMobs(const json& aiJson,
         if(mob->ShouldAttack()){
             if(DARA_DEBUG_MOBCOMBAT)DaraLog("COMBAT", mob->GetName()+" should attack randomly " + target->GetName()+" Mob AttackType:"+mob->GetAttackType());
             mob->MobAttack(target);
-            ApplyDamageToPlayerLocked(target->GetName(), kDamage);
+            ApplyDamageToPlayerLocked(target->GetId(), kDamage);
 
             // Log globally (turn log)
             std::string logMsg= mobName + " attacks " + target->GetName() +
@@ -1209,6 +1225,12 @@ void CombatDirector::ResolveMobs(const json& aiJson,
                 if (!explTarget) continue;
                 mob->Explode(explTarget);
 
+            }
+        }
+        if(mob->ShouldGiveHealerLoot()){
+            for (const auto& lootTarget : alivePlayers) {
+                if (!lootTarget) continue;
+                lootTarget->ReceiveHealerLoot();
             }
         }
     }

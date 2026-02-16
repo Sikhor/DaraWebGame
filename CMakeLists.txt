@@ -65,6 +65,7 @@ add_executable(DaraWebGameServer
     CharacterDbWorker.cpp
     DbJobQueue.cpp
     ServerOptions.cpp
+    LootBox.cpp
 )
 
 target_include_directories(DaraWebGameServer PRIVATE

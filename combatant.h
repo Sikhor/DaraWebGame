@@ -39,6 +39,7 @@ inline constexpr float STAT_MOB_SPEED= 0.5f;
 
 inline constexpr int XPPERLEVEL= 100;  
 
+
 enum class ECombatantDifficulty
 {
     Normal,
@@ -165,6 +166,10 @@ struct Lane
 
 
 float GetRandomFloat(float min, float max);
+int GetRandomInt(int min, int max);
+float GetRandomSomeFloat(float min=-1000.f, float max=1000.f);
+int GetRandomSomeInt(int min=-1000, int max=1000);
+
 void ApplyRandomCost(float& current, float normal, float deviation);
 std::string GenerateUUID();
 
@@ -186,6 +191,7 @@ protected:
     float DamageModifier= 0.f;
     float BaseDefense=STAT_BASE_DEFENSE_CHARACTER;
     float DefenseModifier= 0.f;
+
 
     float Speed= STAT_MOB_SPEED;
     float CurrentField= 0.f;
@@ -281,6 +287,7 @@ public:
     float GetCurrentDefense() const;
     float GetCurrentDamage() const{return BaseDamage+DamageModifier;}
 
+
     // level, xp and credits
     int GetLevel() const { return Level; } // Placeholder
     int GetCredits() const { return Credits; } // Placeholder
@@ -320,6 +327,10 @@ public:
     void TriggerExplode(){ExplodeCounter=0;};
     void Explode(CombatantPtr target);
     void DefuseBomb();
+
+    bool ShouldGiveHealerLoot();
+    void ReceiveHealerLoot();
+
 
     bool IsMezzed() const {return MezzCounter>0;}
     bool IsBurned() const {return BurnedCounter>0;}

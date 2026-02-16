@@ -39,8 +39,8 @@
 @media (orientation: landscape) and (max-width: 1024px){
   :root{
     --gap: 6px;
-    --mobCardSize: 64px;
-    --mobImgSize: 42px;
+    --mobCardSize: 96px;
+    --mobImgSize: 84px;
   }
   #app, #gameRoot, .scene, .ui {
     touch-action: none; /* blocks pinch + double-tap zoom and scrolling on that container */

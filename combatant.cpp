@@ -1,5 +1,6 @@
 #include "combatant.h"
 #include "ServerOptions.h"
+#include "LootBox.h"
 extern ServerOptions g_options;
 
 float GetRandomFloat(float min, float max)
@@ -9,6 +10,30 @@ float GetRandomFloat(float min, float max)
     std::uniform_real_distribution<float> dist(min, max);
     return dist(gen);
 }
+
+int GetRandomInt(int min, int max)
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(gen);
+}
+
+int GetRandomSomeInt(int min, int max)
+{
+    int ret= GetRandomInt(min, max);
+    if(ret<0)ret=0;
+    return ret;
+}
+
+float GetRandomSomeFloat(float min, float max)
+{
+    float ret= GetRandomFloat(min, max);
+    if(ret<0)ret=0.f;
+    return ret;
+}
+
+
 void ApplyRandomCost(float& current, float normal, float deviation)
 {
     current-= GetRandomFloat(normal-deviation, normal+deviation);
@@ -646,7 +671,7 @@ void Combatant::InitLevel(int level)
 
 float Combatant::GetCurrentDefense() const
 {
-    float CurrentDefense= BaseDefense+DefenseModifier;;
+    float CurrentDefense= BaseDefense+DefenseModifier;
     if(BurnedCounter>0){
         CurrentDefense-= DEBUFF_VALUE_BURNED;
         CurrentDefense= std::clamp(CurrentDefense, 0.f, 10000000.f);
@@ -729,4 +754,30 @@ bool Combatant::ShallStayInGame()
 void Combatant::CountdownStayInGame()
 {
     StayInGameCounter--;
+}
+
+
+bool Combatant::ShouldGiveHealerLoot()
+{
+    bool ret= AttackType==ECombatantAttackType::Healer && PosY>0.75;
+    if(ret) DaraLog("HEALER", "PosY:"+std::to_string(PosY));
+    if(ret){
+        HP=0.f;
+    }
+    return ret;
+}
+
+void Combatant::ReceiveHealerLoot()
+{
+    LootBox Box;
+
+    HP-= Box.Dmg;
+    HP+= Box.Heal;
+    Energy+= Box.Energy;
+    Mana+= Box.Mana;
+    Credits+= Box.Credits;
+    PotionAmount+= Box.Potion;
+    XP+=Box.XP;
+    Box.Debug();
+    CheckStats();
 }
