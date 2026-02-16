@@ -1177,7 +1177,7 @@
       e.row.classList.toggle("selected", uiState.selectedPartyId === p.id);
       e.row.classList.toggle("damaged", !!(uiState._damagedIds && uiState._damagedIds.has(p.id)));
 
-      e.nameEl.textContent = p.id || "";
+      e.nameEl.textContent = p.characterName || "";
       const lvl = Number(p.level ?? 0);
       e.lvlEl.textContent = `Lvl ${lvl}`;
       e.metaEl.textContent = p.active ? "ACTIVE" : "";

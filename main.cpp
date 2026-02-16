@@ -103,7 +103,7 @@ std::string NewPlayer(const std::string& characterId,
 {
     //std::string playerName = GeneratePlayerName(displayName);
     // Your join logic:
-    g_combatDirector->AddOrUpdatePlayer(characterId, character);
+    g_combatDirector->AddOrUpdatePlayer(characterId, characterName, character);
 
     DaraLog("LOGIN", "Created character:" + characterName + " id: "+ characterId + " Avatar: "+character.avatar);
 

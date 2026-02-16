@@ -520,7 +520,6 @@ void RegisterAuthRoutes(httplib::Server& server)
                 {"token", token},
                 {"userName", s.userId},
                 {"name", claims.name},
-                 {"playerName", s.playerId},
                 {"picture", claims.picture},
                 {"expiresDays", kSessionDays}
             };
@@ -579,8 +578,6 @@ void RegisterAuthRoutes(httplib::Server& server)
             {"status","ok"},
             {"userId", it->second.userId},
             {"characterId", it->second.characterId},
-            {"userName", it->second.userId},  // ATTENT
-            {"playerName", it->second.characterId}
         }).dump(), "application/json");
     });
 }

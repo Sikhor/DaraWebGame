@@ -121,8 +121,8 @@ UIState::json UIState::PartyMemberToJson(const Combatant& c)
     const json j = c.ToJson();
 
     json out;
-    out["id"]    = GetStringOr(j, "name", c.GetName());
-    out["characterName"]    = GetStringOr(j, "playerName", c.GetName());
+    out["id"]    = GetStringOr(j, "id", c.GetId());
+    out["characterName"]    = GetStringOr(j, "characterName", c.GetName());
     out["characterId"]    = GetStringOr(j, "characterId", c.GetId());
 
     out["hp"]    = j.value("hp", c.GetHP());

@@ -65,7 +65,7 @@ public:
 
     // Player/mob management (call when joining/leaving/spawning)
     void AddOrUpdatePlayer(const std::string& playerName);
-    void AddOrUpdatePlayer(const std::string& playerName, Character selectedCharacter);
+    void AddOrUpdatePlayer(const std::string& characterId, const std::string& characterName, Character selectedCharacter);
     bool ApplyDamageToPlayer(const std::string& playerName, float dmg);
     bool ApplyDamageToPlayerLocked(const std::string& playerName, float dmg);
     void RemovePlayer(const std::string& playerName);

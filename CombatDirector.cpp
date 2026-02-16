@@ -111,7 +111,7 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName)
     Cv.notify_all();
 }
 
-void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character selectedCharacter)
+void CombatDirector::AddOrUpdatePlayer(const std::string& characterId, const std::string& characterName, Character selectedCharacter)
 {
     std::lock_guard<std::mutex> lock(CacheMutex);
 
@@ -123,10 +123,10 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character 
             if (!p) return false;
 
             const bool sameChar =
-                (!selectedCharacter.characterId.empty() &&
-                 p->GetId() == selectedCharacter.characterId);
+                (!characterId.empty() &&
+                 p->GetId() == characterId);
 
-            const bool sameName = (p->GetName() == playerName);
+            const bool sameName = (p->GetName() == characterName);
 
             return sameChar || sameName;
         });
@@ -138,8 +138,8 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character 
         auto p = std::make_shared<Combatant>();
         p->InitPlayerType();
 
-        p->InitName(playerName);
-        p->InitId(selectedCharacter.characterId);
+        p->InitName(characterName);
+        p->InitId(characterId);
 
         p->InitLevel(selectedCharacter.level);
         p->InitXP(selectedCharacter.xp);
@@ -149,7 +149,7 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character 
 
         // Choose what key to store under:
         // Option A: key by playerName (display name)
-        Players[playerName] = p;
+        Players[characterId] = p;
 
         // Option B (recommended): key by characterId or userId (stable)
         // Players[selectedCharacter.characterId] = p;
@@ -159,8 +159,8 @@ void CombatDirector::AddOrUpdatePlayer(const std::string& playerName, Character 
 
     // Update existing
     auto& p = it->second;
-    p->InitName(playerName);
-    p->InitId(selectedCharacter.characterId);
+    p->InitName(characterName);
+    p->InitId(characterId);
     p->InitLevel(selectedCharacter.level);
     p->InitXP(selectedCharacter.xp);
     p->InitCredits(selectedCharacter.credits);
