@@ -1089,14 +1089,19 @@ void CombatDirector::ResolveSpawnMobs()
     if(!FilledSlotArray[0][rndSlot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;
         // do I need to spawn special stuff like a bomb?
-        if(GetRandomFloat(0.f,1000.f)>(900.f-Wave)){
-            int BombForWave= Wave/10+1000+1;
+        if(GetRandomFloat(0.f,1000.f)>900.f-Wave){
+            int BombForWave= Wave/3+1000+1;
             mobId = g_mobTemplates.PickRandomBossForWave(BombForWave);
             if(mobId.empty()){
                 DaraLog("ERROR", "No Bomb found for "+ std::to_string(BombForWave));
             }else{
                 rndSlot= RandSlot();
                 SpawnMob(mobId, 0, rndSlot);
+                if(GetRandomFloat(0.f,1000.f)>900.f-Wave){
+                    // spawn second bomb
+                    rndSlot= RandSlot();
+                    SpawnMob(mobId, 0, rndSlot);
+                }
             }
         }       
         while(MobToSpawnInWave>0 && mobsSpawned<=maxMobsAtOnce){

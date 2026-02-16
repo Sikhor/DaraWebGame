@@ -333,6 +333,231 @@
     },
     {
       "wave": 8,
+      "id": "Drone1",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone1",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone2",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone2",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone3",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone3",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone4",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone4",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone5",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone5",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone6",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone6",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone7",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone7",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone8",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone8",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone9",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone9",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone10",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone10",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone11",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Dron11",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone12",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone12",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 8,
+      "id": "Drone13",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone13",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 9,
+      "id": "Drone14",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone14",
+      "difficulty": "Normal",
+      "attackType": "Ranged",
+      "speed": 8.1667,
+      "maxHP": 190,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 9,
+      "id": "Drone15",
+      "displayName": "Drone",
+      "mobClass": "Drone",
+      "avatarId": "Drone15",
+      "difficulty": "Boss",
+      "attackType": "Ranged",
+      "speed": 14.1667,
+      "maxHP": 490,
+      "maxEnergy": 240,
+      "maxMana": 60,
+      "baseDamage": 38,
+      "baseDefense": 70
+    },
+    {
+      "wave": 10,
       "id": "X220",
       "displayName": "X220",
       "mobClass": "X220",
@@ -347,7 +572,7 @@
       "baseDefense": 8
     },
     {
-      "wave": 8,
+      "wave": 10,
       "id": "X304",
       "displayName": "X304",
       "mobClass": "X304",
@@ -362,7 +587,7 @@
       "baseDefense": 8
     },
     {
-      "wave": 8,
+      "wave": 10,
       "id": "AgentLornt",
       "displayName": "Agent Lornt",
       "mobClass": "AgentLornt",
@@ -377,7 +602,7 @@
       "baseDefense": 80
     },
     {
-      "wave": 9,
+      "wave": 11,
       "id": "X308",
       "displayName": "X308",
       "mobClass": "X308",
@@ -392,7 +617,7 @@
       "baseDefense": 9
     },
     {
-      "wave": 9,
+      "wave": 11,
       "id": "X345",
       "displayName": "X345",
       "mobClass": "X345",
@@ -407,7 +632,7 @@
       "baseDefense": 9
     },
     {
-      "wave": 9,
+      "wave": 11,
       "id": "LaserCanonX4",
       "displayName": "Laser Canon X4",
       "mobClass": "LaserCanonX4",
@@ -422,7 +647,7 @@
       "baseDefense": 90
     },
     {
-      "wave": 10,
+      "wave": 12,
       "id": "X388",
       "displayName": "X388",
       "mobClass": "X388",
@@ -437,7 +662,7 @@
       "baseDefense": 10
     },
     {
-      "wave": 10,
+      "wave": 12,
       "id": "X400",
       "displayName": "X400",
       "mobClass": "X400",
@@ -452,7 +677,7 @@
       "baseDefense": 10
     },
     {
-      "wave": 10,
+      "wave": 12,
       "id": "LaserCanonX311",
       "displayName": "Laser Canon X311",
       "mobClass": "LaserCanonX311",
@@ -467,7 +692,7 @@
       "baseDefense": 100
     },
     {
-      "wave": 11,
+      "wave": 13,
       "id": "X418",
       "displayName": "X418",
       "mobClass": "X418",
@@ -482,7 +707,7 @@
       "baseDefense": 11
     },
     {
-      "wave": 11,
+      "wave": 13,
       "id": "X430",
       "displayName": "X430",
       "mobClass": "X430",
@@ -497,7 +722,7 @@
       "baseDefense": 11
     },
     {
-      "wave": 11,
+      "wave": 13,
       "id": "LaserCanonX312",
       "displayName": "Laser Canon X312",
       "mobClass": "LaserCanonX312",
@@ -512,7 +737,7 @@
       "baseDefense": 110
     },
     {
-      "wave": 12,
+      "wave": 14,
       "id": "X433",
       "displayName": "X433",
       "mobClass": "X433",
@@ -527,7 +752,7 @@
       "baseDefense": 12
     },
     {
-      "wave": 12,
+      "wave": 14,
       "id": "X439",
       "displayName": "X439",
       "mobClass": "X439",
@@ -542,7 +767,7 @@
       "baseDefense": 12
     },
     {
-      "wave": 12,
+      "wave": 14,
       "id": "X487",
       "displayName": "X487",
       "mobClass": "X487",
@@ -557,7 +782,7 @@
       "baseDefense": 12
     },
     {
-      "wave": 12,
+      "wave": 14,
       "id": "X499",
       "displayName": "X499",
       "mobClass": "X499",
@@ -572,7 +797,7 @@
       "baseDefense": 12
     },
     {
-      "wave": 12,
+      "wave": 14,
       "id": "AgentSarna",
       "displayName": "Agent Sarna",
       "mobClass": "AgentSarna",
@@ -587,7 +812,7 @@
       "baseDefense": 120
     },
     {
-      "wave": 13,
+      "wave": 15,
       "id": "AgentSnapper",
       "displayName": "Agent Snapper",
       "mobClass": "AgentSnapper",
@@ -602,7 +827,7 @@
       "baseDefense": 13
     },
     {
-      "wave": 13,
+      "wave": 15,
       "id": "AgentTacker",
       "displayName": "Agent Tacker",
       "mobClass": "AgentTacker",
@@ -617,7 +842,7 @@
       "baseDefense": 13
     },
     {
-      "wave": 13,
+      "wave": 15,
       "id": "AgentSitor",
       "displayName": "Agent Sitor",
       "mobClass": "AgentSitor",
@@ -632,7 +857,7 @@
       "baseDefense": 130
     },
     {
-      "wave": 14,
+      "wave": 16,
       "id": "AgentZ002",
       "displayName": "Agent Z002",
       "mobClass": "AgentZ002",
@@ -647,7 +872,7 @@
       "baseDefense": 14
     },
     {
-      "wave": 14,
+      "wave": 16,
       "id": "AgentZ005",
       "displayName": "Agent Z005",
       "mobClass": "AgentZ005",
@@ -662,7 +887,7 @@
       "baseDefense": 14
     },
     {
-      "wave": 14,
+      "wave": 16,
       "id": "AgentLornt",
       "displayName": "Agent Lornt",
       "mobClass": "AgentLornt",
@@ -677,7 +902,7 @@
       "baseDefense": 140
     },
     {
-      "wave": 15,
+      "wave": 17,
       "id": "X400",
       "displayName": "X400",
       "mobClass": "X400",
@@ -692,7 +917,7 @@
       "baseDefense": 15
     },
     {
-      "wave": 15,
+      "wave": 17,
       "id": "LaserCanonX311",
       "displayName": "Laser Canon X311",
       "mobClass": "LaserCanonX311",
@@ -707,7 +932,7 @@
       "baseDefense": 15
     },
     {
-      "wave": 15,
+      "wave": 17,
       "id": "UltraCanonX202",
       "displayName": "Ultra Canon X202",
       "mobClass": "UltraCanonX202",
@@ -722,7 +947,7 @@
       "baseDefense": 150
     },
     {
-      "wave": 16,
+      "wave": 18,
       "id": "LaserCanonX312",
       "displayName": "Laser Canon X312",
       "mobClass": "LaserCanonX312",
@@ -737,7 +962,7 @@
       "baseDefense": 16
     },
     {
-      "wave": 16,
+      "wave": 18,
       "id": "AgentArgo",
       "displayName": "Agent Argo",
       "mobClass": "AgentArgo",
@@ -752,7 +977,7 @@
       "baseDefense": 16
     },
     {
-      "wave": 16,
+      "wave": 18,
       "id": "UltraCanonX302",
       "displayName": "Ultra Canon X302",
       "mobClass": "UltraCanonX302",

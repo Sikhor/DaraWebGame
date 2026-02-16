@@ -21,9 +21,10 @@
   /* ======================================================================
      GLOBALS (BEGIN)
      ====================================================================== */
-  const IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
+  const IMG_BASE = "https://gameinfo.daraempire.com/game-res/mobimg/";
   const AVATAR_IMG_BASE = "https://gameinfo.daraempire.com/game-res/avatars";
-  const BUFF_IMG_BASE = IMG_BASE;
+  const SCENE_IMG_BASE = "https://gameinfo.daraempire.com/game-res/scene";
+  const BUFF_IMG_BASE = "https://gameinfo.daraempire.com/wp-content/uploads/";
   const SOUND_BASE = "https://gameinfo.daraempire.com/game-res/wav";
   const HELP_URL = "https://gameinfo.daraempire.com/ui/help.html";
   const IMG_EXT = ".png";
@@ -503,6 +504,7 @@
     party: [],
     selectedMobId: null,
     selectedPartyId: null,
+    wave: 1
   };
 
   function renderBadges() {
@@ -542,29 +544,40 @@
   /* ======================================================================
      ENCOUNTER (NO FLICKER) - PERSISTENT DOM
      ====================================================================== */
+  let lastSceneWave="1";
   function ensureScene() {
     const battleFieldRoot = document.getElementById("battleFieldRoot");
     if (!battleFieldRoot) return null;
 
     let scene = battleFieldRoot.querySelector(".scene");
-    if (scene) return scene;
+    if (!scene){
 
-    battleFieldRoot.innerHTML = "";
+        battleFieldRoot.innerHTML = "";
 
-    scene = document.createElement("div");
-    scene.className = "scene";
 
-    const battlefield = document.createElement("div");
-    battlefield.className = "battlefield";
+        scene = document.createElement("div");
+        scene.className = "scene";
 
-    const fog1 = document.createElement("div"); fog1.className = "fog";
-    const fog2 = document.createElement("div"); fog2.className = "fog f2";
+        const battlefield = document.createElement("div");
+        battlefield.className = "battlefield";
 
-    scene.appendChild(battlefield);
-    scene.appendChild(fog1);
-    scene.appendChild(fog2);
+        const fog1 = document.createElement("div"); fog1.className = "fog";
+        const fog2 = document.createElement("div"); fog2.className = "fog f2";
 
-    battleFieldRoot.appendChild(scene);
+        scene.appendChild(battlefield);
+        scene.appendChild(fog1);
+        scene.appendChild(fog2);
+
+        battleFieldRoot.appendChild(scene);
+    }
+    // Update background when wave changes
+    const wave = String(uiState?.wave ?? "1");
+    if (wave !== lastSceneWave) {
+      lastSceneWave = wave;
+      const url = `${SCENE_IMG_BASE}/${wave}.jpg`;
+      scene.style.backgroundImage = `url("${url}")`;
+    }
+      
     return scene;
   }
 
