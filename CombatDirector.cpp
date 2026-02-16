@@ -1079,12 +1079,14 @@ void CombatDirector::ResolveSpawnMobs()
     if (Phase == EGamePhase::WaveCompleted) return;
     if (Phase != EGamePhase::Running) return; // optional guard
     
-    int slot= RandSlot();
-    
+    int maxMobsAtOnce= 5;
+    int mobsSpawned=0;
+    int rndSlot= RandSlot();
+
     GetFilledSlotArray();
     if(DARA_DEBUG_COMBAT) DaraLog("TURN", "Wave: " + std::to_string(Wave)+ " Turn: "+std::to_string(CurrentTurnId));
 
-    if(!FilledSlotArray[0][slot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
+    if(!FilledSlotArray[0][rndSlot] && ShallMobSpawn(CurrentTurnId) && !Players.empty() && MobToSpawnInWave>0){
         std::string mobId;
         // do I need to spawn special stuff like a bomb?
         if(GetRandomFloat(0.f,1000.f)>(900.f-Wave)){
@@ -1093,23 +1095,28 @@ void CombatDirector::ResolveSpawnMobs()
             if(mobId.empty()){
                 DaraLog("ERROR", "No Bomb found for "+ std::to_string(BombForWave));
             }else{
-                SpawnMob(mobId, 0, slot);
+                rndSlot= RandSlot();
+                SpawnMob(mobId, 0, rndSlot);
             }
+        }       
+        while(MobToSpawnInWave>0 && mobsSpawned<=maxMobsAtOnce){
+            if (MobToSpawnInWave <= 1) {
+                mobId = g_mobTemplates.PickRandomBossForWave(Wave);
+            }else{
+                mobId = g_mobTemplates.PickRandomMobIdForWave(Wave);
+            }
+            if (mobId.empty()) {
+                //throw std::runtime_error("No mob templates loaded");
+                mobId = g_mobTemplates.PickRandomMobId();
+                DaraLog("ERROR", "End of possible mob waves... you should add more");
+            }
+            rndSlot= RandSlot();
+            SpawnMob(mobId, 0, rndSlot);
+            MobToSpawnInWave--;
+            mobsSpawned++;
+            // to bring some randomness about how much mobs spawn at once
+            if(GetRandomFloat(0.f,10.f)>5.f) mobsSpawned++;
         }
-        
-        if (MobToSpawnInWave <= 1) {
-            mobId = g_mobTemplates.PickRandomBossForWave(Wave);
-        }else{
-            mobId = g_mobTemplates.PickRandomMobIdForWave(Wave);
-        }
-        MobToSpawnInWave--;
-        if (mobId.empty()) {
-            //throw std::runtime_error("No mob templates loaded");
-            mobId = g_mobTemplates.PickRandomMobId();
-            DaraLog("ERROR", "End of possible mob waves... you should add more");
-        }
-        SpawnMob(mobId, 0, slot);
-        
 
     }
 }
